@@ -1,0 +1,13 @@
+---
+description: Ao revisar uma fonte, documentar todos os campos e guardar um exemplo do arquivo bruto
+alwaysApply: true
+---
+
+# Dicionário da fonte e exemplo bruto
+
+Quando uma fonte entra no Radar, ou quando o formato dela é revisado:
+
+1. A página da fonte, em `src/source-native.js`, lista cada campo que a origem publica, com o nome original, o tipo e o que o valor significa. Campo que a ficha não copia continua no dicionário.
+2. Um exemplo pequeno do arquivo bruto fica em `amostras/{codigo}/`, no formato original. São poucos registros da edição consultada. A cópia nacional continua em `data/cache` e não entra no exemplo.
+3. `LEIA.txt` na mesma pasta diz a data da edição, a URL, o tamanho do arquivo completo e o que ficou de fora, como geometria ou anexo grande.
+4. O relatório da fonte no Document Hub recebe o mesmo dicionário. Sem segredo, token ou credencial no exemplo e no Notion.

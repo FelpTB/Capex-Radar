@@ -1,0 +1,16 @@
+Código Empreendimento,Tipo do Empreendimento,Estudo,UF Origem,UF Destino,UF Secc,Nome do Empreendimento,Itens de obra,Estimativa Leilão,Data de Necessidade,Data de Tendência,Total Investimento ( 2025 ) R$ / 1000,Contratação
+18641,SE,Estudo de Atendimento Elétrico ao Estado do Mato Grosso do Sul,Mato Grosso do Sul,,,SE 230/138 kV Imbirussu,"1° Capacitor em Derivação 230 kV, 1 x 100 Mvar 3ϕ
+CCD (Conexão de Capacitor Derivação) 230 kV, Arranjo BD4
+MIM - 230 kV
+",,2029,2029-01-01 00:00:00,15358.98,Instalação
+18645,SE,Estudo de Atendimento Elétrico ao Estado do Mato Grosso do Sul,Mato Grosso do Sul,,,SE 230/138 kV Campo Grande 2,"1º Capacitor em Derivação 230 kV, 1 x 100  MVar
+CCD (Conexão de Capacitor Derivação) 230 kV, Arranjo BD4
+MIM - 230 kV
+",,2031,2031-01-01 00:00:00,15358.98,Instalação
+18648,SE,Estudo de Atendimento Elétrico ao Estado do Mato Grosso do Sul,Paraná,,,SE 525/230/138 kV Sarandi,"3° ATF 525/230 kV, 3 x 224 MVA 1ϕ
+CT (Conexão de Transformador) 525 kV, Arranjo DJM
+CT (Conexão de Transformador) 230 kV, Arranjo BD4
+IB (Interligação de Barras) 525 kV, Arranjo DJM
+MIM - 525 kV
+MIM - 230 kV
+",,O mais breve possível,2037-01-01 00:00:00,94263.59,Instalação

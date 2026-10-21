@@ -1,0 +1,403 @@
+Radar CapEx — Guia de requisitos do MVP
+Versão: 0.2
+Data: 2026-09-23
+Stack: Supabase (Postgres) + OpenAI API + Railway (local primeiro)
+Inventário de fontes: fontes.md (repositório) e Hub Notion.
+
+================================================================
+1. OBJETIVO DO MVP
+================================================================
+
+Captar projetos de investimento privado (fábrica, planta, mina, terminal,
+data center, concessão operada por empresa). Portal público entra
+depois, para enriquecer um projeto já identificado. A descoberta
+parte de notícia de veículo privado.
+
+O MVP não precisa varrer o Brasil nem todos os portais. Precisa
+provar o ciclo:
+
+  notícia / sinal  →  ficha de projeto  →  enriquecimento pontual
+  →  evidências com link  →  dois dashboards (fontes e projetos)
+
+Critério de aceite (DoD do MVP):
+  - 5 projetos persistidos, cada um com notícia principal (URL).
+  - Pelo menos 1 evidência secundária em cada projeto (ou tentativa
+    registrada com erro de acesso, se a fonte falhar).
+  - Tabela de fontes preenchida para as fontes usadas no piloto.
+  - Dashboard de Fontes e Dashboard de Projetos navegáveis.
+  - Todo registro extraído aponta para a URL de origem (atributo link).
+
+Fora de escopo neste MVP:
+  - Varredura contínua de todos os sites da FONTE-010. O ciclo
+    automático cobre só notícia privada em prova ou fixa.
+  - Scrape de paywall / Cloudflare (CanalEnergia, Valor, etc.).
+  - Autenticação institucional (PDT chave, CVM login).
+  - Matching automático perfeito CNPJ / CEG / Ibama.
+  - FONTE-007 e FONTE-008 (ainda em estudo).
+  - Base dos Dados / GCP (FONTE-011 é avançada).
+
+================================================================
+2. PAPÉIS DAS FONTES
+================================================================
+
+2.1 Fonte primária (prospecção)
+
+  O alvo é projeto privado. Notícia de veículo privado é o sinal
+  de descoberta. Portal de governo, em geral, anuncia obra pública;
+  fica no catálogo para enriquecer quando o projeto privado já
+  existe (licença, outorga, financiamento).
+
+  No scanner: Agência iNFRA, Portal BE News, MegaWhat, InfoMoney,
+  Money Times e InvestNews, no estágio fixa. ANEEL e Portos e
+  Aeroportos ficam fora do scanner: o listing é majoritariamente
+  público.
+
+  A busca do Google, no início, roda na mesma cadência da varredura:
+  uma vez por semana. No banco entra só o domínio, o nome do veículo,
+  a consulta e a data. Manchete, trecho e corpo do Google não são
+  gravados. A matéria é lida depois, na capa do portal.
+
+  Estágios da notícia privada:
+    sugerida    vista na busca, ainda sem leitura
+    prova       repetiu no hub e ainda está em avaliação
+    fixa        entra na varredura semanal
+    aposentada  fora do scanner, histórico mantido
+
+  A prova vira fixa quando, em pelo menos 4 matérias lidas, 20% ou
+  mais são projeto privado com UF brasileira. Sem esse rendimento
+  depois de 8 leituras, ou depois de 21 dias na prova, aposenta.
+  Fonte fixa sem projeto privado por 28 dias, ou com acesso
+  bloqueado, também aposenta.
+
+  Cadência inicial: uma rodada automática por semana, sem teto diário
+  de leituras de modelo. Projetos novos não aparecem com frequência
+  que justifique várias passagens no mesmo dia. Intervalo de alguns
+  dias, ou de mais de uma semana, cabe no mesmo desenho. Várias
+  execuções por dia ficam para quando a operação pedir atualização
+  mais curta. O botão manual continua disponível.
+
+  Filtro do que fica na fila (as quatro portas):
+    1. empresa privada é dona e investidora do ativo;
+    2. o ativo fica em solo brasileiro (pais = BR);
+    3. nenhum órgão público investe, contrata, financia, concede
+       ou é sócio (concessão e PPP ficam de fora);
+    4. porte: valor conhecido abaixo de R$ 100 milhões sai.
+       Valor ausente segue para revisão humana.
+  Antes do modelo, a manchete perde pontos com termo macro (juros,
+  bolsa, cripto, dívida, tarifa) e com país estrangeiro sem menção
+  ao Brasil. Motivos de recusa gravados: não é projeto, projeto
+  público, projeto internacional, projeto pequeno.
+
+2.2 Fonte secundária (enriquecimento)
+
+  Acessada PONTUALMENTE, depois que o projeto já existe e com o
+  CNPJ da empresa já resolvido, para:
+    - completar ficha (empresa, UF, valor, fase, processo);
+    - atualizar STATUS do projeto;
+    - gravar evidência com link.
+
+  Candidatas do inventário (lookup, não dump nacional):
+
+    FONTE-005  Ibama SISLIC (CSV/consulta) — LP/LI/LO
+    FONTE-006  ANEEL SIGA, ANTT investimentos, ANP, ANTAQ, ANA
+    FONTE-009  BNDES operações não automáticas (valor, CNPJ)
+    FONTE-001  Obrasgov (se recurso federal)
+    FONTE-003  PNCP (se contratação pública)
+    FONTE-004  CNO (obra civil, sem valor)
+    FONTE-012  CNPJ dump (lookup de empresa; não descobre obra)
+    CVM IPE    fato relevante (ENETWeb / ZIP dados.cvm.gov.br)
+
+  No piloto, basta 1–2 secundárias por projeto (a que o nicho
+  indicar: energia→SIGA; crédito→BNDES; óleo→ANP/Ibama; obra
+  pública→Obrasgov/PNCP).
+
+2.3 Atributo link (obrigatório)
+
+  Toda extração (projeto, evidência, tentativa de acesso) guarda
+  a URL de onde o dado foi lido. Sem link, o registro não entra.
+
+================================================================
+3. DADOS
+================================================================
+
+3.1 Tabela FONTE (cadastro operacional)
+
+  Serve para o Dashboard de Fontes e para anotar erros /
+  peculiaridades de acesso (WAF 403, Cloudflare, vedação
+  eleitoral, URL que mudou).
+
+  Campos mínimos:
+    id_fonte            código estável (ex. FONTE-010-INFRA)
+    nome
+    tipo                primaria | secundaria
+    categoria           forma técnica de extração:
+                        api_publica | api_privada |
+                        dataset_download | base_consultavel |
+                        portal_web
+    url_base            listing ou portal canônico
+    conteudo            o que a fonte entrega (texto livre curto)
+    frequencia_projetos alta | media | baixa | desconhecida
+    esfera_noticia      publica | privada | vazio
+                        só em portal de notícia: órgão ou imprensa
+    estagio             sugerida | prova | fixa | aposentada | vazio
+                        ciclo da notícia privada; vazio nas demais
+    status_acesso       ok | instavel | bloqueado | indisponivel
+    peculiaridade       notas (403 HEAD, RSS 404, Plone, etc.)
+    ultimo_erro         mensagem / HTTP
+    ultimo_acesso_em
+    ativo               sim | nao
+
+3.2 Tabela PROJETO
+
+  Campos mínimos MVP:
+    id_projeto
+    nome
+    nicho               livre (energia, porto, mineracao, …)
+    uf
+    municipio           opcional
+    empresa_nome        nome que o texto trouxe
+    cnpj                resolvido na estruturação, a partir do nome,
+                        por base própria de empresas e API de cadastro;
+                        vazio só quando não houver casamento único.
+                        A secundária confirma, não origina
+    valor_capex         numérico opcional
+    moeda               BRL | USD | desconhecida
+    valor_confianca     baixa (notícia) | alta (BNDES/CVM/Obrasgov)
+    status              rumor | anunciado | leilao | outorga |
+                        lp | li | construcao | operacao | cancelado
+    url_noticia_principal   obrigatória
+    id_fonte_principal
+    criado_em
+    atualizado_em
+
+3.3 Tabela EVIDENCIA (sinal / enriquecimento)
+
+  Uma linha por acesso bem-sucedido a uma URL.
+    id_evidencia
+    id_projeto
+    id_fonte
+    papel               primaria | secundaria
+    url                 obrigatória
+    titulo_ou_resumo
+    trecho              opcional
+    campos_extraidos    JSON livre (processo Ibama, CEG, contrato)
+    coletado_em
+
+3.4 Tabela ACESSO_LOG (erros)
+
+  Uma linha por tentativa, inclusive falha.
+    id_fonte, url, http_status, erro, em
+
+  O Dashboard de Fontes usa o último log para destacar status.
+
+3.5 Tabela CANDIDATO_PROJETO (dataset de decisão)
+
+  Toda notícia encontrada pelo scanner é preservada, independente
+  da decisão humana.
+    id, id_fonte, url UNIQUE, titulo, resumo
+    relevancia, dados_extraidos, modelo_extracao
+    status (novo | analisado | aprovado | rejeitado | erro)
+    rotulo_projeto (true | false | null)
+    decidido_em, motivo_decisao
+
+  Aprovar cria projeto + evidência; rejeitar não apaga a notícia.
+  Registros decididos podem ser exportados em JSONL para futuro
+  treinamento e avaliação do classificador.
+
+================================================================
+4. DASHBOARDS
+================================================================
+
+4.1 Dashboard de Fontes
+
+  Lista cada fonte cadastrada com:
+    - nome e tipo (primária / secundária)
+    - categoria de extração e sua descrição
+    - url_base (clicável)
+    - conteúdo (o que se espera extrair)
+    - frequência de novos projetos
+    - DESTAQUE: status de acesso (ok / instável / bloqueado)
+    - peculiaridade e último erro
+
+  Filtros e ordenação:
+    - filtrar por acesso, papel, extração e recorrência
+    - ordenar por nome, papel, acesso ou recorrência
+
+  Objetivo: o operador vê o que está quebrado antes de prospectar.
+
+4.2 Dashboard de Projetos
+
+  Lista os 5+ projetos com:
+    - nome, nicho, UF, empresa
+    - valor (se houver) e confiança
+    - DESTAQUE: status do projeto
+    - atalho para a notícia principal (url_noticia_principal)
+    - entrada no detalhe: evidências relacionadas (título + link)
+
+  Do card/linha do projeto deve ser possível abrir a notícia
+  principal e a lista de evidências sem sair do fluxo.
+
+4.3 Prospecção / material de treino
+
+  Mostra métricas: total prospectado, aprovado, não aprovado e
+  pendente. Toda notícia pendente tem as ações “Aprovar projeto”
+  e “Não aprovar”, esta última com motivo. Histórico mantém ambos
+  os rótulos e oferece exportação JSONL.
+
+================================================================
+5. REGRAS DE NEGÓCIO
+================================================================
+
+  R1  Projeto só nasce com url_noticia_principal.
+  R2  Enriquecimento não apaga o sinal original; acrescenta evidência.
+  R3  CNPJ não é inventado a partir da notícia.
+  R4  Valor da manchete entra com valor_confianca = baixa até uma
+      secundária com número oficial.
+  R5  Status do projeto só muda com evidência nova (ou nota
+      explícita no enriquecimento).
+  R6  Fonte bloqueada (Cloudflare, 403 persistente) permanece no
+      cadastro com status_acesso = bloqueado e não entra no poll.
+  R7  Não persistir segredos (chaves PDT, tokens, service_role,
+      OPENAI_API_KEY) neste repositório. Só .env local / painel
+      Railway.
+  R8  OpenAI não inventa CNPJ nem valor oficial. Só estrutura
+      texto já coletado (título/lead). Sem filtro de keywords,
+      não chama o modelo.
+  R9  Acesso ao banco só no servidor, via SUPABASE_STRING.
+      Dashboards não recebem a URI. RLS permanece ligado.
+  R10 Candidato nunca é apagado por decisão. Aprovação e rejeição
+      são rótulos humanos permanentes para futuro treinamento.
+
+================================================================
+5.1 STACK (decisão de arquitetura)
+================================================================
+
+  Banco:     Supabase (Postgres). Tabelas do MVP no schema public
+             (ou radar, se o projeto já tiver public ocupado).
+             RLS ligado. App usa SUPABASE_STRING (URI Postgres
+             do projeto, de preferência pooler porta 6543).
+  LLM:       OpenAI API — extração estruturada da notícia
+             (empresa, UF, valor mencionado, fase, nicho) e
+             resumo da evidência. Modelo configurável via env
+             (ex. gpt-4.1-mini).
+  Host:      Railway em produção (Nixpacks, PORT injetado pela
+             plataforma, health /health). Desenvolvimento:
+             `npm start` / equivalente em localhost apontando
+             para o MESMO projeto Supabase (sem banco paralelo
+             SQLite).
+  App:       servidor web (Node) + duas rotas de dashboard
+             /fontes e /projetos.
+
+  Variáveis (nunca commitadas; ver .env.example):
+    SUPABASE_STRING       URI Postgres (Supabase)
+    OPENAI_API_KEY
+    OPENAI_MODEL          (opcional, default gpt-4.1-mini)
+    PORT                  (só local; no Railway não setar)
+
+  Arquivo de exemplo: .env.example
+  SQL inicial: sql/001_radar_mvp.sql
+
+================================================================
+6. PLANO DE IMPLEMENTAÇÃO DO MVP
+================================================================
+
+  Captação dos 5 projetos: o scanner visita as fontes primárias
+  ativas, encontra links, aplica filtro de relevância e envia os
+  melhores candidatos à OpenAI. O humano aprova antes de criar a
+  ficha. Cadastro manual é apenas fallback.
+
+Fase A — Base (1)
+  A1  Aplicar sql/001_radar_mvp.sql no projeto Supabase
+      (SQL Editor ou CLI). Conferir RLS.
+  A2  Seed da tabela fonte: primárias do piloto (iNFRA, BE News,
+      MegaWhat, ANEEL, Portos) e secundárias (Ibama, SIGA, BNDES,
+      Obrasgov). Peculiaridades já conhecidas (WAF, RSS 404,
+      path MPOR, CVM ENETWeb).
+  A3  App local: cliente Supabase server-side + rotas vazias
+      /fontes e /projetos + GET /health.
+  A4  .env local a partir de .env.example. Smoke: insert 1 fonte.
+
+Fase B — Prospecção dos 5 (2)
+  B1  Ação “Buscar novos projetos” varre as fontes primárias.
+      Falhas atualizam acesso_log e o Dashboard de Fontes.
+  B2  Filtro local retém links com sinais de CapEx; OpenAI
+      estrutura nome, empresa, UF, valor, fase e nicho.
+  B3  Resultados entram em candidato_projeto. Operador abre a
+      notícia e aprova ou descarta.
+  B4  Aprovação grava projeto + evidência primária em transação.
+
+Fase C — Enriquecimento pontual (3)
+  C1  Na ficha do projeto, ação “buscar secundária”: lookup
+      manual (colar URL) ou script pontual (ex. filtrar SIGA /
+      BNDES / Ibama por nome/UF).
+  C2  Salvar evidência com link; opcionalmente atualizar status,
+      valor_confianca, cnpj.
+  C3  Se o acesso falhar, gravar acesso_log e refletir na fonte.
+
+Fase D — Dashboards (4)
+  D1  Dashboard Fontes: tabela com status em destaque (cor/selo)
+      e frequência; link url_base; último erro.
+  D2  Dashboard Projetos: cards/tabela com status em destaque;
+      link notícia principal; clique abre evidências.
+  D3  Verificar os 5 projetos ponta a ponta no browser.
+
+Fase E — Railway (depois do local verde)
+  E1  railway.toml: start command + healthcheck /health.
+      Não definir PORT no arquivo.
+  E2  Mesmas env vars no painel Railway (Supabase + OpenAI).
+  E3  Smoke no domínio público: dashboards + health.
+
+Fase F — Encerramento
+  F1  Conferir DoD da seção 1.
+  F2  Anotar no cadastro de fontes o que quebrou no piloto.
+  F3  O scanner de descoberta fica nos veículos privados. Portal
+      público não volta ao scanner só porque a página abre.
+
+Ordem: A → B → D2 → C → D1 → F (local) → E (Railway).
+Prioridade de tela: Projetos depois Fontes.
+Testes iniciais: sempre local contra o Supabase do projeto.
+
+================================================================
+7. REFERÊNCIA RÁPIDA DE URLS DO PILOTO
+================================================================
+
+  Primárias no scanner (notícia privada)
+    https://agenciainfra.com/blog/
+    https://portalbenews.com.br/
+    https://megawhat.energy/
+    https://www.infomoney.com.br/business/
+    https://www.moneytimes.com.br/
+    https://investnews.com.br/
+
+  Busca auxiliar, aberta no navegador (não é fonte do banco)
+    Google Notícias: investimento fábrica, planta ou data center
+
+  Fora do scanner (sinal público, enriquecimento)
+    https://www.gov.br/aneel/pt-br/assuntos/noticias
+    https://www.gov.br/portos-e-aeroportos/pt-br/assuntos/noticias
+
+  Secundárias
+    Ibama SISLIC / consultas LAF (FONTE-005)
+    SIGA CSV dadosabertos.aneel.gov.br (FONTE-006)
+    BNDES operacoes-financiamento não automáticas (FONTE-009)
+    Obrasgov GET /projeto-investimento (FONTE-001)
+
+  CVM consulta (secundária corporativa)
+    https://www.rad.cvm.gov.br/ENETWeb/frmConsultaExternaCVM.aspx
+
+================================================================
+Fim do guia. Inventário detalhado de cada órgão: fontes.md
+================================================================
+
+IMPLEMENTAÇÃO — 2026-09-23
+  [x] Schema Supabase + RLS + índices
+  [x] Seed de 10 fontes do piloto
+  [x] Seed do inventário mapeado (FONTE-001 a 006, 009, 010, 012, 013; CVM/RI)
+  [x] Backend local e healthcheck
+  [x] Dashboard de Fontes
+  [x] Dashboard de Projetos
+  [x] Cadastro assistido por OpenAI
+  [x] Scanner de fontes primárias + fila de candidatos
+  [x] Evidência secundária + atualização de status
+  [ ] Captar e enriquecer os 5 projetos reais
+  [ ] Deploy no Railway após aceite local

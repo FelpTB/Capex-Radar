@@ -1,0 +1,10 @@
+Fonte: SEC-ANP-EP
+Formato: CSV Windows-1252, separador ponto e virgula
+Campos: 22
+Data da extracao: 21/10/2026
+Fonte da extracao: https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/fase-exploracao
+
+Arquivo: blocos-sob-contrato.csv (4 blocos).
+Arquivo completo: data/cache/anp-blocos.csv, 81748 bytes, 411 linhas.
+A amostra guarda um bloco mar da Petrobras, um terra, um de partilha e um suspenso.
+Ficou de fora: as demais linhas, geometria do bloco e contratos em PDF. Nao ha coluna de CNPJ.

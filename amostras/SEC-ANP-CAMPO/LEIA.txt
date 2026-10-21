@@ -1,0 +1,10 @@
+Fonte: SEC-ANP-CAMPO
+Formato: CSV UTF-8, separador virgula
+Campos: 20
+Data da extracao: 21/10/2026
+Fonte da extracao: https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos/arquivos-fase-de-desenvolvimento-e-producao/producao-por-zona/producao_zona_
+
+Arquivo: producao-zona.csv (pocos de Mero e de Canto do Amaro).
+Arquivo completo: data/cache/anp-zona.csv, 2165202 bytes, 13430 linhas. Mes da copia: 01/08/2026.
+Sao linhas de poco, nao a linha agregada do campo.
+Ficou de fora: as demais 13 mil linhas e a geometria do campo. Nao ha coluna de CNPJ.

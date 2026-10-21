@@ -1,0 +1,9 @@
+Fonte: SEC-ANTAQ-INST
+Formato: CSV Windows-1252, separador ponto e virgula, primeira linha e titulo
+Campos: 9
+Data da extracao: 21/10/2026
+Fonte da extracao: https://dados.transportes.gov.br/dataset/5cb74314-b2d8-4bcb-8330-f7acda1ad060/resource/4cb7551c-176c-46b0-bba5-8e326d6fda6e/download/out_2022.csv
+
+Arquivo: out_2022.csv (titulo + cabecalho + 4 instalacoes).
+Arquivo completo: data/cache/antaq-instalacoes.csv, 47701 bytes, 271 instalacoes. Fotografia de outubro de 2022.
+Ficou de fora: as demais linhas e as estatisticas de movimentacao da ANTAQ. Nao ha coluna de CNPJ.

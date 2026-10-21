@@ -1,0 +1,11 @@
+Fonte: SEC-CVM-IPE
+Formato: CSV latin1, separador ponto e virgula
+Campos: 13
+Data da extracao: 21/10/2026
+Fonte da extracao: https://dados.cvm.gov.br/dados/CIA_ABERTA/DOC/IPE/DADOS/ipe_cia_aberta_2026.zip
+
+Arquivo: ipe_cia_aberta_2026-amostra.csv (cabecalho + 4 protocolos, bytes originais).
+CSV completo de 2026: 15475342 bytes, 23989 protocolos. O de 2025 tem as mesmas 13 colunas.
+Colunas: CNPJ_Companhia, Nome_Companhia, Codigo_CVM, Data_Referencia, Categoria, Tipo, Especie, Assunto, Data_Entrega, Tipo_Apresentacao, Protocolo_Entrega, Versao, Link_Download.
+A carga fica com Fato Relevante e Comunicado ao Mercado.
+Ficou de fora: os outros protocolos, o ZIP e os PDFs apontados por Link_Download.

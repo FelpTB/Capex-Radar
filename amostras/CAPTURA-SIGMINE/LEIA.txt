@@ -1,0 +1,10 @@
+Fonte: CAPTURA-SIGMINE
+Formato: DBF dBase III (bytes originais) + CSV UTF-8 comparavel, separador ponto e virgula
+Campos: 12
+Data da extracao: 18/10/2026
+Fonte da extracao: https://dadosabertos.anm.gov.br/SIGMINE/PROCESSOS_MINERARIOS/MG.zip
+
+Arquivos: MG.dbf (5 registros), MG.cpg (UTF-8), MG.prj (SIRGAS 2000) e processos-amostra.csv (mesmos 5 registros, legivel).
+Edicao de MG: 55002 processos. A tabela lida pela ficha e o DBF.
+Colunas: PROCESSO, NUMERO, ANO, AREA_HA, ID, FASE, ULT_EVENTO, NOME, SUBS, USO, UF, DSProcesso.
+Ficou de fora: MG.shp (poligonos, 68,9 MB), MG.shx, MG.sbn, MG.sbx e MG.shp.xml.

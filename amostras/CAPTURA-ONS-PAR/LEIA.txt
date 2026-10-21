@@ -1,0 +1,10 @@
+Fonte: CAPTURA-ONS-PAR
+Formato: CSV UTF-8 extraido das abas XLSX do 7z de apoio PET/PELP
+Campos: 13
+Data da extracao: 21/10/2026
+Fonte da extracao: https://www.epe.gov.br/sites-pt/publicacoes-dados-abertos/publicacoes/PublicacoesArquivos/publicacao-943/02.Documentos%20de%20Apoio%20do%20PET-PELP%202o%20Sem%202025.7z
+
+Pagina: https://www.epe.gov.br/pt/publicacoes-dados-abertos/publicacoes/programa-de-expansao-da-transmissao-pet-plano-de-expansao-de-longo-prazo-pelp-ciclo-2025-2-semestre
+Arquivos: empreendimentos_pet.csv (3 linhas) e empreendimentos_pelp.csv (3 linhas).
+Pacote 7z: data/cache/pet-apoio.7z, 2123862 bytes. Ciclo 2025, 2o semestre.
+Ficou de fora: as demais 157+280 linhas, a aba Capa e o PDF de fichas.

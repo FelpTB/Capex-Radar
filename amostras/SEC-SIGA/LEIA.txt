@@ -1,0 +1,11 @@
+Fonte: SEC-SIGA
+Formato: CSV UTF-8, virgula decimal, aspas em cada campo
+Campos: 23
+Data da extracao: 21/10/2026
+Fonte da extracao: https://dadosabertos.aneel.gov.br/dataset/6d90b77c-c5f5-4d81-bdec-7bc619494bb9/resource/2f65a1b0-19b8-4360-8238-b34ab4693d55/download/siga-empreendimentos-geracao-diario.csv
+
+Dicionario 1.2 (30/03/2023): https://dadosabertos.aneel.gov.br/dataset/6d90b77c-c5f5-4d81-bdec-7bc619494bb9/resource/25722a60-194d-4234-ab3b-b71354078402/download/dm-siga-sistema-de-informacoes-de-geracao-da-aneel.pdf
+Arquivos: siga-diario-amostra.csv (4 empreendimentos) e siga-mensal-acominas.csv (1 linha).
+Diario completo em 21/10/2026: 7885278 bytes, 25058 empreendimentos.
+Mensal em 01/10/2026: https://dadosabertos.aneel.gov.br/dataset/6d90b77c-c5f5-4d81-bdec-7bc619494bb9/resource/11ec447d-698d-4ab8-977f-b424d5deee6a/download/siga-empreendimentos-geracao.csv
+Ficou de fora: os outros empreendimentos e os XML, que repetem as mesmas 23 colunas.

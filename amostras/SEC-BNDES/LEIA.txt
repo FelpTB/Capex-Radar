@@ -1,0 +1,12 @@
+Fonte: SEC-BNDES
+Formato: CSV Windows-1252, separador ponto e virgula
+Campos: 34
+Data da extracao: 21/10/2026
+Fonte da extracao: https://dadosabertos.bndes.gov.br/dataset/10e21ad1-568e-45e5-a8af-43f2c05ef1a2/resource/6f56b78c-510f-44b6-8274-78a5b7e931f4/download/operacoes-financiamento-operacoes-nao-automaticas.csv
+
+Pagina: https://dadosabertos.bndes.gov.br/dataset/operacoes-financiamento
+Arquivo: operacoes-nao-automaticas.csv (4 contratos).
+Arquivo completo: data/cache/bndes-nao-automaticas.csv, 20011334 bytes, 23815 linhas.
+A amostra guarda um FINEM ativo, um liquidado, um de apoio indireto e um de industria em SP.
+Ficou de fora: as demais 23 mil linhas e o CSV de operacoes automaticas.
+A tabela enr_bndes guarda 15 colunas; as outras 19 ficam no arquivo.

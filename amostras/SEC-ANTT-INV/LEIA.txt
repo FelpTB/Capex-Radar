@@ -1,0 +1,14 @@
+Fonte: SEC-ANTT-INV
+Formato: cinco CSV Windows-1252, separador ponto e virgula
+Campos: cadastro 27 / autorizacao 17 / encerramento 19 / PIP 6 / concessionarias 3
+Data da extracao: 21/10/2026
+Fonte da extracao: https://dados.antt.gov.br/
+
+Cadastro (01/10/2026, 27 campos): https://dados.antt.gov.br/dataset/6a42582f-5481-458d-bf21-247d91a60af5/resource/48ca5a9b-65c2-46af-9123-cad23e6f8a8d/download/cadastros-de-investimentos-dos-contratos-de-concessao.csv
+Autorizacao (14/10/2026, 17): https://dados.antt.gov.br/dataset/967e6b74-bbcd-4212-a93f-4119611143f8/resource/cec76fd2-8fa0-45f5-bb87-566de09fa715/download/autorizacao-investimento.csv
+Encerramento (01/10/2026, 19): https://dados.antt.gov.br/dataset/09020405-776b-4bbc-946e-410a37ab2a70/resource/37527602-5b8b-4b2d-aef7-f7ed59a2f473/download/encerramento-investimentos.csv
+PIP (10/04/2026, 6): https://dados.antt.gov.br/dataset/7c6bc8ab-69fb-4955-9cf3-7481cfa089f9/resource/64a0f446-f67c-412d-8b87-17587a8e9f78/download/investimentos_autorizados_gpfer_pip.csv
+Concessionarias (22/05/2026, 3): https://dados.antt.gov.br/dataset/a133da64-1e03-4832-909d-e1eb835eec2e/resource/a08292ac-41a6-4220-bfe2-35c7b3abfbf0/download/investimentos.csv
+Arquivos: cadastros-amostra.csv, autorizacao-amostra.csv, encerramento-amostra.csv, pip-amostra.csv, concessionarias-amostra.csv.
+A amostra usa o id_sigicor 15586 (VIA ARAUCARIA, BR-277/PR) nos tres arquivos que se cruzam.
+Ficou de fora: as demais linhas, JSON, PDFs de dicionario. Nenhum arquivo traz CNPJ.

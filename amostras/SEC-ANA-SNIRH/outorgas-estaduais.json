@@ -1,0 +1,618 @@
+{
+  "objectIdFieldName": "objectid",
+  "globalIdFieldName": "",
+  "geometryType": "esriGeometryPoint",
+  "spatialReference": {
+    "wkid": 4326,
+    "latestWkid": 4326
+  },
+  "fields": [
+    {
+      "name": "objectid",
+      "alias": "objectid",
+      "type": "esriFieldTypeOID"
+    },
+    {
+      "name": "abr_dad_qt_dia",
+      "alias": "abr_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "abr_dad_qt_horas",
+      "alias": "abr_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "abr_dad_qt_vazaodia",
+      "alias": "abr_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "ago_dad_qt_dia",
+      "alias": "ago_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "ago_dad_qt_horas",
+      "alias": "ago_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "ago_dad_qt_vazaodia",
+      "alias": "ago_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "dez_dad_qt_dia",
+      "alias": "dez_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "dez_dad_qt_horas",
+      "alias": "dez_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "dez_dad_qt_vazaodia",
+      "alias": "dez_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "emp_nm_empreendimento",
+      "alias": "emp_nm_empreendimento",
+      "type": "esriFieldTypeString",
+      "length": 160
+    },
+    {
+      "name": "emp_nm_responsavel",
+      "alias": "emp_nm_responsavel",
+      "type": "esriFieldTypeString",
+      "length": 250
+    },
+    {
+      "name": "emp_nu_cpfcnpj",
+      "alias": "emp_nu_cpfcnpj",
+      "type": "esriFieldTypeString",
+      "length": 60000
+    },
+    {
+      "name": "fev_dad_qt_dia",
+      "alias": "fev_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "fev_dad_qt_horas",
+      "alias": "fev_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "fev_dad_qt_vazaodia",
+      "alias": "fev_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "ing_cd_ottobacia_trecho",
+      "alias": "ing_cd_ottobacia_trecho",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "ing_nm_comiteestadual",
+      "alias": "ing_nm_comiteestadual",
+      "type": "esriFieldTypeString",
+      "length": 200
+    },
+    {
+      "name": "ing_nm_comitefederal",
+      "alias": "ing_nm_comitefederal",
+      "type": "esriFieldTypeString",
+      "length": 200
+    },
+    {
+      "name": "ing_nm_municipio",
+      "alias": "ing_nm_municipio",
+      "type": "esriFieldTypeString",
+      "length": 200
+    },
+    {
+      "name": "ing_nm_regiao_hidro",
+      "alias": "ing_nm_regiao_hidro",
+      "type": "esriFieldTypeString",
+      "length": 65
+    },
+    {
+      "name": "ing_sg_ufmunicipio",
+      "alias": "ing_sg_ufmunicipio",
+      "type": "esriFieldTypeString",
+      "length": 2
+    },
+    {
+      "name": "int_cd",
+      "alias": "int_cd",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "name": "int_cd_declaracao",
+      "alias": "int_cd_declaracao",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "int_nm_corpohidrico",
+      "alias": "int_nm_corpohidrico",
+      "type": "esriFieldTypeString",
+      "length": 255
+    },
+    {
+      "name": "int_nm_corpohidricoalterado",
+      "alias": "int_nm_corpohidricoalterado",
+      "type": "esriFieldTypeString",
+      "length": 255
+    },
+    {
+      "name": "int_nu_cnarh",
+      "alias": "int_nu_cnarh",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "int_nu_latitude",
+      "alias": "int_nu_latitude",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "int_nu_longitude",
+      "alias": "int_nu_longitude",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "int_nu_siagas",
+      "alias": "int_nu_siagas",
+      "type": "esriFieldTypeString",
+      "length": 20
+    },
+    {
+      "name": "int_qt_vazaomaxima",
+      "alias": "int_qt_vazaomaxima",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "int_qt_vazaomedia",
+      "alias": "int_qt_vazaomedia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "int_qt_volumeanual",
+      "alias": "int_qt_volumeanual",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "int_tch_cd",
+      "alias": "int_tch_cd",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "int_tdm_cd",
+      "alias": "int_tdm_cd",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "int_tin_cd",
+      "alias": "int_tin_cd",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "int_tod_cd",
+      "alias": "int_tod_cd",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "int_tsf_cd",
+      "alias": "int_tsf_cd",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "int_tsu_cd",
+      "alias": "int_tsu_cd",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "jan_dad_qt_dia",
+      "alias": "jan_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "jan_dad_qt_horas",
+      "alias": "jan_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "jan_dad_qt_vazaodia",
+      "alias": "jan_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "jul_dad_qt_dia",
+      "alias": "jul_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "jul_dad_qt_horas",
+      "alias": "jul_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "jul_dad_qt_vazaodia",
+      "alias": "jul_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "jun_dad_qt_dia",
+      "alias": "jun_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "jun_dad_qt_horas",
+      "alias": "jun_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "jun_dad_qt_vazaodia",
+      "alias": "jun_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "mai_dad_qt_dia",
+      "alias": "mai_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "mai_dad_qt_horas",
+      "alias": "mai_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "mai_dad_qt_vazaodia",
+      "alias": "mai_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "mar_dad_qt_dia",
+      "alias": "mar_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "mar_dad_qt_horas",
+      "alias": "mar_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "mar_dad_qt_vazaodia",
+      "alias": "mar_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "nov_dad_qt_dia",
+      "alias": "nov_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "nov_dad_qt_horas",
+      "alias": "nov_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "nov_dad_qt_vazaodia",
+      "alias": "nov_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "org_nm",
+      "alias": "org_nm",
+      "type": "esriFieldTypeString",
+      "length": 100
+    },
+    {
+      "name": "org_uf",
+      "alias": "org_uf",
+      "type": "esriFieldTypeString",
+      "length": 2
+    },
+    {
+      "name": "out_dad_qt_dia",
+      "alias": "out_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "out_dad_qt_horas",
+      "alias": "out_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "out_dad_qt_vazaodia",
+      "alias": "out_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "out_dt_outorgafinal",
+      "alias": "out_dt_outorgafinal",
+      "type": "esriFieldTypeDate",
+      "length": 8
+    },
+    {
+      "name": "out_dt_outorgainicial",
+      "alias": "out_dt_outorgainicial",
+      "type": "esriFieldTypeDate",
+      "length": 8
+    },
+    {
+      "name": "out_nu_ato",
+      "alias": "out_nu_ato",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "out_nu_processo",
+      "alias": "out_nu_processo",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "out_tp_ato",
+      "alias": "out_tp_ato",
+      "type": "esriFieldTypeString",
+      "length": 100
+    },
+    {
+      "name": "outorga_valida",
+      "alias": "outorga_valida",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "name": "set_dad_qt_dia",
+      "alias": "set_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "set_dad_qt_horas",
+      "alias": "set_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "set_dad_qt_vazaodia",
+      "alias": "set_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "name": "tch_ds",
+      "alias": "tch_ds",
+      "type": "esriFieldTypeString",
+      "length": 100
+    },
+    {
+      "name": "tdm_ds",
+      "alias": "tdm_ds",
+      "type": "esriFieldTypeString",
+      "length": 100
+    },
+    {
+      "name": "tfn_ds",
+      "alias": "tfn_ds",
+      "type": "esriFieldTypeString",
+      "length": 100
+    },
+    {
+      "name": "tin_ds",
+      "alias": "tin_ds",
+      "type": "esriFieldTypeString",
+      "length": 100
+    },
+    {
+      "name": "tod_ds",
+      "alias": "tod_ds",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "tpo_ds",
+      "alias": "tpo_ds",
+      "type": "esriFieldTypeString",
+      "length": 100
+    },
+    {
+      "name": "tsf_ds",
+      "alias": "tsf_ds",
+      "type": "esriFieldTypeString",
+      "length": 50
+    },
+    {
+      "name": "tsp_ds",
+      "alias": "tsp_ds",
+      "type": "esriFieldTypeString",
+      "length": 100
+    },
+    {
+      "name": "tsu_ds",
+      "alias": "tsu_ds",
+      "type": "esriFieldTypeString",
+      "length": 100
+    }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "objectid": 1,
+        "abr_dad_qt_dia": null,
+        "abr_dad_qt_horas": null,
+        "abr_dad_qt_vazaodia": null,
+        "ago_dad_qt_dia": null,
+        "ago_dad_qt_horas": null,
+        "ago_dad_qt_vazaodia": null,
+        "dez_dad_qt_dia": 31,
+        "dez_dad_qt_horas": 12,
+        "dez_dad_qt_vazaodia": 60,
+        "emp_nm_empreendimento": "DESTILARIA PORTO ALEGRE",
+        "emp_nm_responsavel": "DESTILARIA AUTONOMA PORTO ALEGRE LIMITADA",
+        "emp_nu_cpfcnpj": "12.411.864/0002-66",
+        "fev_dad_qt_dia": 28,
+        "fev_dad_qt_horas": 12,
+        "fev_dad_qt_vazaodia": 60,
+        "ing_cd_ottobacia_trecho": "7595282",
+        "ing_nm_comiteestadual": null,
+        "ing_nm_comitefederal": null,
+        "ing_nm_municipio": "NOVO LINO",
+        "ing_nm_regiao_hidro": "Região Hidrográfica ATLÂNTICO NORDESTE ORIENTAL",
+        "ing_sg_ufmunicipio": "AL",
+        "int_cd": 300,
+        "int_cd_declaracao": null,
+        "int_nm_corpohidrico": "SEM NOME",
+        "int_nm_corpohidricoalterado": " Afluente do Rio Manguaba",
+        "int_nu_cnarh": "270006712685",
+        "int_nu_latitude": -8.9366666667,
+        "int_nu_longitude": -35.6336111111,
+        "int_nu_siagas": null,
+        "int_qt_vazaomaxima": 60,
+        "int_qt_vazaomedia": 60,
+        "int_qt_volumeanual": 108720,
+        "int_tch_cd": "1",
+        "int_tdm_cd": "1",
+        "int_tin_cd": "1",
+        "int_tod_cd": "3",
+        "int_tsf_cd": "3",
+        "int_tsu_cd": "1",
+        "jan_dad_qt_dia": 31,
+        "jan_dad_qt_horas": 12,
+        "jan_dad_qt_vazaodia": 60,
+        "jul_dad_qt_dia": null,
+        "jul_dad_qt_horas": null,
+        "jul_dad_qt_vazaodia": null,
+        "jun_dad_qt_dia": null,
+        "jun_dad_qt_horas": null,
+        "jun_dad_qt_vazaodia": null,
+        "mai_dad_qt_dia": null,
+        "mai_dad_qt_horas": null,
+        "mai_dad_qt_vazaodia": null,
+        "mar_dad_qt_dia": null,
+        "mar_dad_qt_horas": null,
+        "mar_dad_qt_vazaodia": null,
+        "nov_dad_qt_dia": 30,
+        "nov_dad_qt_horas": 12,
+        "nov_dad_qt_vazaodia": 60,
+        "org_nm": "SEMARH",
+        "org_uf": "AL",
+        "out_dad_qt_dia": 31,
+        "out_dad_qt_horas": 12,
+        "out_dad_qt_vazaodia": 60,
+        "out_dt_outorgafinal": 1486425600000,
+        "out_dt_outorgainicial": 1360195200000,
+        "out_nu_ato": "0067/2013",
+        "out_nu_processo": "23010000448/2008",
+        "out_tp_ato": "Portaria",
+        "outorga_valida": 0,
+        "set_dad_qt_dia": null,
+        "set_dad_qt_horas": null,
+        "set_dad_qt_vazaodia": null,
+        "tch_ds": "Rio ou Curso D'Água",
+        "tdm_ds": "Estadual",
+        "tfn_ds": "Irrigação",
+        "tin_ds": "Captação",
+        "tod_ds": "CNARH 40",
+        "tpo_ds": "Direito de Uso",
+        "tsf_ds": "Operação",
+        "tsp_ds": "Outorgado",
+        "tsu_ds": "Superficial"
+      }
+    },
+    {
+      "attributes": {
+        "objectid": 2,
+        "abr_dad_qt_dia": null,
+        "abr_dad_qt_horas": null,
+        "abr_dad_qt_vazaodia": null,
+        "ago_dad_qt_dia": null,
+        "ago_dad_qt_horas": null,
+        "ago_dad_qt_vazaodia": null,
+        "dez_dad_qt_dia": 31,
+        "dez_dad_qt_horas": 21,
+        "dez_dad_qt_vazaodia": 126,
+        "emp_nm_empreendimento": "Fazenda Bicas",
+        "emp_nm_responsavel": "INDUSTRIAL PORTO RICO S/A - USINA PORTO RICO MATRIZ E FILIAL",
+        "emp_nu_cpfcnpj": "12.217.832/0001-43",
+        "fev_dad_qt_dia": 28,
+        "fev_dad_qt_horas": 21,
+        "fev_dad_qt_vazaodia": 126,
+        "ing_cd_ottobacia_trecho": "7599492",
+        "ing_nm_comiteestadual": "CBH do Rio São Miguel",
+        "ing_nm_comitefederal": null,
+        "ing_nm_municipio": "LIMOEIRO DE ANADIA",
+        "ing_nm_regiao_hidro": "Região Hidrográfica ATLÂNTICO NORDESTE ORIENTAL",
+        "ing_sg_ufmunicipio": "AL",
+        "int_cd": 600,
+        "int_cd_declaracao": null,
+        "int_nm_corpohidrico": "SEM NOME",
+        "int_nm_corpohidricoalterado": "Riacho Doce Água Fria",
+        "int_nu_cnarh": null,
+        "int_nu_latitude": -9.7633333333,
+        "int_nu_longitude": -36.4191666667,
+        "int_nu_siagas": null,
+        "int_qt_vazaomaxima": 126,
+        "int_qt_vazaomedia": 126,
+        "int_qt_volumeanual": 560952,
+        "int_tch_cd": "1",
+        "int_tdm_cd": "1",
+        "int_tin_cd": "1",
+        "int_tod_cd": "3",
+        "int_tsf_cd": "3",
+        "int_tsu_cd": "1",
+        "jan_dad_qt_dia": 31,
+        "jan_dad_qt_horas": 21,
+        "jan_dad_qt_vazaodia": 126,
+        "jul_dad_qt_dia": null,
+        "jul_dad_qt_horas": null,
+        "jul_dad_qt_vazaodia": null,
+        "jun_dad_qt_dia": null,
+        "jun_dad_qt_horas": null,
+        "jun_dad_qt_vazaodia": null,
+        "mai_dad_qt_dia": null,
+        "mai_dad_qt_horas": null,
+        "mai_dad_qt_vazaodia": null,
+        "mar_dad_qt_dia": 31,
+        "mar_dad_qt_horas": 21,
+        "mar_dad_qt_vazaodia": 126,
+        "nov_dad_qt_dia": 30,
+        "nov_dad_qt_horas": 21,
+        "nov_dad_qt_vazaodia": 126,
+        "org_nm": "SEMARH",
+        "org_uf": "AL",
+        "out_dad_qt_dia": 31,
+        "out_dad_qt_horas": 21,
+        "out_dad_qt_vazaodia": 126,
+        "out_dt_outorgafinal": 1492560000000,
+        "out_dt_outorgainicial": 1366329600000,
+        "out_nu_ato": "0218/2013",
+        "out_nu_processo": "23010000327/2013",
+        "out_tp_ato": "Portaria",
+        "outorga_valida": 0,
+        "set_dad_qt_dia": 30,
+        "set_dad_qt_horas": 21,
+        "set_dad_qt_vazaodia": 126,
+        "tch_ds": "Rio ou Curso D'Água",
+        "tdm_ds": "Estadual",
+        "tfn_ds": "Irrigação",
+        "tin_ds": "Captação",
+        "tod_ds": "CNARH 40",
+        "tpo_ds": "Direito de Uso",
+        "tsf_ds": "Operação",
+        "tsp_ds": "Outorgado",
+        "tsu_ds": "Superficial"
+      }
+    }
+  ],
+  "exceededTransferLimit": true
+}

@@ -1,0 +1,9 @@
+Fonte: SEC-ANP-PLAT
+Formato: CSV UTF-8, separador virgula
+Campos: 13
+Data da extracao: 21/10/2026
+Fonte da extracao: https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/arquivos/arquivos-fase-de-desenvolvimento-e-producao/lpo/dados-abertos-plataformas-operacao.csv
+
+Arquivo: plataformas-operacao.csv (FPSO, jaqueta, semissubmersivel e uma unidade com capacidade).
+Arquivo completo: data/cache/anp-plataformas.csv, 14888 bytes, 76 linhas.
+Ficou de fora: as demais plataformas. Nao ha coluna de CNPJ.

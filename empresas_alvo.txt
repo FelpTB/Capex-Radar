@@ -1,0 +1,295 @@
+Empresas alvo — identidades para consultar as fontes
+Cadastro nacional (cnpj_db), matrizes ativas, em 2026-10-19.
+Cada bloco traz o que as fontes pedem: CNPJ de 14 dígitos, raiz de 8, razão social, nome fantasia, UF e município.
+CNPJ de 14 dígitos: BNDES, CVM IPE, SIGA, ANTT, PDT, REIDI.
+Raiz de 8 dígitos: CNO e ANA.
+Razão social: SISLIC (duas primeiras palavras), IAT, ANP, SIGMINE, DOU, Querido Diário.
+UF e município: ARTESP (só SP), SIGMINE, ONS, Querido Diário.
+
+Bracell
+  Operação de celulose em Lençóis Paulista e o complexo da Bahia.
+
+  BRACELL SP CELULOSE LTDA
+    nome fantasia: (vazio)
+    cnpj: 53.943.098/0001-87
+    raiz: 53943098
+    situacao: ativa
+    cnae: 1710900
+    uf: SP
+    municipio: LENCOIS PAULISTA
+    porte: demais
+    capital social: 2.878.296.556,00
+
+  BRACELL SP FLORESTAL LTDA
+    nome fantasia: (vazio)
+    cnpj: 50.640.054/0001-90
+    raiz: 50640054
+    situacao: ativa
+    cnae: 0230600
+    uf: SP
+    municipio: LENCOIS PAULISTA
+    porte: demais
+    capital social: 1.956.970.001,00
+
+  BRACELL BAHIA SPECIALTY CELLULOSE S.A.
+    nome fantasia: (vazio)
+    cnpj: 69.037.133/0001-39
+    raiz: 69037133
+    situacao: ativa
+    cnae: 1710900
+    uf: BA
+    municipio: CAMACARI
+    porte: demais
+    capital social: 885.036.695,00
+
+  BRACELL BAHIA FLORESTAL LTDA
+    nome fantasia: BRACELL BAHIA FORESTRY LTDA
+    cnpj: 15.692.999/0001-54
+    raiz: 15692999
+    situacao: ativa
+    cnae: 4744002
+    uf: BA
+    municipio: ALAGOINHAS
+    porte: demais
+    capital social: 599.658.561,43
+
+  BRACELL PAPEIS NORDESTE LTDA
+    nome fantasia: BRACELL PAPEIS NORDESTE
+    cnpj: 08.855.790/0001-07
+    raiz: 08855790
+    situacao: ativa
+    cnae: 1742799
+    uf: BA
+    municipio: FEIRA DE SANTANA
+    porte: demais
+    capital social: 132.829.492,00
+
+
+CMPC
+  Companhia de celulose. Matriz industrial em Guaíba/RS.
+
+  CMPC CELULOSE RIOGRANDENSE LTDA
+    nome fantasia: CMPC BRASIL
+    cnpj: 11.234.954/0001-85
+    raiz: 11234954
+    situacao: ativa
+    cnae: 1710900
+    uf: RS
+    municipio: GUAIBA
+    porte: demais
+    capital social: 5.161.974.380,00
+
+  CMPC IGUACU EMBALAGENS LTDA
+    nome fantasia: CMPC IGUACU
+    cnpj: 11.308.600/0001-38
+    raiz: 11308600
+    situacao: ativa
+    cnae: 1721400
+    uf: PR
+    municipio: SAO JOSE DOS PINHAIS
+    porte: demais
+    capital social: 1.211.048.789,00
+
+  CMPC RIOGRANDENSE LTDA
+    nome fantasia: CMPC RIOGRANDENSE
+    cnpj: 03.145.127/0001-97
+    raiz: 03145127
+    situacao: ativa
+    cnae: 1621800
+    uf: RS
+    municipio: GUAIBA
+    porte: demais
+    capital social: 185.229.432,00
+
+BYD
+  Fábrica de automóveis em Camaçari e a pessoa jurídica histórica em Campinas.
+
+  BYD AUTO DO BRASIL LTDA
+    nome fantasia: (vazio)
+    cnpj: 50.351.104/0001-19
+    raiz: 50351104
+    situacao: ativa
+    cnae: 2910701
+    uf: BA
+    municipio: CAMACARI
+    porte: demais
+    capital social: 500.000.000,00
+
+  BYD DO BRASIL LTDA.
+    nome fantasia: (vazio)
+    cnpj: 17.140.820/0002-62
+    raiz: 17140820
+    situacao: ativa
+    cnae: 2920401
+    uf: SP
+    municipio: CAMPINAS
+    porte: demais
+    capital social: 514.516.681,00
+    nota: o estabelecimento 17.140.820/0001-81, em São Paulo, está ativo e cadastrado como filial. A raiz 17140820 cobre os dois.
+
+  BYD ENERGY DO BRASIL LTDA.
+    nome fantasia: (vazio)
+    cnpj: 21.858.948/0001-52
+    raiz: 21858948
+    situacao: ativa
+    cnae: 2610800
+    uf: SP
+    municipio: CAMPINAS
+    porte: demais
+    capital social: 1.000.000,00
+
+  BYD INDUSTRIA DE BATERIAS LTDA
+    nome fantasia: BYD INDUSTRIA DE BATERIAS LTDA
+    cnpj: 27.956.445/0001-04
+    raiz: 27956445
+    situacao: ativa
+    cnae: 2722801
+    uf: AM
+    municipio: MANAUS
+    porte: demais
+    capital social: 1.000.000,00
+
+Ambev
+  Holding fabricante. As plantas entram pela raiz 07526557.
+
+  AMBEV S.A.
+    nome fantasia: (vazio)
+    cnpj: 07.526.557/0001-00
+    raiz: 07526557
+    situacao: ativa
+    cnae: 1113502
+    uf: SP
+    municipio: SAO PAULO
+    porte: demais
+    capital social: 58.275.086.270,41
+
+Gerdau
+  Holding e as usinas com CNPJ próprio.
+
+  GERDAU S.A.
+    nome fantasia: (vazio)
+    cnpj: 33.611.500/0001-19
+    raiz: 33611500
+    situacao: ativa
+    cnae: 2423702
+    uf: SP
+    municipio: SAO PAULO
+    porte: demais
+    capital social: 24.347.290.800,00
+
+  GERDAU ACOMINAS S/A
+    nome fantasia: GERDAU
+    cnpj: 17.227.422/0001-05
+    raiz: 17227422
+    situacao: ativa
+    cnae: 2423702
+    uf: MG
+    municipio: OURO BRANCO
+    porte: demais
+    capital social: 4.054.243.000,00
+
+  GERDAU ACOS LONGOS S.A.
+    nome fantasia: GERDAU COSIGUA
+    cnpj: 07.358.761/0001-69
+    raiz: 07358761
+    situacao: ativa
+    cnae: 2423702
+    uf: RJ
+    municipio: RIO DE JANEIRO
+    porte: demais
+    capital social: 5.554.212.242,03
+
+  GERDAU SUMMIT ACOS FUNDIDOS E FORJADOS S.A.
+    nome fantasia: GERDAU ACOS FORJADOS S.A.
+    cnpj: 24.554.306/0001-58
+    raiz: 24554306
+    situacao: ativa
+    cnae: 2531401
+    uf: SP
+    municipio: PINDAMONHANGABA
+    porte: demais
+    capital social: 313.635.015,00
+
+  GERDAU INTERNACIONAL EMPREENDIMENTOS LTDA -GRUPO GERDAU
+    nome fantasia: (vazio)
+    cnpj: 87.040.598/0001-20
+    raiz: 87040598
+    situacao: ativa
+    cnae: 6462000
+    uf: RS
+    municipio: SAPUCAIA DO SUL
+    porte: demais
+    capital social: 4.868.500.000,00
+
+Votorantim
+  Holding e a cimenteira. Fundos e SPEs imobiliárias ficaram de fora.
+
+  VOTORANTIM S.A.
+    nome fantasia: V.I.
+    cnpj: 03.407.049/0001-51
+    raiz: 03407049
+    situacao: ativa
+    cnae: 6462000
+    uf: SP
+    municipio: SAO PAULO
+    porte: demais
+    capital social: 28.656.001.868,35
+
+  VOTORANTIM CIMENTOS S.A.
+    nome fantasia: VOTORAN
+    cnpj: 01.637.895/0001-32
+    raiz: 01637895
+    situacao: ativa
+    cnae: 2320600
+    uf: SP
+    municipio: SAO PAULO
+    porte: demais
+    capital social: 7.708.353.218,99
+
+  VOTORANTIM CIMENTOS N/NE S/A
+    nome fantasia: (vazio)
+    cnpj: 10.656.452/0001-80
+    raiz: 10656452
+    situacao: ativa
+    cnae: 2320600
+    uf: PE
+    municipio: RECIFE
+    porte: demais
+    capital social: 403.087.041,18
+
+  VOTORANTIM FINANCAS S/A
+    nome fantasia: VOTORANTIM
+    cnpj: 01.386.256/0001-41
+    raiz: 01386256
+    situacao: ativa
+    cnae: 6461100
+    uf: SP
+    municipio: SAO PAULO
+    porte: demais
+    capital social: 3.507.808.862,50
+
+Heineken
+  A fabricante ativa está registrada como HNK BR, em Itu.
+  CERVEJARIAS KAISER BRASIL LTDA (19.900.000/0001-76) e CERVEJARIA HEINEKEN LTDA (90.581.604/0001-61) constam baixadas.
+
+  HNK BR INDUSTRIA DE BEBIDAS LTDA.
+    nome fantasia: (vazio)
+    cnpj: 50.221.019/0001-36
+    raiz: 50221019
+    situacao: ativa
+    cnae: 1113502
+    uf: SP
+    municipio: ITU
+    porte: demais
+    capital social: 4.310.177.922,00
+
+  HNK BR BEBIDAS LTDA.
+    nome fantasia: (vazio)
+    cnpj: 02.864.417/0001-28
+    raiz: 02864417
+    situacao: ativa
+    cnae: 4635402
+    uf: RJ
+    municipio: RIO DE JANEIRO
+    porte: demais
+    capital social: 679.393.376,00

@@ -1,0 +1,10 @@
+Fonte: CAPTURA-DOU
+Formato: JSON embutido na busca HTML + HTML do artigo do ato
+Campos: 16 no jsonArray; 4 lidos na pagina do ato
+Data da extracao: 21/10/2026
+Fonte da extracao: https://www.in.gov.br/consulta/-/buscar/dou?q=%22gerdau+acominas%22&delta=8&sortType=0
+
+Arquivos: busca-BuscaDouPortlet_params.json (8 atos, 16 campos) e ato-extrato-de-termo-aditivo-739065915.html.
+Consulta com o termo gerdau acominas entre aspas.
+A ficha fica com os cinco atos mais recentes. Esse limite pode ser revisado.
+Ficou de fora: as paginas dos outros atos, CSS, scripts e menus do portal.

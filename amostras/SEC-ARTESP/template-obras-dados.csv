@@ -1,0 +1,5 @@
+lote,rodovia,programa,item,subitem,detalhamento_servico,unidade,quantidade,km_inicial,km_final,local,data_inicial,data_final,observacoes_gerais,
+L22,SP0000310,CAPEX,1,2050517,Construção de passarela para pedestres,un,1,45.2,45.2,PISTA_NORTE; CANTEIRO_CENTRAL,2026-04-01 00:00:00,2026-10-31 00:00:00,Obra de acessibilidade em área urbana,
+L22,SPA000248,NS,3,5465465,Implantação de terceira faixa de rolamento,km,8.75,12,20.75,PISTA_NORTE,2026-02-15 00:00:00,2026-11-30 00:00:00,,
+⬇️ PREENCHA OS SEUS DADOS A PARTIR DA LINHA 6 Células em azul são obrigatórias.,,,,,,,,,,,,,,
+-,-,-,-,-,-,-,-,-,-,-,-,-,-,

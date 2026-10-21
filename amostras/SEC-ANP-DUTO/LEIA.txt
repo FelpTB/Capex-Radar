@@ -1,0 +1,9 @@
+Fonte: SEC-ANP-DUTO
+Formato: CSV UTF-8, separador virgula
+Campos: 9
+Data da extracao: 21/10/2026
+Fonte da extracao: https://www.gov.br/anp/pt-br/assuntos/exploracao-e-producao-de-oleo-e-gas/desenvolvimento-e-producao/arquivos-lista-de-codigos/codigo-dutos.csv
+
+Arquivo: codigo-dutos.csv (oleoduto, duto em construcao, umbilical e um nao integrante).
+Arquivo completo: data/cache/anp-dutos.csv, 2510721 bytes, 19239 linhas.
+Ficou de fora: as demais 19 mil linhas e o CSV de instalacoes. Nao ha coluna de CNPJ.

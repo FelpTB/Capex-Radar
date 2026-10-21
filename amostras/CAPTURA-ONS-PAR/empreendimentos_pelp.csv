@@ -1,0 +1,26 @@
+Código Empreendimento,Tipo do Empreendimento,Estudo,UF Origem,UF Destino,UF Secc,Nome do Empreendimento,Itens de obra,Estimativa Leilão,Data de Necessidade,Data de Tendência,Total Investimento ( 2025 ) R$ / 1000,Contratação
+26491,LT,ESTUDO DE INTERLIGAÇÃO INTERNACIONAL BRASIL - BOLÍVIA (ETAPA I),Goiás,Mato Grosso do Sul,,"LT 500 kV Rio Verde Norte - Chapadão, C1","Circuito Simples 500 kV, 4 x 954 MCM (RAIL), 220 km
+Reator de Linha Fixo 500 kV, (3+1R) x 36,67 Mvar 1Ф // SE Rio Verde Norte
+Reator de Linha Fixo 500 kV, (3+1R) x 36,67 Mvar 1Ф // SE Chapadão
+EL (Entrada de Linha) 500 kV, Arranjo DJM // SE Rio Verde Norte
+EL (Entrada de Linha) 500 kV, Arranjo DJM // SE Chapadão
+CRL (Conexão de Reator de Linha Fixo) 500 kV, Arranjo DJM // SE Rio Verde Norte
+CRL (Conexão de Reator de Linha Fixo) 500 kV, Arranjo DJM // SE Chapadão
+",002/2026,2034,2034-01-01 00:00:00,661292.86,Leilão
+26492,LT,ESTUDO DE INTERLIGAÇÃO INTERNACIONAL BRASIL - BOLÍVIA (ETAPA I),Mato Grosso do Sul,Mato Grosso do Sul,,"LT 500 kV Chapadão - Rio Brilhante, C1","Circuito Simples 500 kV, 4 x 954 MCM (RAIL), 330 km
+Reator de Linha Fixo 500 kV, (3+1R) x 58,3 Mvar 1Ф // SE Chapadão
+Reator de Linha Fixo 500 kV, (3+1R) x 58,3 Mvar 1Ф // SE Rio Brilhante
+EL (Entrada de Linha) 500 kV, Arranjo DJM // SE Chapadão
+EL (Entrada de Linha) 500 kV, Arranjo DJM // SE Rio Brilhante
+CRL (Conexão de Reator de Linha Fixo) 500 kV, Arranjo DJM // SE Chapadão
+CRL (Conexão de Reator de Linha Fixo) 500 kV, Arranjo DJM // SE Rio Brilhante
+",002/2026,2034,2034-01-01 00:00:00,951793.46,Leilão
+26494,SE,ESTUDO DE INTERLIGAÇÃO INTERNACIONAL BRASIL - BOLÍVIA (ETAPA I),Mato Grosso do Sul,,,SE 500 kV Chapadão,"1° ATF 500/230 kV, (3+1R) x 400 MVA 1Ф
+CT (Conexão de Transformador) 500 kV, Arranjo DJM
+CT (Conexão de Transformador) 230 kV, Arranjo BD4
+IB (Interligação de Barras) 500 kV, Arranjo DJM
+1° Reator de Barra 500 kV, 3 x 36,67 Mvar 1Ф
+CRB (Conexão de Reator de Barra) 500 kV, Arranjo DJM
+MIM - 500 kV
+MIM - 230 kV
+",002/2026,2034,2034-01-01 00:00:00,211657.05,Leilão

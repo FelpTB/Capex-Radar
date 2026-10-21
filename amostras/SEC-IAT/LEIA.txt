@@ -1,0 +1,10 @@
+Fonte: SEC-IAT
+Formato: JSON FeatureServer, UTF-8, sem geometria
+Campos: 14
+Data da extracao: 21/10/2026
+Fonte da extracao: https://geopr.iat.pr.gov.br/server/rest/services/00_PUBLICACOES/licencas_ambientais_sia_sga/FeatureServer/0
+
+Arquivo: licencas-sia-sga.json (4 feicoes de modalidades distintas).
+A carga pagina /query com outFields=* e returnGeometry=false.
+Ficou de fora: as demais licencas e o ponto geografico (os atributos x e y continuam no JSON).
+Nao ha arquivo nacional em data/cache. Nao ha coluna de CNPJ.

@@ -1,0 +1,12 @@
+Fonte: SEC-IBAMA
+Formato: CSV UTF-8, separador ponto e virgula
+Campos: 10
+Data da extracao: 21/10/2026
+Fonte da extracao: https://stibamadadosabertosprd.blob.core.windows.net/dados-abertos/dados/SISLIC/sislic-licencas.csv
+
+Pagina: https://dadosabertos.ibama.gov.br/pt_BR/dataset/licencas-ambientais-de-atividades-e-empreendimentos-licenciados-pelo-ibama
+Arquivo: sislic-licencas-amostra.csv (cabecalho + 4 atos).
+Arquivo completo: 3342907 bytes, 14352 linhas. A coluna ultima_atualizacao_relatorio traz 21/10/2026 01:02.
+O catalogo lista oito atributos; o CSV desta edicao tem dez (inclui PAC e ultima_atualizacao_relatorio).
+Ficou de fora: as demais linhas. HTML, XML e JSON do conjunto repetem os atributos e nao foram copiados.
+Nao ha coluna de CNPJ nem UF.

@@ -1,0 +1,149 @@
+{
+  "objectIdFieldName": "objectid",
+  "fields": [
+    {
+      "name": "objectid",
+      "type": "esriFieldTypeOID",
+      "alias": "OBJECTID"
+    },
+    {
+      "name": "num_protocolo",
+      "type": "esriFieldTypeInteger",
+      "alias": "num_protocolo"
+    },
+    {
+      "name": "nome_razao_social",
+      "type": "esriFieldTypeString",
+      "alias": "nome_razao_social"
+    },
+    {
+      "name": "cod_ibge",
+      "type": "esriFieldTypeInteger",
+      "alias": "cod_ibge"
+    },
+    {
+      "name": "nome_municipio",
+      "type": "esriFieldTypeString",
+      "alias": "nome_municipio"
+    },
+    {
+      "name": "uf",
+      "type": "esriFieldTypeString",
+      "alias": "uf"
+    },
+    {
+      "name": "sigla_modalidade",
+      "type": "esriFieldTypeString",
+      "alias": "sigla_modalidade"
+    },
+    {
+      "name": "desc_modalidade",
+      "type": "esriFieldTypeString",
+      "alias": "desc_modalidade"
+    },
+    {
+      "name": "desc_grupo_atividade",
+      "type": "esriFieldTypeString",
+      "alias": "desc_grupo_atividade"
+    },
+    {
+      "name": "desc_atividade",
+      "type": "esriFieldTypeString",
+      "alias": "desc_atividade"
+    },
+    {
+      "name": "dt_emissao",
+      "type": "esriFieldTypeDate",
+      "alias": "dt_emissao"
+    },
+    {
+      "name": "dt_validade",
+      "type": "esriFieldTypeDate",
+      "alias": "dt_validade"
+    },
+    {
+      "name": "x",
+      "type": "esriFieldTypeDouble",
+      "alias": "x"
+    },
+    {
+      "name": "y",
+      "type": "esriFieldTypeDouble",
+      "alias": "y"
+    }
+  ],
+  "features": [
+    {
+      "attributes": {
+        "objectid": 348037951,
+        "num_protocolo": 154922555,
+        "nome_razao_social": "ARAUCARIA NITROGENADOS S/A",
+        "cod_ibge": 4101804,
+        "nome_municipio": "Araucária",
+        "uf": "PR",
+        "sigla_modalidade": "AA",
+        "desc_modalidade": "Autorização Ambiental",
+        "desc_grupo_atividade": "Destinação final de resíduos sólidos industriais, urbanos ou de serviço de saúde e efluentes",
+        "desc_atividade": "Destinação final de resíduos",
+        "dt_emissao": 1554433200000,
+        "dt_validade": 1582772400000,
+        "x": -49.36899608,
+        "y": -25.5785378
+      }
+    },
+    {
+      "attributes": {
+        "objectid": 348037952,
+        "num_protocolo": 160866926,
+        "nome_razao_social": "ARAUCARIA NITROGENADOS S/A",
+        "cod_ibge": 4101804,
+        "nome_municipio": "Araucária",
+        "uf": "PR",
+        "sigla_modalidade": "AA",
+        "desc_modalidade": "Autorização Ambiental",
+        "desc_grupo_atividade": "Destinação final de resíduos sólidos industriais, urbanos ou de serviço de saúde e efluentes",
+        "desc_atividade": "Destinação final de resíduos",
+        "dt_emissao": 1596337200000,
+        "dt_validade": 1659409200000,
+        "x": -49.36899608,
+        "y": -25.5785378
+      }
+    },
+    {
+      "attributes": {
+        "objectid": 348037953,
+        "num_protocolo": 185854876,
+        "nome_razao_social": "KLABIN CELULOSE S.A",
+        "cod_ibge": 4117305,
+        "nome_municipio": "Ortigueira",
+        "uf": "PR",
+        "sigla_modalidade": "AA",
+        "desc_modalidade": "Autorização Ambiental",
+        "desc_grupo_atividade": "Destinação final de resíduos sólidos industriais, urbanos ou de serviço de saúde e efluentes",
+        "desc_atividade": "Destinação final de resíduos com emissão de Autorização Ambiental Automática",
+        "dt_emissao": 1643684400000,
+        "dt_validade": 1706756400000,
+        "x": -50.74447466,
+        "y": -24.24391858
+      }
+    },
+    {
+      "attributes": {
+        "objectid": 348037954,
+        "num_protocolo": 173080964,
+        "nome_razao_social": "RENAULT DO BRASIL S.A.",
+        "cod_ibge": 4125506,
+        "nome_municipio": "São José dos Pinhais",
+        "uf": "PR",
+        "sigla_modalidade": "AA",
+        "desc_modalidade": "Autorização Ambiental",
+        "desc_grupo_atividade": "Destinação final de resíduos sólidos industriais, urbanos ou de serviço de saúde e efluentes",
+        "desc_atividade": "Destinação final de resíduos com emissão de Autorização Ambiental Automática",
+        "dt_emissao": 1612234800000,
+        "dt_validade": 1675306800000,
+        "x": -49.22268717,
+        "y": -25.60799021
+      }
+    }
+  ]
+}

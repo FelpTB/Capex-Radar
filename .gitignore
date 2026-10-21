@@ -1,0 +1,17 @@
+.env
+.env.local
+.env.*.local
+node_modules/
+data/
+cno/
+cno.zip
+modelo_dados_api_obrasgov/
+modelo_dados_api_obrasgov.zip
+.railway/
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE / agent (nao versionar estado local do Cursor)
+.cursor/projects/

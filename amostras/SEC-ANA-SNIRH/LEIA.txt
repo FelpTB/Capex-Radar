@@ -1,0 +1,12 @@
+Fonte: SEC-ANA-SNIRH
+Formato: JSON FeatureServer (ArcGIS), UTF-8, sem geometria
+Campos: 80 atributos por feicao (camada publica 80)
+Data da extracao: 21/10/2026
+Fonte da extracao: https://portal1.snirh.gov.br/server/rest/services/Hosted/outorgas_federais_superficial/FeatureServer/0
+
+Camada estadual: https://portal1.snirh.gov.br/arcgis/rest/services/DADOSABERTOS/outorgas_estaduais_superficial/FeatureServer/0
+Consulta: outFields=* returnGeometry=false resultRecordCount=2 f=json.
+Arquivos: outorgas-federais.json (2 feicoes, 80 attrs, 80 defs) e outorgas-estaduais.json (2 feicoes, 80 attrs).
+A ficha le um subconjunto de 26 campos; a amostra guarda todos os atributos publicados.
+Ficou de fora: as demais outorgas e a geometria do ponto.
+Nao ha arquivo nacional em data/cache.

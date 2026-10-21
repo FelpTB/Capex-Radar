@@ -1,0 +1,12 @@
+Fonte: CAPTURA-REIDI
+Formato: CSV UTF-8 com BOM, separador ponto e virgula, uma linha por registro
+Campos: 12
+Data da extracao: 21/10/2026
+Fonte da extracao: https://dados.transportes.gov.br/dataset/incentivo-fiscal-reidi
+
+API do catalogo: https://dados.transportes.gov.br/api/3/action/package_show?id=incentivo-fiscal-reidi
+Arquivo: reidi.csv (preambulo + cabecalho + 4 projetos: rodovia, ferrovia, SP e PR).
+O CSV nacional em data/cache/reidi.csv e Windows-1252 e quebra PORTARIA, ADE e alguns cabecalhos no meio da celula.
+A amostra decodifica esse arquivo e achata as quebras internas para o texto ficar legivel.
+Arquivo completo: 42729 bytes, 164 projetos.
+Ficou de fora: as demais linhas e os PDFs de portaria.

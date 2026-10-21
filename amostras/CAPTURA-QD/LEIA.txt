@@ -1,0 +1,13 @@
+Fonte: CAPTURA-QD
+Formato: JSON da API do Querido Diario, UTF-8
+Campos: objeto com total_gazettes + gazettes[] (10 chaves por edicao)
+Data da extracao: 21/10/2026
+Fonte da extracao: https://queridodiario.ok.org.br/api/gazettes?territory_ids=4106902&querystring=licenca&size=5&excerpt_size=180
+
+Municipio da amostra: Curitiba/PR, territory_id 4106902 (codigo IBGE).
+Itajai/SC (4208203) devolveu 0 edicoes nesta consulta; a cidade ainda nao esta na base.
+total_gazettes=3624; a amostra guarda 5 edicoes com excerpt_size=180.
+Chaves de cada gazette: territory_id, date, scraped_at, url, territory_name, state_code, excerpts, edition, is_extra_edition, txt_url.
+A ficha usa date, territory_name, url e excerpts. As demais chaves ficam no JSON bruto.
+Ficou de fora: o PDF/TXT de cada edicao e os demais municipios da base.
+Nao ha arquivo nacional em data/cache. Nao ha token.

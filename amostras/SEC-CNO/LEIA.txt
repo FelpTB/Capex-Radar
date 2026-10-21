@@ -1,0 +1,12 @@
+Fonte: SEC-CNO
+Formato: cinco CSV ISO-8859-1, separador virgula, texto entre aspas
+Campos: cno 26 / cnaes 3 / vinculos 6 / areas 7 / totais 4
+Data da extracao: 01/10/2026
+Fonte da extracao: https://dados.gov.br/dados/conjuntos-dados/cadastro-nacional-de-obras-cno
+
+ZIP da Receita: https://arquivos.receitafederal.gov.br/index.php/s/PC6732BXG9B98W3/download
+Edicao do ZIP: Last-Modified Thu, 01 Oct 2026 05:18:13 GMT, 333862569 bytes.
+Amostra: 4 obras de cno.csv; cnaes 4; vinculos 3; areas 6; cno_totais.csv inteiro.
+cno_totais desta edicao: "Total de obras","Total de cnaes","Total de áreas","Total de vínculos" "00003637725","00003980209","00004595786","00000434828"
+Copia nacional extraida em data/dadosgov/cadastro-nacional-de-obras-cno/. O PDF cno-metadados nao entra na amostra.
+Ficou de fora: os demais milhoes de linhas dos quatro CSV grandes.

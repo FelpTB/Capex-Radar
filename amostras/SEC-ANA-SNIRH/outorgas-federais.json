@@ -1,0 +1,773 @@
+{
+  "features": [
+    {
+      "attributes": {
+        "int_qt_vazaomedia": 270,
+        "int_nu_longitude": -45.27463056,
+        "nov_dad_qt_dia": 6,
+        "ago_dad_qt_dia": 13,
+        "set_dad_qt_dia": 6,
+        "emp_nm_empreendimento": "Fazenda San Francesco Della Vigna",
+        "jun_dad_qt_dia": 6,
+        "out_tp_ato": "RESOLUÇÃO DE OUTORGA",
+        "tpo_ds": "Direito de Uso",
+        "nov_dad_qt_horas": 21,
+        "set_dad_qt_horas": 21,
+        "mar_dad_qt_vazaodia": 270,
+        "ing_cd_ottobacia_trecho": "769915",
+        "ing_nm_municipio": "MARTINHO CAMPOS",
+        "int_qt_volumeanual": 470610,
+        "dez_dad_qt_vazaodia": 270,
+        "int_tdm_cd": "0",
+        "jul_dad_qt_horas": 21,
+        "int_cd_declaracao": "287302",
+        "tin_ds": "Captação",
+        "org_nm": "ANA",
+        "mar_dad_qt_horas": 21,
+        "tch_ds": "Rio ou Curso D'Água",
+        "out_dad_qt_horas": 21,
+        "emp_nu_cpfcnpj": "71.236.061/0001-09",
+        "ing_nm_regiao_hidro": "Região Hidrográfica do SÃO FRANCISCO",
+        "nov_dad_qt_vazaodia": 270,
+        "emp_nm_responsavel": "Robson de Almeida - ME",
+        "ago_dad_qt_vazaodia": 270,
+        "set_dad_qt_vazaodia": 270,
+        "org_uf": "BR",
+        "tfn_ds": "Irrigação",
+        "abr_dad_qt_dia": 8,
+        "tdm_ds": "Federal",
+        "mai_dad_qt_horas": 21,
+        "dez_dad_qt_dia": 5,
+        "abr_dad_qt_vazaodia": 270,
+        "int_nu_siagas": null,
+        "int_cd": 810000,
+        "outorga_valida": 1,
+        "int_tch_cd": "1",
+        "int_tsu_cd": "1",
+        "tsp_ds": "Outorgado",
+        "ing_sg_ufmunicipio": "MG",
+        "ing_nm_comitefederal": "São Francisco",
+        "int_nm_corpohidricoalterado": null,
+        "out_dad_qt_vazaodia": 270,
+        "jan_dad_qt_dia": 5,
+        "jan_dad_qt_vazaodia": 270,
+        "jan_dad_qt_horas": 21,
+        "int_tod_cd": "2",
+        "jul_dad_qt_vazaodia": 270,
+        "int_tsf_cd": "3",
+        "out_nu_ato": "288/2017",
+        "out_dt_outorgafinal": 1802736000000,
+        "int_nm_corpohidrico": "Rio São Francisco",
+        "fev_dad_qt_vazaodia": 270,
+        "mai_dad_qt_vazaodia": 270,
+        "tsu_ds": "Superficial",
+        "int_nu_latitude": -19.27999444,
+        "jun_dad_qt_horas": 21,
+        "fev_dad_qt_horas": 21,
+        "mar_dad_qt_dia": 8,
+        "abr_dad_qt_horas": 21,
+        "int_nu_cnarh": "310010025703",
+        "tsf_ds": "Operação",
+        "int_qt_vazaomaxima": 270,
+        "mai_dad_qt_dia": 7,
+        "ago_dad_qt_horas": 21,
+        "out_dt_outorgainicial": 1487203200000,
+        "jun_dad_qt_vazaodia": 270,
+        "fev_dad_qt_dia": 5,
+        "ing_nm_comiteestadual": "CBH dos Afluentes do Alto São Francisco",
+        "jul_dad_qt_dia": 8,
+        "tod_ds": "REGLA",
+        "out_dad_qt_dia": 6,
+        "int_tin_cd": "1",
+        "out_nu_processo": "02501.000251/2017",
+        "objectid": 1,
+        "dez_dad_qt_horas": 21
+      }
+    },
+    {
+      "attributes": {
+        "int_qt_vazaomedia": 99,
+        "int_nu_longitude": -40.7725,
+        "nov_dad_qt_dia": 30,
+        "ago_dad_qt_dia": 31,
+        "set_dad_qt_dia": 30,
+        "emp_nm_empreendimento": "COPASA Carlos Chagas",
+        "jun_dad_qt_dia": 30,
+        "out_tp_ato": "Resolução de outorga",
+        "tpo_ds": "Direito de Uso",
+        "nov_dad_qt_horas": 24,
+        "set_dad_qt_horas": 24,
+        "mar_dad_qt_vazaodia": 99,
+        "ing_cd_ottobacia_trecho": "779651",
+        "ing_nm_municipio": "CARLOS CHAGAS",
+        "int_qt_volumeanual": 867240,
+        "dez_dad_qt_vazaodia": 99,
+        "int_tdm_cd": "0",
+        "jul_dad_qt_horas": 24,
+        "int_cd_declaracao": "100204",
+        "tin_ds": "Captação",
+        "org_nm": "ANA",
+        "mar_dad_qt_horas": 24,
+        "tch_ds": "Rio ou Curso D'Água",
+        "out_dad_qt_horas": 24,
+        "emp_nu_cpfcnpj": "17.281.106/0001-03",
+        "ing_nm_regiao_hidro": "Região Hidrográfica ATLÂNTICO LESTE",
+        "nov_dad_qt_vazaodia": 99,
+        "emp_nm_responsavel": "COMPANHIA DE SANEAMENTO DE MINAS GERAIS COPASA MG",
+        "ago_dad_qt_vazaodia": 99,
+        "set_dad_qt_vazaodia": 99,
+        "org_uf": "BR",
+        "tfn_ds": "Abastecimento Público",
+        "abr_dad_qt_dia": 30,
+        "tdm_ds": "Federal",
+        "mai_dad_qt_horas": 24,
+        "dez_dad_qt_dia": 31,
+        "abr_dad_qt_vazaodia": 99,
+        "int_nu_siagas": null,
+        "int_cd": 870000,
+        "outorga_valida": 0,
+        "int_tch_cd": "1",
+        "int_tsu_cd": "1",
+        "tsp_ds": "Inválido",
+        "ing_sg_ufmunicipio": "MG",
+        "ing_nm_comitefederal": null,
+        "int_nm_corpohidricoalterado": null,
+        "out_dad_qt_vazaodia": 99,
+        "jan_dad_qt_dia": 31,
+        "jan_dad_qt_vazaodia": 99,
+        "jan_dad_qt_horas": 24,
+        "int_tod_cd": "2",
+        "jul_dad_qt_vazaodia": 99,
+        "int_tsf_cd": "3",
+        "out_nu_ato": "302/2011",
+        "out_dt_outorgafinal": 1516320000000,
+        "int_nm_corpohidrico": "Rio Mucuri",
+        "fev_dad_qt_vazaodia": 99,
+        "mai_dad_qt_vazaodia": 99,
+        "tsu_ds": "Superficial",
+        "int_nu_latitude": -17.69055556,
+        "jun_dad_qt_horas": 24,
+        "fev_dad_qt_horas": 24,
+        "mar_dad_qt_dia": 31,
+        "abr_dad_qt_horas": 24,
+        "int_nu_cnarh": "310005819500",
+        "tsf_ds": "Operação",
+        "int_qt_vazaomaxima": 99,
+        "mai_dad_qt_dia": 31,
+        "ago_dad_qt_horas": 24,
+        "out_dt_outorgainicial": 1304899200000,
+        "jun_dad_qt_vazaodia": 99,
+        "fev_dad_qt_dia": 28,
+        "ing_nm_comiteestadual": "CBH do Rio Mucuri",
+        "jul_dad_qt_dia": 31,
+        "tod_ds": "REGLA",
+        "out_dad_qt_dia": 31,
+        "int_tin_cd": "1",
+        "out_nu_processo": null,
+        "objectid": 2,
+        "dez_dad_qt_horas": 24
+      }
+    }
+  ],
+  "exceededTransferLimit": true,
+  "objectIdFieldName": "objectid",
+  "fields": [
+    {
+      "defaultValue": null,
+      "length": 4,
+      "type": "esriFieldTypeOID",
+      "modelName": "objectid",
+      "name": "objectid",
+      "alias": "objectid"
+    },
+    {
+      "modelName": "abr_dad_qt_dia",
+      "defaultValue": null,
+      "name": "abr_dad_qt_dia",
+      "alias": "abr_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "abr_dad_qt_horas",
+      "defaultValue": null,
+      "name": "abr_dad_qt_horas",
+      "alias": "abr_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "abr_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "abr_dad_qt_vazaodia",
+      "alias": "abr_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "ago_dad_qt_dia",
+      "defaultValue": null,
+      "name": "ago_dad_qt_dia",
+      "alias": "ago_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "ago_dad_qt_horas",
+      "defaultValue": null,
+      "name": "ago_dad_qt_horas",
+      "alias": "ago_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "ago_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "ago_dad_qt_vazaodia",
+      "alias": "ago_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "dez_dad_qt_dia",
+      "defaultValue": null,
+      "name": "dez_dad_qt_dia",
+      "alias": "dez_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "dez_dad_qt_horas",
+      "defaultValue": null,
+      "name": "dez_dad_qt_horas",
+      "alias": "dez_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "dez_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "dez_dad_qt_vazaodia",
+      "alias": "dez_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "emp_nm_empreendimento",
+      "defaultValue": null,
+      "name": "emp_nm_empreendimento",
+      "length": 160,
+      "alias": "emp_nm_empreendimento",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "emp_nm_responsavel",
+      "defaultValue": null,
+      "name": "emp_nm_responsavel",
+      "length": 250,
+      "alias": "emp_nm_responsavel",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "emp_nu_cpfcnpj",
+      "defaultValue": null,
+      "name": "emp_nu_cpfcnpj",
+      "length": 60000,
+      "alias": "emp_nu_cpfcnpj",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "fev_dad_qt_dia",
+      "defaultValue": null,
+      "name": "fev_dad_qt_dia",
+      "alias": "fev_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "fev_dad_qt_horas",
+      "defaultValue": null,
+      "name": "fev_dad_qt_horas",
+      "alias": "fev_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "fev_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "fev_dad_qt_vazaodia",
+      "alias": "fev_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "ing_cd_ottobacia_trecho",
+      "defaultValue": null,
+      "name": "ing_cd_ottobacia_trecho",
+      "length": 50,
+      "alias": "ing_cd_ottobacia_trecho",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "ing_nm_comiteestadual",
+      "defaultValue": null,
+      "name": "ing_nm_comiteestadual",
+      "length": 200,
+      "alias": "ing_nm_comiteestadual",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "ing_nm_comitefederal",
+      "defaultValue": null,
+      "name": "ing_nm_comitefederal",
+      "length": 200,
+      "alias": "ing_nm_comitefederal",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "ing_nm_municipio",
+      "defaultValue": null,
+      "name": "ing_nm_municipio",
+      "length": 200,
+      "alias": "ing_nm_municipio",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "ing_nm_regiao_hidro",
+      "defaultValue": null,
+      "name": "ing_nm_regiao_hidro",
+      "length": 65,
+      "alias": "ing_nm_regiao_hidro",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "ing_sg_ufmunicipio",
+      "defaultValue": null,
+      "name": "ing_sg_ufmunicipio",
+      "length": 2,
+      "alias": "ing_sg_ufmunicipio",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_cd",
+      "defaultValue": null,
+      "name": "int_cd",
+      "alias": "int_cd",
+      "type": "esriFieldTypeInteger"
+    },
+    {
+      "modelName": "int_cd_declaracao",
+      "defaultValue": null,
+      "name": "int_cd_declaracao",
+      "length": 50,
+      "alias": "int_cd_declaracao",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_nm_corpohidrico",
+      "defaultValue": null,
+      "name": "int_nm_corpohidrico",
+      "length": 255,
+      "alias": "int_nm_corpohidrico",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_nm_corpohidricoalterado",
+      "defaultValue": null,
+      "name": "int_nm_corpohidricoalterado",
+      "length": 255,
+      "alias": "int_nm_corpohidricoalterado",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_nu_cnarh",
+      "defaultValue": null,
+      "name": "int_nu_cnarh",
+      "length": 50,
+      "alias": "int_nu_cnarh",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_nu_latitude",
+      "defaultValue": null,
+      "name": "int_nu_latitude",
+      "alias": "int_nu_latitude",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "int_nu_longitude",
+      "defaultValue": null,
+      "name": "int_nu_longitude",
+      "alias": "int_nu_longitude",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "int_nu_siagas",
+      "defaultValue": null,
+      "name": "int_nu_siagas",
+      "length": 20,
+      "alias": "int_nu_siagas",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_qt_vazaomaxima",
+      "defaultValue": null,
+      "name": "int_qt_vazaomaxima",
+      "alias": "int_qt_vazaomaxima",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "int_qt_vazaomedia",
+      "defaultValue": null,
+      "name": "int_qt_vazaomedia",
+      "alias": "int_qt_vazaomedia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "int_qt_volumeanual",
+      "defaultValue": null,
+      "name": "int_qt_volumeanual",
+      "alias": "int_qt_volumeanual",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "int_tch_cd",
+      "defaultValue": null,
+      "name": "int_tch_cd",
+      "length": 50,
+      "alias": "int_tch_cd",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_tdm_cd",
+      "defaultValue": null,
+      "name": "int_tdm_cd",
+      "length": 50,
+      "alias": "int_tdm_cd",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_tin_cd",
+      "defaultValue": null,
+      "name": "int_tin_cd",
+      "length": 50,
+      "alias": "int_tin_cd",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_tod_cd",
+      "defaultValue": null,
+      "name": "int_tod_cd",
+      "length": 50,
+      "alias": "int_tod_cd",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_tsf_cd",
+      "defaultValue": null,
+      "name": "int_tsf_cd",
+      "length": 50,
+      "alias": "int_tsf_cd",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "int_tsu_cd",
+      "defaultValue": null,
+      "name": "int_tsu_cd",
+      "length": 50,
+      "alias": "int_tsu_cd",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "jan_dad_qt_dia",
+      "defaultValue": null,
+      "name": "jan_dad_qt_dia",
+      "alias": "jan_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "jan_dad_qt_horas",
+      "defaultValue": null,
+      "name": "jan_dad_qt_horas",
+      "alias": "jan_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "jan_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "jan_dad_qt_vazaodia",
+      "alias": "jan_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "jul_dad_qt_dia",
+      "defaultValue": null,
+      "name": "jul_dad_qt_dia",
+      "alias": "jul_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "jul_dad_qt_horas",
+      "defaultValue": null,
+      "name": "jul_dad_qt_horas",
+      "alias": "jul_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "jul_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "jul_dad_qt_vazaodia",
+      "alias": "jul_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "jun_dad_qt_dia",
+      "defaultValue": null,
+      "name": "jun_dad_qt_dia",
+      "alias": "jun_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "jun_dad_qt_horas",
+      "defaultValue": null,
+      "name": "jun_dad_qt_horas",
+      "alias": "jun_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "jun_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "jun_dad_qt_vazaodia",
+      "alias": "jun_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "mai_dad_qt_dia",
+      "defaultValue": null,
+      "name": "mai_dad_qt_dia",
+      "alias": "mai_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "mai_dad_qt_horas",
+      "defaultValue": null,
+      "name": "mai_dad_qt_horas",
+      "alias": "mai_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "mai_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "mai_dad_qt_vazaodia",
+      "alias": "mai_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "mar_dad_qt_dia",
+      "defaultValue": null,
+      "name": "mar_dad_qt_dia",
+      "alias": "mar_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "mar_dad_qt_horas",
+      "defaultValue": null,
+      "name": "mar_dad_qt_horas",
+      "alias": "mar_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "mar_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "mar_dad_qt_vazaodia",
+      "alias": "mar_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "nov_dad_qt_dia",
+      "defaultValue": null,
+      "name": "nov_dad_qt_dia",
+      "alias": "nov_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "nov_dad_qt_horas",
+      "defaultValue": null,
+      "name": "nov_dad_qt_horas",
+      "alias": "nov_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "nov_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "nov_dad_qt_vazaodia",
+      "alias": "nov_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "org_nm",
+      "defaultValue": null,
+      "name": "org_nm",
+      "length": 100,
+      "alias": "org_nm",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "org_uf",
+      "defaultValue": null,
+      "name": "org_uf",
+      "length": 2,
+      "alias": "org_uf",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "out_dad_qt_dia",
+      "defaultValue": null,
+      "name": "out_dad_qt_dia",
+      "alias": "out_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "out_dad_qt_horas",
+      "defaultValue": null,
+      "name": "out_dad_qt_horas",
+      "alias": "out_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "out_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "out_dad_qt_vazaodia",
+      "alias": "out_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "out_dt_outorgafinal",
+      "defaultValue": null,
+      "name": "out_dt_outorgafinal",
+      "length": 29,
+      "alias": "out_dt_outorgafinal",
+      "type": "esriFieldTypeDate"
+    },
+    {
+      "modelName": "out_dt_outorgainicial",
+      "defaultValue": null,
+      "name": "out_dt_outorgainicial",
+      "length": 29,
+      "alias": "out_dt_outorgainicial",
+      "type": "esriFieldTypeDate"
+    },
+    {
+      "modelName": "out_nu_ato",
+      "defaultValue": null,
+      "name": "out_nu_ato",
+      "length": 50,
+      "alias": "out_nu_ato",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "out_nu_processo",
+      "defaultValue": null,
+      "name": "out_nu_processo",
+      "length": 50,
+      "alias": "out_nu_processo",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "out_tp_ato",
+      "defaultValue": null,
+      "name": "out_tp_ato",
+      "length": 100,
+      "alias": "out_tp_ato",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "outorga_valida",
+      "defaultValue": null,
+      "name": "outorga_valida",
+      "alias": "outorga_valida",
+      "type": "esriFieldTypeSmallInteger"
+    },
+    {
+      "modelName": "set_dad_qt_dia",
+      "defaultValue": null,
+      "name": "set_dad_qt_dia",
+      "alias": "set_dad_qt_dia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "set_dad_qt_horas",
+      "defaultValue": null,
+      "name": "set_dad_qt_horas",
+      "alias": "set_dad_qt_horas",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "set_dad_qt_vazaodia",
+      "defaultValue": null,
+      "name": "set_dad_qt_vazaodia",
+      "alias": "set_dad_qt_vazaodia",
+      "type": "esriFieldTypeDouble"
+    },
+    {
+      "modelName": "tch_ds",
+      "defaultValue": null,
+      "name": "tch_ds",
+      "length": 100,
+      "alias": "tch_ds",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "tdm_ds",
+      "defaultValue": null,
+      "name": "tdm_ds",
+      "length": 100,
+      "alias": "tdm_ds",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "tfn_ds",
+      "defaultValue": null,
+      "name": "tfn_ds",
+      "length": 100,
+      "alias": "tfn_ds",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "tin_ds",
+      "defaultValue": null,
+      "name": "tin_ds",
+      "length": 100,
+      "alias": "tin_ds",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "tod_ds",
+      "defaultValue": null,
+      "name": "tod_ds",
+      "length": 50,
+      "alias": "tod_ds",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "tpo_ds",
+      "defaultValue": null,
+      "name": "tpo_ds",
+      "length": 100,
+      "alias": "tpo_ds",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "tsf_ds",
+      "defaultValue": null,
+      "name": "tsf_ds",
+      "length": 50,
+      "alias": "tsf_ds",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "tsp_ds",
+      "defaultValue": null,
+      "name": "tsp_ds",
+      "length": 100,
+      "alias": "tsp_ds",
+      "type": "esriFieldTypeString"
+    },
+    {
+      "modelName": "tsu_ds",
+      "defaultValue": null,
+      "name": "tsu_ds",
+      "length": 100,
+      "alias": "tsu_ds",
+      "type": "esriFieldTypeString"
+    }
+  ]
+}

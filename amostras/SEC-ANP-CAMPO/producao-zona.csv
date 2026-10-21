@@ -1,0 +1,6 @@
+﻿Zona,Nome poço ANP,Campo,Bacia,Ambiente,Data,Óleo (m³/d),Condensado (m³/d),Petróleo (m³/d),Gás associado (Mil m³/d),Gás não associado (Mil m³/d),Gás total (Mil m³/d),Água (m³/d),Água injetada para descarte (m³/d),Água injetada para rec. secundária (m³/d),Vapor injetado (t/d),Gás injetado (Mil m³/d),CO2 injetado (Mil m³/d),N2 injetado (Mil m³/d),Outros fluidos injetados (m³/d)
+BVE-ITP,3-BRSA-1255-RJS,MERO,Santos,MAR,01/08/2026,"2.030,71","0,00","2.030,71","876,00","0,00","876,00","3,05","0,00","0,00","0,00","0,00","0,00","0,00","0,00"
+BVE-ITP,3-BRSA-1305A-RJS,MERO,Santos,MAR,01/08/2026,"4.740,62","0,00","4.740,62","2.336,56","0,00","2.336,56","44,76","0,00","0,00","0,00","0,00","0,00","0,00","0,00"
+ACU0100,1-AP-2-RN,CANTO DO AMARO,Potiguar,TERRA,01/08/2026,"0,10","0,00","0,10","0,00","0,00","0,00","7,36","0,00","0,00","0,00","0,00","0,00","0,00","0,00"
+ACU0100,7-AP-110-RN,CANTO DO AMARO,Potiguar,TERRA,01/08/2026,"0,33","0,00","0,33","0,00","0,00","0,00","23,12","0,00","0,00","0,00","0,00","0,00","0,00","0,00"
+3874,7-ATL-2HP-RJS,ATLANTA,Santos,MAR,01/08/2026,"417,26","0,00","417,26","19,43","0,00","19,43","182,87","0,00","0,00","0,00","0,00","0,00","0,00","0,00"

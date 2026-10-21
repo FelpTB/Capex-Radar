@@ -1,0 +1,10 @@
+Fonte: SEC-ARTESP
+Formato: CSV UTF-8 da aba Dados do template XLSX (catalogo sem GeoJSON preenchido)
+Campos: 14 no template (a carga acrescenta id e exemplo=true)
+Data da extracao: 21/10/2026
+Fonte da extracao: https://dadosabertos.artesp.sp.gov.br/dataset/6cbb1c8e-04f5-42c7-b286-afd156ae8e3c/resource/609ea398-1a22-4aa8-b7fb-989382d914f7/download/template_lxx_obras_2026_r0.xlsx
+
+API: https://dadosabertos.artesp.sp.gov.br/api/3/action/package_show?id=programacao-de-obras
+Arquivo: template-obras-dados.csv. Duas linhas de exemplo (L22 CAPEX e L22 NS) e duas de instrucao.
+Nao ha programacao real de 2026 neste arquivo. A carga marca exemplo=true.
+Ficou de fora: XLSX de conservacao, GeoJSON de exemplo, PDF das circulares e a geometria prevista no schema.

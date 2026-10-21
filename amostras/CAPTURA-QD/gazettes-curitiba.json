@@ -1,0 +1,75 @@
+{
+  "total_gazettes": 3624,
+  "gazettes": [
+    {
+      "territory_id": "4106902",
+      "date": "2025-06-25",
+      "scraped_at": "2025-06-26T04:32:23.696961",
+      "url": "https://data.queridodiario.ok.org.br/4106902/2025-06-25/1405e41030f58408a3e86c41e1571b7204329414.pdf",
+      "territory_name": "Curitiba",
+      "state_code": "PR",
+      "excerpts": [
+        "trabalhar, independentemente da causa, incluindo, mas não se limitando a: férias, recessos, licenças de\nqualquer ordem, faltas.\n§ 1º Para fins de cálculo, serão considerados como limites"
+      ],
+      "edition": "116",
+      "is_extra_edition": false,
+      "txt_url": "https://data.queridodiario.ok.org.br/4106902/2025-06-25/1405e41030f58408a3e86c41e1571b7204329414.txt"
+    },
+    {
+      "territory_id": "4106902",
+      "date": "2023-01-05",
+      "scraped_at": "2023-01-05T21:30:44.549029",
+      "url": "https://data.queridodiario.ok.org.br/4106902/2023-01-05/31c1f9ea3cbe01f2ca93965c55229bc1259729bd.pdf",
+      "territory_name": "Curitiba",
+      "state_code": "PR",
+      "excerpts": [
+        "544/2014, estabelece:\n \n1. QUANTO À PARTICIPAÇÃO: \n \n1.1 Podem concorrer à concessão de licença para participação em cursos de pós-graduação na modalidade mestrado,\ndoutorado e pós-doutorado"
+      ],
+      "edition": "3",
+      "is_extra_edition": false,
+      "txt_url": "https://data.queridodiario.ok.org.br/4106902/2023-01-05/31c1f9ea3cbe01f2ca93965c55229bc1259729bd.txt"
+    },
+    {
+      "territory_id": "4106902",
+      "date": "2020-10-26",
+      "scraped_at": "2022-05-10T09:28:37.166374",
+      "url": "https://data.queridodiario.ok.org.br/4106902/2020-10-26/ca0013feab250610f77118af508e5e0bd4b6a6aa.pdf",
+      "territory_name": "Curitiba",
+      "state_code": "PR",
+      "excerpts": [
+        "Individual, em imóvel com edificação, e quando tratar-se da Licença Ambiental\nPrévia – LP, bem como das licenças posteriores, Licença Ambiental de Instalação – LI e de Operação – LO, a solicitação"
+      ],
+      "edition": "203",
+      "is_extra_edition": false,
+      "txt_url": "https://data.queridodiario.ok.org.br/4106902/2020-10-26/ca0013feab250610f77118af508e5e0bd4b6a6aa.txt"
+    },
+    {
+      "territory_id": "4106902",
+      "date": "2024-02-22",
+      "scraped_at": "2024-02-23T00:42:46.117151",
+      "url": "https://data.queridodiario.ok.org.br/4106902/2024-02-22/1bc6001b6efbad02b9aada0798db1ae9c5d83c92.pdf",
+      "territory_name": "Curitiba",
+      "state_code": "PR",
+      "excerpts": [
+        "ADMINISTRAÇÃO PÚBLICA\nPROCESSO ADMINISTRATIVO n. 01-038.185/2024- IMAP\nObjeto: “Aquisição das licenças do software de videoconferência “Zoom” para realização de reuniões não presenciais usando"
+      ],
+      "edition": "35",
+      "is_extra_edition": false,
+      "txt_url": "https://data.queridodiario.ok.org.br/4106902/2024-02-22/1bc6001b6efbad02b9aada0798db1ae9c5d83c92.txt"
+    },
+    {
+      "territory_id": "4106902",
+      "date": "2015-03-05",
+      "scraped_at": "2022-05-10T07:29:32.356237",
+      "url": "https://data.queridodiario.ok.org.br/4106902/2015-03-05/8f913decc3c05946c0486d1a01cdc46e0fd80e52.pdf",
+      "territory_name": "Curitiba",
+      "state_code": "PR",
+      "excerpts": [
+        "CURITIBA\n\nNº 42 - ANO IV\nCURITIBA, QUINTA-FEIRA, 5 DE MARÇO DE 2015\n\nPágina 35\n\n\n\nConcede licença sem vencimentos.\n\nIncorpora tempo de serviço.\n\nIncorpora tempo de serviço.\n\nProt. n.º 01-020979/2015"
+      ],
+      "edition": "42",
+      "is_extra_edition": false,
+      "txt_url": "https://data.queridodiario.ok.org.br/4106902/2015-03-05/8f913decc3c05946c0486d1a01cdc46e0fd80e52.txt"
+    }
+  ]
+}
