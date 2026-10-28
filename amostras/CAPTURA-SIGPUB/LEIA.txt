@@ -1,0 +1,11 @@
+Fonte: CAPTURA-SIGPUB
+Formato: HTML da página de busca, UTF-8. Cada matéria é um li.materia-card.
+Campos: 8 por matéria (título, link, entidade, órgão, trecho, circulação, edição, código identificador)
+Data da extracao: 26/10/2026
+Fonte da extracao: https://www.diariomunicipal.com.br/amm-mg/pesquisar?busca_avancada[texto]=17.227.422&busca_avancada[dataInicio]=2015-01-01&busca_avancada[dataFim]=2026-10-26&busca_avancada[pagina]=1&busca_avancada[Enviar]=
+
+Arquivo: busca-amm-mg-cnpj-gerdau.html, com 3 das 11 matérias devolvidas (raiz de CNPJ da Gerdau Açominas no diário da AMM-MG).
+A página completa tinha 140.808 bytes. Ficaram de fora o cabeçalho, o menu, a lista de entidades do filtro, os scripts e as outras 8 matérias.
+A busca exige dataInicio e dataFim e devolve até 25 matérias por página. Os termos são combinados com OU; o Radar exige o CNPJ ou todas as palavras do nome no título ou no trecho.
+Associações cobertas pelo conector: ama, aam, bahia, amurc, aprece, agm, fgm, amm-mg, ms, amm-mt, famep, famup, amupe, appm, amp, aemerj, femurn, arom, amr, famurs, sergipe, apm.
+Nao ha token nem login.

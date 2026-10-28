@@ -1,0 +1,12 @@
+Fonte: CAPTURA-DOE-TO
+Formato: fragmento HTML da página de resultados da busca por texto do Diário Oficial do Tocantins, UTF-8 (resposta gzip)
+Campos: tabela com Edição (Nº), Publicado em (dd/mm/aaaa), Páginas, Tamanho, Downloads e link de download do PDF da edição
+Data da extracao: 27/10/2026
+Fonte da extracao: https://diariooficial.to.gov.br/busca?por=texto&texto=33.000.167&data-inicial=2015-01-01&data-final=2026-10-27
+
+Arquivo: busca-cnpj-petrobras.html, com os 3 resultados da consulta (raiz de CNPJ da Petrobras).
+Cada resultado é uma edição inteira. Não há trecho do texto nem número de página: para ler o ato é preciso baixar o PDF da edição.
+A busca é por frase exata (aspas viram parte do termo e zeram o resultado). Devolve no máximo 100 edições, sem paginação.
+Consultas de período longo levaram até 32 s.
+O recorte é a seção search-results; o resto da página ficou de fora. Conteúdo sem alteração.
+PDF: https://doe.to.gov.br/diario/{id}/download. Nao ha token. TLS ok com as raízes do Node.

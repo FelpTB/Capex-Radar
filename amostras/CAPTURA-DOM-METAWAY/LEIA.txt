@@ -1,0 +1,11 @@
+Fonte: CAPTURA-DOM-METAWAY
+Formato: JSON da plataforma Mentor (Metaway) do Diário Oficial de Lençóis Paulista, UTF-8, e PDF da edição
+Campos: lista com 11 chaves por edição; detalhe com as mesmas 11 e srcPDF
+Data da extracao: 26/10/2026
+Fonte da extracao: https://lencois.mentor.metaway.com.br/recurso/diario/lista?texto=Bracell&dataInicial=2015-01-01&dataFinal=2026-10-26
+Detalhe: https://lencois.mentor.metaway.com.br/recurso/diario/editar/209
+
+Arquivos: lista-bracell-lencois.json (3 das 60 edições com o termo) e edicao-209.json (detalhe de uma edição).
+A busca devolve só as edições, sem trecho. O Radar abre o PDF de srcPDF e lê o texto em volta do termo.
+O acervo vai de 26/04/2019 até hoje, com cerca de 2.000 edições.
+Ficou de fora: os PDFs (o da edição 194 tem 282.701 bytes). Nao ha token.

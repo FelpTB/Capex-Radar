@@ -1,0 +1,10 @@
+Fonte: SEC-SEMAS-PA
+Formato: HTML da listagem de processos do SIMLAM público da SEMAS-PA (ASP.NET WebForms), UTF-8
+Campos: 5 colunas (Nº Processo, Empreendimento, Interessado, Situação, Ações)
+Data da extracao: 26/10/2026
+Fonte da extracao: https://monitoramento.semas.pa.gov.br/simlam/ListarProcessos.aspx, postback __EVENTTARGET=ctl00$baseBody$btnBuscaAvancada com ctl00$baseBody$txtInteressado=VOTORANTIM
+
+Arquivo: processos-votorantim.html, com o cabeçalho e 5 das 95 linhas encontradas.
+A busca exige o estado da página: primeiro um GET para obter __VIEWSTATE, __EVENTVALIDATION e o cookie de sessão, depois o POST com os mesmos campos ocultos.
+Ficaram de fora a paginação, os campos ocultos e o detalhe de cada processo.
+Nao ha token nem login.

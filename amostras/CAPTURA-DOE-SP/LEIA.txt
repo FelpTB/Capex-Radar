@@ -1,0 +1,10 @@
+Fonte: CAPTURA-DOE-SP
+Formato: JSON da API de busca do novo Diário Oficial de SP, UTF-8
+Campos: 7 no envelope (items, currentPage, totalPages, totalItems, pageSize, hasPreviousPage, hasNextPage) e 12 por item
+Data da extracao: 26/10/2026
+Fonte da extracao: https://do-api-web-search.doe.sp.gov.br/v2/advanced-search/publications?Terms[0]=53.943.098&FromDate=2015-01-01&ToDate=2026-10-26&PageNumber=1&PageSize=3&SortField=Date
+
+Arquivo: busca-cnpj-bracell.json, com 3 atos (raiz de CNPJ da Bracell SP Celulose). A consulta completa achou mais de 100.
+O ato fica em https://www.doe.sp.gov.br/{slug}. A API indexa a partir de maio de 2023; o acervo legado não entra.
+Vários Terms[i] na mesma chamada são combinados com OU.
+Ficou de fora: os demais atos e a página HTML de cada um. Nao ha token.

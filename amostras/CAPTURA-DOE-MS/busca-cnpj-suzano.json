@@ -1,0 +1,51 @@
+{
+  "paginaAtual": 1,
+  "totalDePaginas": 73,
+  "totalDeRegistros": 218,
+  "paginasDiario": [
+    {
+      "numero": 12291,
+      "descricao": "Suplemento I DOE n. 12291 - Imasul",
+      "pagina": 222,
+      "caminhoArquivo": "https://assets.imprensaoficial.ms.gov.br/public/prd/Diario%20Oficial/2026/09/30/DO12291_30_09_2026_SUP_1.pdf",
+      "nomeArquivo": "DO12291_30_09_2026_SUP_1.pdf",
+      "dataPublicacao": "2026-09-30T07:30:00",
+      "hiHighlight": {
+        "texto": [
+          "COMERCIO E IMPORTACAO LTDA 04.123.496/0001-41 SUVALAN SUCOS DE FRUTAS, INDUSTRIA E COMERCIO LTDA. <mark>16.404.287</mark>",
+          "/0033-32 SUZANO S.A. <mark>16.404.287</mark>/0387-13 SUZANO S.A. 13.832.196/0001-22 SUZIN INDUSTRIA E COMERCIO DE"
+        ]
+      },
+      "ocorrenciasPorPagina": 2
+    },
+    {
+      "numero": 12268,
+      "descricao": "Diário Oficial Eletrônico n. 12.268",
+      "pagina": 122,
+      "caminhoArquivo": "https://assets.imprensaoficial.ms.gov.br/public/prd/Diario%20Oficial/2026/09/02/DO12268_02_09_2026.pdf",
+      "nomeArquivo": "DO12268_02_09_2026.pdf",
+      "dataPublicacao": "2026-09-02T07:30:00",
+      "hiHighlight": {
+        "texto": [
+          "2026 20 DIAS LUCIMAR MAFFISSONI XXX.227.229.XX LC031973/2026 - AI025435/2026 20 DIAS SUZANO S.A. <mark>16.404.287</mark>"
+        ]
+      },
+      "ocorrenciasPorPagina": 1
+    },
+    {
+      "numero": 12252,
+      "descricao": "Diário Oficial Eletrônico n. 12.252",
+      "pagina": 148,
+      "caminhoArquivo": "https://assets.imprensaoficial.ms.gov.br/public/prd/Diario%20Oficial/2026/08/18/DO12252_18_08_2026.pdf",
+      "nomeArquivo": "DO12252_18_08_2026.pdf",
+      "dataPublicacao": "2026-08-18T07:30:00",
+      "hiHighlight": {
+        "texto": [
+          "Objeto do Ato Usos de recursos hidricos de dominio estadual constantes da  DURH026626 Requerente <mark>16.404.287</mark>",
+          "Objeto do Ato Usos de recursos hidricos de dominio estadual constantes da  DURH026627 Requerente <mark>16.404.287</mark>"
+        ]
+      },
+      "ocorrenciasPorPagina": 2
+    }
+  ]
+}

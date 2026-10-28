@@ -1,0 +1,10 @@
+Fonte: CAPTURA-DOE-PR
+Formato: JSON do Elasticsearch atrás da busca do DIOE-PR, UTF-8. Mesmo motor do DOE-BA.
+Campos: hits.total + hits.hits[] com _id, _score, _source (10 chaves) e highlight.conteudo
+Data da extracao: 26/10/2026
+Fonte da extracao: https://www.dioe.pr.gov.br/busca/busca/buscar/query/0/di:2015-01-01/df:2026-10-26/?1=1&q="11.308.600"
+
+Arquivo: busca-cnpj-cmpc-iguacu.json, com 3 dos 14 resultados (raiz de CNPJ da CMPC Iguaçu Embalagens).
+O texto de _source.conteudo foi cortado em 1.500 caracteres; o original tem a página toda.
+PDF da página: https://www.dioe.pr.gov.br/portal/edicoes/download/{diario_id}/{pagina}.
+Ficou de fora: os outros 11 resultados. Nao ha token.

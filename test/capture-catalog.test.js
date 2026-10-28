@@ -23,10 +23,10 @@ test("mapeia todas as fontes operacionais sem ligar a coleta geral", () => {
   assert.equal(captureProfile("SEC-OBRASGOV").formato_dado, "json_api");
   assert.equal(captureProfile("SEC-PDT"), null);
   assert.equal(captureProfile("NEWS-ECONOMIA-PAYWALL").auth_acesso, "captcha_paywall");
-  assert.equal(Object.keys(DASHBOARD_PROFILES).length, 15);
+  assert.equal(Object.keys(DASHBOARD_PROFILES).length, 44);
   assert.equal(captureProfile("CAPTURA-SINISA").participa_scanner, false);
   const seeded = sourcesForSeed();
-  assert.equal(seeded.length, 15);
+  assert.equal(seeded.length, 44);
   assert.ok(seeded.every((source) => source.peculiaridade && source.conteudo && source.url));
   assert.equal(seeded.some((source) => source.codigo === "CAPTURA-ANA-METAS"), false);
 });

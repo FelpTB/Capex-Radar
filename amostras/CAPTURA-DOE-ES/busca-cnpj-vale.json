@@ -1,0 +1,307 @@
+{
+ "took": 272,
+ "timed_out": false,
+ "_shards": {
+  "total": 1,
+  "successful": 1,
+  "skipped": 0,
+  "failed": 0
+ },
+ "hits": {
+  "total": 36,
+  "max_score": 18.862345,
+  "hits": [
+   {
+    "_index": "multidiarios",
+    "_type": "diario",
+    "_id": "11236_35",
+    "_score": 10.882552,
+    "_source": {
+     "conteudo": "DIÁRIO OFICIAL DOS PODERES DO ESTADO E X E C U T I V O 28 Vitória (ES), quarta-feira, 24 de Junho de 2026. Continuação NOTAS EXPLICATIVAS: 1 - Em observância ao princípio da prevalência da essência sobre a forma, as receitas estão classificadas de acordo com a estrutura de codificação estabelecida pela Portaria STN nº 831, de 2021, atualizado até a Portaria STN nº 1.567 de 2022. 2 - Em observância à metodologia disposta no Manual de Demonstrativos Fiscais - 14ª edição, as receitas correntes das empresas estatais dependentes estão demonstradas de forma conjunta com as demais receitas correntes dos órgãos integrantes do Orçamento Fiscal e da Seguridade Social do Estado do Espírito Santo. 3 - A coluna \"Previsão Atualizada\" foi apurada com base nos registros constantes nas contas contábeis integrantes do grupo \"521000000 - Previsão da Receita\". 4 - Na linha \"Outras Receitas Correntes\", estão sendo deduzidos o valores de R$ 10.669,27 (junho/2025), R$ 612.384,57 (julho/2025), R$ 50.061,52 (setembro/2025), R$ 1.598.153,81 (novembro/2025), R$ 42.033.580,97 (dezembro/2025), R$ 75.070,65 (fevereiro/2026) e R$ 1.325.070,48 (março/2026) em virtude de se referirem à recomposição do Fundo de Depósito Judiciais, nos termos do art. 12, I, da Lei Estadual nº 10.549/2016. 5 - Para fins de cumprimento do disposto no §17 do art. 100 da Constituição Federal e no art. 6º do Decreto nº 4049-R, de 26 de dezembro de 2016, na tabela abaixo é demonstrado o comprometimento da Receita Corrente Líquida co",
+     "data": "2026-06-24",
+     "paginas": 115,
+     "pagina": 35,
+     "pdf_id": 1123869,
+     "year": "2026",
+     "month": "06",
+     "day": "24",
+     "diario_id": 11236,
+     "tipo_edicao": 1
+    },
+    "highlight": {
+     "conteudo": [
+      "Processo: 2025-HWPQ6 CNPJ/MF n.ºs: <strong>33</strong>.<strong>592</strong>.<strong>510</strong>/0220-42 42.276.907/0005-51 e Objeto: AUTORIZA A UTILIZAÇÃO CONJUNTA DO PONTO DE ABASTECIMENTO DE ÓLEO DIESEL E LUBRIFICANTES, LOCALIZADO EM OUTRO ESTABELECIMENTO. Prazo de Vigência: Este termo de acordo terá vigência no período de 01.07.2026 a 30.06.2028. Vitória, 12 de Junho de 2026."
+     ]
+    },
+    "sort": [
+     1782259200000
+    ],
+    "diario": "DIO",
+    "suplemento": "Edição 26752"
+   },
+   {
+    "_index": "multidiarios",
+    "_type": "diario",
+    "_id": "11202_22",
+    "_score": 18.862345,
+    "_source": {
+     "conteudo": "EXECUTIVO DIÁRIO OFICIAL DOS PODERES DO ESTADO 15 Vitória (ES), quinta-feira, 11 de Junho de 2026. TERMO DE ACORDO SEFAZ N.º 008/2026 RETIFICAÇÃO Na Portaria n.º 615-S, publicada em 10 de junho de 2026: Onde se lê: ... Dione Silva. Beneficiária: VALE S.A. Processo: 2026-ZC3CZ CNPJ/MF n.º: 33.592.510/0220-42 Objeto: AUTORIZA O FUNCIONAMENTO EXTENSÃO DE ESTABELECIMENTO. Leia-se: ... Dione Alves. MARCELO CALMON DIAS Secretário de Estado de Gestão e Recursos Humanos Protocolo 1805853 DE Prazo de Vigência: O termo de acordo, ora concedido, terá validade de 1º de maio de 2026 até 30 de abril de 2028. Vitória, 26 de Maio de 2026. Arquivo Público do Estado do Espirito Santo - APEES - BENÍCIO SUZANA COSTA Secretário de Estado da Fazenda Protocolo 1805807 RESUMO DO TERMO DE COOPERAÇÃO PARA PRESTAÇÃO DE SERVIÇOS Nº 003/2026 PROCESSO Nº: 2026-5H4WC PARTES: ARQUIVO PÚBLICO DO ESTADO DO ESPÍRITO SANTO - APEES e o INSTITUTO DE TECNOLOGIA DA INFORMAÇÃO E COMUNICAÇÃO DO ESTADO DO ESPÍRITO SANTO - PRODEST. OBJETO: Cooperação técnica visando à prestação de serviços de Tecnologia da Informação e Comunicação (TIC), conforme Catálogo de Serviços do PRODEST, com definição de responsabilidades, critérios e padrões dos serviços disponibilizados. VIGÊNCIA: O presente instrumento vigerá por 60 (sessenta) meses com início a partir do primeiro dia seguinte ao da publicação de seu extrato na imprensa oficial. TERMO DE ACORDO SEFAZ N.º 009/2026 Beneficiária: VALE S.A. Processo: 2026-681R2 CNPJ/MF n.º: 33.5",
+     "data": "2026-06-11",
+     "paginas": 88,
+     "pagina": 22,
+     "pdf_id": 1119495,
+     "year": "2026",
+     "month": "06",
+     "day": "11",
+     "diario_id": 11202,
+     "tipo_edicao": 1
+    },
+    "highlight": {
+     "conteudo": [
+      "Processo: 2026-681R2 CNPJ/MF n.º: <strong>33</strong>.<strong>592</strong>.<strong>510</strong>/0220-42 Objeto: AUTORIZA O FUNCIONAMENTO EXTENSÃO DE ESTABELECIMENTO. DE Prazo de Vigência: O termo de acordo, ora concedido, terá validade de 1º de maio de 2026 até 30 de abril de 2028. Vitória, 26 de Maio de 2026.",
+      "Processo: 2026-B8HS4 CNPJ/MF n.º: <strong>33</strong>.<strong>592</strong>.<strong>510</strong>/0220-42 Objeto: AUTORIZA O FUNCIONAMENTO EXTENSÃO DE ESTABELECIMENTO. DE Prazo de Vigência: O termo de acordo, ora concedido, terá validade de 1º de maio de 2026 até 30 de abril de 2028. TERMO DE ACORDO SEFAZ N.º 007/2026 Vitória, 26 de Maio de 2026. Beneficiária: VALE S.A.",
+      "Processo: 2026-S538M CNPJ/MF n.º: <strong>33</strong>.<strong>592</strong>.<strong>510</strong>/0220-42 BENÍCIO SUZANA COSTA Secretário de Estado da Fazenda Protocolo 1805831 Objeto: AUTORIZA O FUNCIONAMENTO EXTENSÃO DE ESTABELECIMENTO. DE Prazo de Vigência: O termo de acordo, ora concedido, terá validade de 1º de maio de 2026 até 30 de abril de 2028. Vitória, 26 de Maio de 2026."
+     ]
+    },
+    "sort": [
+     1781136000000
+    ],
+    "diario": "DIO",
+    "suplemento": "Edição 26743"
+   },
+   {
+    "_index": "multidiarios",
+    "_type": "diario",
+    "_id": "11032_53",
+    "_score": 14.139415,
+    "_source": {
+     "conteudo": "DIÁRIO OFICIAL DOS PODERES DO ESTADO D I V E R S O S 6 Vitória (ES), segunda-feira, 6 de Abril de 2026. VALE S.A. A Vale S.A., titular do CNPJ 33.592.510/0220-42, torna público que requereu ao Instituto Estadual de Meio Ambiente (IEMA) a renovação da Licença de Operação (LO) nº 123/2018, com vencimento em 21/09/2026, referente às atividades de aglomeração e pelotização de minério de ferro; embarque, desembarque, carregamento, descarregamento, transporte, manuseio, estocagem e transbordo de minério de ferro e outros produtos e mercadorias; Atividades e instalações de apoio, conforme documentação apresentada pela empresa no âmbito do processo administrativo nº 22252053. Protocolo: 002673/2026. Protocolo 1761558 Julio C Rodrigues, torna público que Requereu a SMMALP, por meio do processo n° 2026-R0WD2 , Licença Ambiental de Regularização para Terraplenagem na localidade de Crg Boa Esperança, no Mun. de Iúna - ES. Protocolo 1761632 Entidades Federais Departamento Nacional de Infraestrutura de Transportes - DNIT COMUNICADO O Departamento Nacional de Infraestrutura de Transportes - DNIT torna público que requereu do Instituto Estadual do Meio Ambiente e Recursos Hídricos - IEMA, através do processo n° 91065330, Licença Prévia - LP, para as obras de restauração e ampliação de capacidade do trecho capixaba da rodovia BR-262/ES, compreendido entre o km 15,80 e o km 195,50, nos Municípios de Brejetuba, Conceição do Castelo, Domingos Martins, Ibatiba, Irupi, Iúna, Marechal Floriano, Mun",
+     "data": "2026-04-06",
+     "paginas": 66,
+     "pagina": 53,
+     "pdf_id": 1095512,
+     "year": "2026",
+     "month": "04",
+     "day": "06",
+     "diario_id": 11032,
+     "tipo_edicao": 1
+    },
+    "highlight": {
+     "conteudo": [
+      "., titular do CNPJ <strong>33</strong>.<strong>592</strong>.<strong>510</strong>/0220-42, torna público que requereu ao Instituto Estadual de Meio Ambiente (IEMA) a renovação da Licença de Operação (LO) nº 123/2018, com vencimento em 21/09/2026, referente às atividades de aglomeração e pelotização de minério de ferro; embarque, desembarque, carregamento, descarregamento, transporte, manuseio, estocagem e transbordo de minério de ferro e outros produtos e mercadorias; Atividades e instalações de apoio, conforme documentação apresentada pela empresa"
+     ]
+    },
+    "sort": [
+     1775433600000
+    ],
+    "diario": "DIO",
+    "suplemento": "Edição 26700"
+   }
+  ]
+ },
+ "aggregations": {
+  "TipoEdicao": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 1,
+     "doc_count": 36
+    }
+   ]
+  },
+  "Edicoes": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 8765,
+     "doc_count": 2
+    },
+    {
+     "key": 10065,
+     "doc_count": 2
+    },
+    {
+     "key": 3042,
+     "doc_count": 1
+    },
+    {
+     "key": 3086,
+     "doc_count": 1
+    },
+    {
+     "key": 3134,
+     "doc_count": 1
+    },
+    {
+     "key": 3199,
+     "doc_count": 1
+    },
+    {
+     "key": 3542,
+     "doc_count": 1
+    },
+    {
+     "key": 3613,
+     "doc_count": 1
+    },
+    {
+     "key": 3685,
+     "doc_count": 1
+    },
+    {
+     "key": 3892,
+     "doc_count": 1
+    },
+    {
+     "key": 3936,
+     "doc_count": 1
+    },
+    {
+     "key": 3973,
+     "doc_count": 1
+    },
+    {
+     "key": 4004,
+     "doc_count": 1
+    },
+    {
+     "key": 4272,
+     "doc_count": 1
+    },
+    {
+     "key": 4306,
+     "doc_count": 1
+    },
+    {
+     "key": 4430,
+     "doc_count": 1
+    },
+    {
+     "key": 4451,
+     "doc_count": 1
+    },
+    {
+     "key": 4579,
+     "doc_count": 1
+    },
+    {
+     "key": 4665,
+     "doc_count": 1
+    },
+    {
+     "key": 4709,
+     "doc_count": 1
+    },
+    {
+     "key": 5777,
+     "doc_count": 1
+    },
+    {
+     "key": 7057,
+     "doc_count": 1
+    },
+    {
+     "key": 7446,
+     "doc_count": 1
+    },
+    {
+     "key": 7538,
+     "doc_count": 1
+    },
+    {
+     "key": 8995,
+     "doc_count": 1
+    },
+    {
+     "key": 9226,
+     "doc_count": 1
+    },
+    {
+     "key": 9340,
+     "doc_count": 1
+    },
+    {
+     "key": 9384,
+     "doc_count": 1
+    },
+    {
+     "key": 9472,
+     "doc_count": 1
+    },
+    {
+     "key": 9574,
+     "doc_count": 1
+    },
+    {
+     "key": 10604,
+     "doc_count": 1
+    },
+    {
+     "key": 11032,
+     "doc_count": 1
+    },
+    {
+     "key": 11202,
+     "doc_count": 1
+    },
+    {
+     "key": 11236,
+     "doc_count": 1
+    }
+   ]
+  },
+  "FileYear": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 2024,
+     "doc_count": 8
+    },
+    {
+     "key": 2015,
+     "doc_count": 4
+    },
+    {
+     "key": 2017,
+     "doc_count": 4
+    },
+    {
+     "key": 2019,
+     "doc_count": 4
+    },
+    {
+     "key": 2022,
+     "doc_count": 3
+    },
+    {
+     "key": 2025,
+     "doc_count": 3
+    },
+    {
+     "key": 2026,
+     "doc_count": 3
+    },
+    {
+     "key": 2016,
+     "doc_count": 2
+    },
+    {
+     "key": 2018,
+     "doc_count": 2
+    },
+    {
+     "key": 2020,
+     "doc_count": 2
+    },
+    {
+     "key": 2021,
+     "doc_count": 1
+    }
+   ]
+  }
+ },
+ "loggedCredit": true
+}

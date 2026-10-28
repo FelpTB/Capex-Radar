@@ -1,0 +1,8 @@
+Fonte: SEC-INEA
+Sem arquivo bruto.
+Data da tentativa: 26/10/2026
+URL testada: https://portallicenciamento.inea.rj.gov.br/
+
+O portal SELCA é uma aplicação de página única (Angular). O GET devolve só a casca da página (1.648 bytes), sem registro de licença.
+A consulta de processos fica atrás do login do requerente. Não foi achado endpoint público de dados.
+Uso no Radar: consulta manual pelo portal, ou leitura das licenças publicadas no Diário Oficial do RJ.

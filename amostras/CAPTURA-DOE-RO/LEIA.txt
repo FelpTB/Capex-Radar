@@ -1,0 +1,12 @@
+Fonte: CAPTURA-DOE-RO
+Formato: (1) fragmento HTML (só linhas <tr>) devolvido pela busca por data do DIOF; (2) JSON com uma página de PDF como o índice do Radar a guarda
+Campos (1): data (DD-MM-AAAA), rótulo (data ou "Suplemento #n"), tamanho e link do PDF em /data/uploads/AAAA/MM/{arquivo}.pdf
+Campos (2): edicao {uf, chave, data, titulo, url, paginas, bytes}, pagina, raizes, texto (texto integral da página extraído com pdfjs)
+Data da extracao: 28/10/2026
+Fonte da extracao: GET https://diof.ro.gov.br/diarios/?cf_time=27-10-2026 e o PDF https://diof.ro.gov.br/data/uploads/2026/10/DOE-27-10-26.pdf
+
+Arquivo 1: 1-edicoes-27-10-2026.html, resposta inteira (edição do dia e suplementos #1 e #2). Arquivo 2: 2-pagina-indexada.json, página 456: pedido de publicação da ATEM'S Distribuidora de Petróleo junto à SEDAM.
+A consulta por data está no campo "Buscar Publicações por data" da home (main.js monta /diarios?cf_time=DD-MM-AAAA). A resposta não tem <table>: o parser envolve as linhas numa tabela.
+O nome do arquivo não segue padrão (DOE-27-10-26.pdf, DOE-10.03.2025.pdf, Doe-05-01-162.pdf), por isso o conector não adivinha a URL.
+A busca de conteúdo do portal está comentada no HTML, a REST API do WordPress exige login e as páginas /diario/{id} mostram uma lista fixa antiga.
+PDF de 3,8 MB e 457 páginas (27/10/2026), com camada de texto. Nao ha token.

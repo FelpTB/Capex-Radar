@@ -1,4 +1,11 @@
 const { fold } = require("./resolve");
+const { SIGPUB_UF, metawayBase } = require("./diarios");
+
+// UFs com diário oficial conectado: todas. PA, PB, RO e RR leem o índice de PDFs (doe-pdf.js).
+const DOE_UFS = [
+  "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA",
+  "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+];
 
 const ENERGY = ["energia", "geracao", "usina", "hidreletr", "termeletr", "solar", "eolic", "transmiss"];
 const MINING = ["miner", "mina", "lavra"];
@@ -73,7 +80,7 @@ function collectableSources() {
     { codigo: "SEC-IBAMA" },
     { codigo: "SEC-ANTT-INV" },
     { codigo: "SEC-ANTAQ-INST" },
-    { codigo: "SEC-IAT" },
+    { codigo: "SEC-IAT", uf: "PR" },
     { codigo: "SEC-CNO" },
     { codigo: "SEC-ANP-EP" },
     { codigo: "SEC-ANA-SNIRH" },
@@ -84,6 +91,10 @@ function collectableSources() {
     { codigo: "SEC-ANP-PLAT" },
     { codigo: "SEC-ANP-DUTO" },
     { codigo: "CAPTURA-QD" },
+    { codigo: "CAPTURA-SIGPUB" },
+    { codigo: "CAPTURA-DOM-METAWAY" },
+    ...DOE_UFS.map((uf) => ({ codigo: `CAPTURA-DOE-${uf}`, uf })),
+    { codigo: "SEC-SEMAD", uf: "MG" },
     { codigo: "CAPTURA-DOU" },
     { codigo: "SEC-ARTESP", uf: "SP" },
   ];
@@ -94,8 +105,10 @@ function sourcesForProject(project) {
     if (source.uf && source.uf !== project.uf) return false;
     if (source.codigo === "CAPTURA-SIGMINE" && !project.uf) return false;
     if (source.codigo === "CAPTURA-QD" && !project.municipio) return false;
+    if (source.codigo === "CAPTURA-SIGPUB" && !SIGPUB_UF[project.uf]) return false;
+    if (source.codigo === "CAPTURA-DOM-METAWAY" && !metawayBase(project)) return false;
     return true;
   });
 }
 
-module.exports = { collectableSources, sourcesForProject, viableSources };
+module.exports = { DOE_UFS, collectableSources, sourcesForProject, viableSources };

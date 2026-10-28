@@ -1,0 +1,10 @@
+Fonte: SEC-FEPAM
+Formato: HTML da consulta de documentos licenciatórios da FEPAM (RS), ISO-8859-1 convertido para UTF-8
+Campos: 9 por documento (Nº Documento, Nº Processo, Situação, Vigência, Tipo de Documento, Empreendedor, Empreendimento, Endereço, Município/UF)
+Data da extracao: 26/10/2026
+Fonte da extracao: POST http://ww3.fepam.rs.gov.br/spogweb/e016/doclicenciatorio.asp com opc_consulta=Doc_Licenciatorio, tipo_pesq=especifica, tespecifica=vlRazaosocial, razaosocial=CMPC CELULOSE RIOGRANDENSE
+
+Arquivo: doclicenciatorio-cmpc.html, com o contador e os 3 primeiros documentos da primeira página.
+A busca achou 4.031 documentos em 74 páginas; a página tinha 140.820 bytes. Ficaram de fora as outras páginas, o menu e os links de detalhe.
+O site é só HTTP (sem HTTPS). A busca também aceita CNPJ, número de processo e endereço.
+Nao ha token nem login.

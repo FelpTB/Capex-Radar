@@ -1,0 +1,12 @@
+Fonte: CAPTURA-DOE-RR
+Formato: (1) recorte HTML (tbody) da lista de edições do mês da Imprensa Oficial de Roraima; (2) JSON com uma página de PDF como o índice do Radar a guarda
+Campos (1): tipo ("Diário Oficial"), data (DD / MM / AAAA), tamanho e o formulário de download com doe (caminho AAAA/MM/doe-AAAAMMDD.pdf), ipconexao, dia, mes e ano
+Campos (2): edicao {uf, chave, data, titulo, url, paginas, bytes}, pagina, raizes, texto (texto integral da página extraído com pdfjs)
+Data da extracao: 28/10/2026
+Fonte da extracao: GET https://www.imprensaoficial.rr.gov.br/_visualizar-mes/?ano=2026&mes=10 e POST https://www.imprensaoficial.rr.gov.br/_visualizar-doe/ (doe=2026/10/doe-20261020.pdf&ipconexao=0.0.0.0)
+
+Arquivo 1: 1-edicoes-outubro-2026.html, as 3 primeiras linhas da tabela. Arquivo 2: 2-pagina-indexada.json, página 63 da edição de 20/10/2026, com licença assinada pela FEMARH-RR.
+O PDF só sai por POST com doe e ipconexao (qualquer valor); sem ipconexao o servidor redireciona para /_inicial. GET com os mesmos parâmetros também redireciona.
+Por isso o link mostrado na ficha é a lista do mês, onde a edição tem o botão de abrir.
+A busca por palavra-chave do portal é o widget do Google Programmable Search; o servidor ignora o termo. Acervo listado por mês desde 1980.
+PDF de 2,8 MB e 56 páginas (23/10/2026), com camada de texto. Nao ha token.

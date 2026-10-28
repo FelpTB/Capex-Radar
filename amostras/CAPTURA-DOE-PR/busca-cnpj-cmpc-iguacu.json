@@ -1,0 +1,181 @@
+{
+ "took": 1331,
+ "timed_out": false,
+ "_shards": {
+  "total": 1,
+  "successful": 1,
+  "skipped": 0,
+  "failed": 0
+ },
+ "hits": {
+  "total": 14,
+  "max_score": 8.057068,
+  "hits": [
+   {
+    "_index": "multidiarios",
+    "_type": "diario",
+    "_id": "17345_42",
+    "_score": 6.8895645,
+    "_source": {
+     "conteudo": "42 6ª FEIRA |02/OUT/2026 - EDIÇÃO N° 12.241 PODER EXECUTIVO ESTADUAL ESPECIALIZADO DE CRIANÇAS E ADOLESCENTES ATENDIDAS PELA APAE DE IVAÍ”, com recursos do FIA/PR, no valor de R$ 159.020,00 (cento e cinquenta e nove mil e vinte reais), com as atribuições constantes no Art.69 e incisos do Decreto Estadual nº 3513/2016. Art. 2º Esta Resolução entra em vigor na data de sua publicação. Curitiba, 01 de outubro de 2026. (Assinado Digitalmente) Luiza Simonelli Secretária de Estado do Desenvolvimento Social e Família, em exercícioArt. 5°, inciso III e Art. 46 da Lei Estadual n°21.352 de 1° de janeiro de 2023 Protocolo 133048/2026 Secretaria do Desenvolvimento Sustentável IAT RAZÃO NOE CALDEIRA BRANT Município Autuação AIA SID TAPEJARA 141372 17.588.344-4 Protocolo 133021/2026 EDITAL DE NOTIFICAÇÃO Nº 018/2026 ADESÃO AO PROGRAMA DE CONVERSÃO DE MULTAS IAT Em atendimento ao Art. 126 do Decreto Federal 6514/2008 e para prosseguimento na cobrança administrativa dos processos de Autos de Infração Ambiental, o Instituto Água e Terra - IAT torna público a relação dos autuados notificados por via postal e sem êxito na entrega da correspondência. Prazo 10 (dez) dias da data da publicação. Município Autuação AIA ANGELO ROSA LEOPOLDINO RAZÃO CONTENDA 137071 16.293.020-6 SID DANIEL DOS SANTOS PONTAL DO PARANÁ 147035 19.650.738-8 NIVALDO ANTONIO DE OLIVEIRA MOREIRA SALES 151497 21.979.150-0 Protocolo 133023/2026 EDITAL DE NOTIFICAÇÃO N° 021/2026 DECISÃO ADMINISTRATIVA/ PENDÊNCIA Em atendimento ao",
+     "data": "2026-10-02",
+     "paginas": 108,
+     "pagina": 42,
+     "pdf_id": 1207361,
+     "year": "2026",
+     "month": "10",
+     "day": "02",
+     "diario_id": 17345,
+     "tipo_edicao": 3
+    },
+    "highlight": {
+     "conteudo": [
+      "Outorgado(s) CMPC IGUAÇU EMBALAGENS LTDA CPF/CNPJ <strong>11</strong>.<strong>308</strong>.<strong>600</strong>/0001-38. Iguaçu. Coordenadas UTM 7.174.710,89 N 678.952,51 E. Validade 6 anos. Finalidade Processo fabril. Vazão máxima outorgada 28.80 m³/h 12:30 horas/dia 31 dias/mês. Município São José dos Pinhais. Esta portaria revoga a portaria n° 25517/2023/OD-GOUT."
+     ]
+    },
+    "sort": [
+     1790899200000
+    ],
+    "diario": "EX",
+    "suplemento": "Edição 12241"
+   },
+   {
+    "_index": "multidiarios",
+    "_type": "diario",
+    "_id": "17141_74",
+    "_score": 6.0623775,
+    "_source": {
+     "conteudo": "74 4ª FEIRA |29/JUL/2026 - EDIÇÃO N° 12.196 PODER EXECUTIVO ESTADUAL Portaria n° 11515/2026/OP-GOUT. Prot. 25.976.231-6. Lançamento de efluentes. Outorgado(s) CLAUDETE DUARTE - CPF/CNPJ 038.290.409-54. Rio Central. Piquiri. Coordenadas UTM 7.267.236,74 N 257.253,45 E. Validade 2 anos. Finalidade Diluição de efluente de aquicultura comercial. Vazão máxima outorgada 39.35 m³/h 24:00 horas/dia 31 dias/mês. Município Cafelândia. Protocolo 100202/2026 Portaria n° 11651/2026/OD-GOUT. Prot. 22.830.251-1. Captação subterrânea (Poço tubular). Outorgado(s) Mosaic Fertilizantes do Brasil Ltda - CPF/CNPJ 61.156.501/0109-76. Litorânea. Coordenadas UTM 7.171.889,01 N 744.677,00 E. Validade 6 anos. Finalidade Processo fabril, Limpeza. Vazão máxima outorgada 37.22 m³/h 10:45 horas/dia 30 dias/mês. Município Paranaguá. Esta portaria revoga a portaria n° 461/2022. Protocolo 100237/2026 Portaria n° 11636/2026/OD-GOUT. Prot. 26.093.791-0. Captação superficial. Outorgado(s) FABIO SILVA PERDOMO - CPF/CNPJ 029.877.519-07. Rio Ivaí. Ivaí. Coordenadas UTM 7.430.937,40 N 248.751,62 E. Validade 6 anos. Finalidade Irrigação. Vazão máxima outorgada 472.67 m³/h 15:00 horas/dia 31 dias/mês. Município Santa Cruz de Monte Castelo. Esta portaria revoga a portaria n° 12007/2025/OP-GOUT. Protocolo 100203/2026 Portaria n° 11652/2026/OP-GOUT. Prot. 23.105.370-0. Captação subterrânea (Poço tubular). Outorgado(s) NEIVALDO JOSE JULIANO - CPF/CNPJ 810.520.909-82. Ivaí. Coordenadas UTM 7.423.320,00 N 334.839,00 E. Val",
+     "data": "2026-07-29",
+     "paginas": 178,
+     "pagina": 74,
+     "pdf_id": 1189837,
+     "year": "2026",
+     "month": "07",
+     "day": "29",
+     "diario_id": 17141,
+     "tipo_edicao": 3
+    },
+    "highlight": {
+     "conteudo": [
+      "Outorgado(s) CMPC IGUAÇU EMBALAGENS LTDA CPF/CNPJ <strong>11</strong>.<strong>308</strong>.<strong>600</strong>/0001-38. Iguaçu. Coordenadas UTM 7.174.736,76 N 678.996,00 E. Validade 6 anos. Finalidade Sanitário (consumo humano + limpeza), Processo fabril. Vazão máxima outorgada 2.49 m³/h 18:30 horas/dia 31 dias/mês. Município São José dos Pinhais. Esta portaria revoga a portaria n° 10775/2024/AP-GOUT. Portaria n° 11642/2026/OP-GOUT. Prot. 21.969.012-6. Captação superficial. Outorgado(s) LUCIANO PACHER NETO - CPF/CNPJ 039.334.559-95. Rio Ivaí."
+     ]
+    },
+    "sort": [
+     1785283200000
+    ],
+    "diario": "EX",
+    "suplemento": "Edição 12196"
+   },
+   {
+    "_index": "multidiarios",
+    "_type": "diario",
+    "_id": "16335_42",
+    "_score": 6.0623775,
+    "_source": {
+     "conteudo": "42 6ª feira |14/Nov/2025 - Edição nº 12030 Portaria n° 12623/2025/OD-GOUT. Prot. 22.913.748-4. Captação subterrânea (Poço tubular). Outorgado(s) Harima do Brasil Indústria Química Ltda. - CPF/ CNPJ 76.176.643/0001-52. Tibagi. Coordenadas UTM 7.230.285,17 N 583.936,74 E. Validade 6 anos. Finalidade Combate a incêndio, Processo fabril, Sanitário (consumo humano + limpeza). Vazão máxima outorgada 32.32 m³/h 03:14 horas/ dia 31 dias/mês. Município Ponta Grossa. Esta portaria revoga a portaria n° 10938/2024/AP-GOUT. 156118/2025 Portaria n° 12633/2025/OP-GOUT. Prot. 24.914.322-7. Aproveitamento hidrelétrico com barragem/soleira. Outorgado(s) CGH FAROLETE ENERGIA RENOVAVEL SPE LTDA. - CPF/CNPJ 58.435.310/0001-19. Rio Índios. Ivaí. Coordenadas UTM 7.405.225,00 N 336.238,99 E. Validade 03/04/2028. Finalidade Aproveitamento de potencial hidráulico. Município Indianópolis. Esta portaria revoga a portaria n° 10719/2025/OP-GOUT. 156078/2025 Portaria n° 12631/2025/OD-GOUT. Prot. 24.015.072-7. Captação subterrânea (Poço tubular). Outorgado(s) VIA ARAUCÁRIA CONCESSIONÁRIA DE RODOVIAS S.A. - CPF/CNPJ 47.155.252/0001-53. Iguaçu. Coordenadas UTM 7.186.514,00 N 663.013,00 E. Validade 6 anos. Finalidade Limpeza, Sanitário (consumo humano + limpeza). Vazão máxima outorgada 0.84 m³/h 02:35 horas/dia 30 dias/mês. Município Curitiba. Esta portaria revoga a portaria n° 12007/2024/AP-GOUT. 156123/2025 Portaria n° 12626/2025/OD-GOUT. Prot. 22.940.916-6. Captação subterrânea (Poço tubular). Outorgado(s) ",
+     "data": "2025-11-14",
+     "paginas": 81,
+     "pagina": 42,
+     "pdf_id": 37341,
+     "year": "2025",
+     "month": "11",
+     "day": "14",
+     "diario_id": 16335,
+     "tipo_edicao": 3
+    },
+    "highlight": {
+     "conteudo": [
+      "Outorgado(s) CMPC IGUAÇU EMBALAGENS LTDA - CPF/CNPJ <strong>11</strong>.<strong>308</strong>.<strong>600</strong>/0009-95. Rio Piraí. Tibagi. Coordenadas UTM 7.276.994,66 N 604.294,22 E. Validade 2 anos. Finalidade Diluição de efluente sanitário, Diluição de efluente industrial. Vazão máxima outorgada 420.00 m³/h 24:00 horas/dia 31 dias/mês. Município Piraí do Sul. Esta portaria revoga a portaria n° 25874/2023/ OD-GOUT. 156112/2025 Portaria n° 12618/2025/OD-GOUT. Prot. 23.767.787-0. Captação superficial."
+     ]
+    },
+    "sort": [
+     1763078400000
+    ],
+    "diario": "EX",
+    "suplemento": "Edição 12030"
+   }
+  ]
+ },
+ "aggregations": {
+  "TipoEdicao": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 3,
+     "doc_count": 14
+    }
+   ]
+  },
+  "Edicoes": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 14119,
+     "doc_count": 3
+    },
+    {
+     "key": 16335,
+     "doc_count": 2
+    },
+    {
+     "key": 13944,
+     "doc_count": 1
+    },
+    {
+     "key": 14033,
+     "doc_count": 1
+    },
+    {
+     "key": 14048,
+     "doc_count": 1
+    },
+    {
+     "key": 14198,
+     "doc_count": 1
+    },
+    {
+     "key": 15831,
+     "doc_count": 1
+    },
+    {
+     "key": 16086,
+     "doc_count": 1
+    },
+    {
+     "key": 16213,
+     "doc_count": 1
+    },
+    {
+     "key": 17141,
+     "doc_count": 1
+    },
+    {
+     "key": 17345,
+     "doc_count": 1
+    }
+   ]
+  },
+  "FileYear": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 2023,
+     "doc_count": 7
+    },
+    {
+     "key": 2025,
+     "doc_count": 5
+    },
+    {
+     "key": 2026,
+     "doc_count": 2
+    }
+   ]
+  }
+ },
+ "loggedCredit": true
+}

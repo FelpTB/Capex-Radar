@@ -1,0 +1,14 @@
+Fonte: CAPTURA-DOE-MS
+Formato: JSON da API do portal Next.js do Diário Oficial de MS (www.diariooficial.ms.gov.br), UTF-8
+Campos: envelope paginaAtual, totalDePaginas, totalDeRegistros, paginasDiario[]; 8 chaves por item (numero, descricao, pagina, caminhoArquivo, nomeArquivo, dataPublicacao, hiHighlight.texto[], ocorrenciasPorPagina)
+Data da extracao: 27/10/2026
+Fonte da extracao: https://www.diariooficial.ms.gov.br/api/diarios/busca-diarios?tipo=1&texto=16.404.287&dataInicial=2015-01-01&dataFinal=2026-10-26&pagina=1&registrosPorPagina=3
+
+Arquivo: busca-cnpj-suzano.json, com 3 dos 218 resultados (páginas do diário que citam a raiz de CNPJ da Suzano S.A.).
+Cada resultado é uma página do diário. hiHighlight.texto traz um trecho de ~120 caracteres por ocorrência, com <mark>; não foi cortado.
+tipo=1 é busca exata (frase); tipo=2 é "ao menos uma palavra". Aspas não funcionam: a busca volta vazia.
+Busca sem resultado responde HTTP 400 com o corpo "Nenhum resultado encontrado.".
+Acervo pesquisável desde janeiro de 2007. registrosPorPagina aceitou 1000.
+Link: caminhoArquivo (PDF da edição inteira em assets.imprensaoficial.ms.gov.br, sem login); a página vem em "pagina" (dá para abrir com #page={pagina} no navegador). Não há link por ato.
+Certificados Let's Encrypt com cadeia completa. Sem token, sem login. O domínio antigo www.spdo.ms.gov.br não resolve mais (DNS).
+Ficou de fora: os outros 215 resultados e o PDF da edição.

@@ -1,3 +1,7 @@
+const { DOE_ESTADOS } = require("./doe-registry");
+
+const DOE_PDF_UFS = DOE_ESTADOS.filter((estado) => estado.motor === "indice_pdf").map((estado) => estado.uf);
+
 const CAPTURE_LABELS = {
   papel_captura: {
     descoberta: "Descoberta",
@@ -98,8 +102,8 @@ const CAPTURE_PROFILES = {
     unidade_registro: "processo ambiental",
   }),
   "SEC-SEMAD": source({
-    formato_dado: "formulario",
-    unidade_registro: "decisão de licença",
+    formato_dado: "gis",
+    unidade_registro: "licença georreferenciada",
   }),
   "SEC-IAT": source({
     formato_dado: "gis",
@@ -283,15 +287,94 @@ const POSSIBLE_SOURCES = [
     porque: "É o único conector pronto para decreto e licença municipal. Uso futuro: consulta pontual quando o projeto já tem município.",
   },
   {
+    codigo: "CAPTURA-SIGPUB",
+    familia: "Diários oficiais",
+    nome: "Diários oficiais dos municípios (SIGPub / associações municipais)",
+    url: "https://www.diariomunicipal.com.br/",
+    modo: "Busca HTML por associação estadual de municípios",
+    disponibilidade: "22 diários de associações em 20 UFs (AMM-MG, AMP-PR, APM-SP, AMUPE, FAMURS, APRECE e outras), com prefeituras, câmaras e consórcios. Busca por texto desde 2009, sem login.",
+    papel: "Descoberta municipal",
+    decisao: "mapear",
+    porque: "Cobre centenas de municípios que o Querido Diário não indexa. A busca pelo CNPJ formatado acha decreto, lei e licença municipal com a empresa citada.",
+  },
+  {
+    codigo: "CAPTURA-DOM-METAWAY",
+    familia: "Diários oficiais",
+    nome: "Diários oficiais municipais na plataforma Metaway (Mentor)",
+    url: "https://lencois.mentor.metaway.com.br/diario/",
+    modo: "API JSON de edições e PDF por prefeitura",
+    disponibilidade: "Lençóis Paulista/SP desde 04/2019. A busca devolve as edições com o termo; o texto sai do PDF. Outras prefeituras da plataforma entram no mapa do conector.",
+    papel: "Descoberta municipal",
+    decisao: "mapear",
+    porque: "Cobre município fora do Querido Diário e da SIGPub. Achou o decreto de 2020 que cita a construção da fábrica da Bracell.",
+  },
+  {
+    codigo: "CAPTURA-DOE-BA",
+    familia: "Diários oficiais",
+    nome: "Diário Oficial do Estado da Bahia (DOOL / EGBA)",
+    url: "https://dool.egba.ba.gov.br/",
+    modo: "API JSON da busca (Elasticsearch)",
+    disponibilidade: "Texto integral por página desde 2007, busca por frase e CNPJ, sem login. Traz portarias do INEMA, resoluções do DESENVOLVE e do PROAUTO, contratos da SDE e despachos.",
+    papel: "Descoberta estadual",
+    decisao: "mapear",
+    porque: "Concentra licença, incentivo fiscal e terreno do estado numa busca só. Pela raiz de CNPJ achou a LO, a LA e o PROAUTO da BYD em Camaçari.",
+  },
+  {
+    codigo: "CAPTURA-DOE-PR",
+    familia: "Diários oficiais",
+    nome: "Diário Oficial do Estado do Paraná (DIOE)",
+    url: "https://www.dioe.pr.gov.br/",
+    modo: "API JSON da busca (mesmo motor do DOE-BA)",
+    disponibilidade: "Texto integral por página, busca por frase e CNPJ, sem login. Traz súmulas de licença e TAC do IAT e outorgas do Instituto Água e Terra.",
+    papel: "Descoberta estadual",
+    decisao: "mapear",
+    porque: "Complementa o FeatureServer do IAT com o texto e a data da publicação. Pela raiz de CNPJ achou outorgas e o TAC da CMPC em Piraí do Sul.",
+  },
+  {
+    codigo: "CAPTURA-DOE-SP",
+    familia: "Diários oficiais",
+    nome: "Diário Oficial do Estado de São Paulo (novo portal)",
+    url: "https://www.doe.sp.gov.br/",
+    modo: "API JSON de busca avançada",
+    disponibilidade: "Atos desde maio de 2023, com título, trecho, órgão e link. Traz as listas mensais de licenças concedidas e solicitadas da CETESB e as outorgas do DAEE.",
+    papel: "Descoberta estadual",
+    decisao: "mapear",
+    porque: "Substitui a consulta direta à CETESB para LP, LI e LO. Pela raiz de CNPJ achou licenças e outorgas da Bracell.",
+  },
+  {
+    codigo: "CAPTURA-DOE-MG",
+    familia: "Diários oficiais",
+    nome: "Jornal Minas Gerais (Diário Oficial de MG)",
+    url: "https://www.jornalminasgerais.mg.gov.br/",
+    modo: "API JSON v1 com token anônimo",
+    disponibilidade: "Texto pesquisável desde 2011 nos cadernos do Executivo, dos Municípios e de Terceiros. Traz licenças da SEMAD e do COPAM, protocolos da Invest Minas, outorgas e regimes tributários.",
+    papel: "Descoberta estadual",
+    decisao: "mapear",
+    porque: "Uma integração cobre licença, protocolo de intenção e incentivo em MG. Achou a LP+LI+LO de Miguel Burnier e o cancelamento do protocolo da Gerdau.",
+  },
+  ...DOE_ESTADOS.map((estado) => ({
+    codigo: estado.codigo,
+    familia: "Diários oficiais",
+    nome: estado.nome,
+    url: estado.portal,
+    modo: estado.modo,
+    disponibilidade: `${estado.acervo} Traz ${estado.atos}.`,
+    papel: "Descoberta estadual",
+    decisao: "mapear",
+    porque: estado.motor === "indice_pdf"
+      ? `Sem busca no portal (testado em 27 e 28/10/2026). O Radar indexa os PDFs das edições e consulta o índice. ${estado.limitacoes[0]}`
+      : `Busca pública testada ao vivo em 27/10/2026, sem login. ${estado.limitacoes[0]}`,
+  })),
+  {
     codigo: "CAPTURA-DOE",
     familia: "Diários oficiais",
     nome: "Diários oficiais estaduais",
     url: "https://www.imprensaoficial.com.br/",
     modo: "Um portal por estado",
-    disponibilidade: "Exemplos citados: Imprensa Oficial de São Paulo, IOERJ e Jornal Minas Gerais. Cada um tem busca e regras próprias.",
+    disponibilidade: `Cada estado tem busca e regras próprias. As 27 UFs têm conector com código próprio (CAPTURA-DOE-{UF}); ${DOE_PDF_UFS.join(", ")} usam o índice de PDFs do Radar.`,
     papel: "Descoberta estadual",
-    decisao: "adiar",
-    porque: "Não existe conector único. Os três portais não foram revalidados um a um; entram só como família, atrás do DOU e do Querido Diário.",
+    decisao: "sobreposicao",
+    porque: `Não existe conector único. A família continua como índice. Sem busca de texto no portal, com índice próprio dos PDFs: ${DOE_PDF_UFS.join(", ")}.`,
   },
   {
     codigo: "CAPTURA-REIDI",
@@ -411,6 +494,26 @@ const DASHBOARD_PROFILES = {
   "CAPTURA-DNIT": row("secundaria", "portal_web", "enriquecimento", "html", "obra rodoviária federal", "media"),
   "CAPTURA-DOU": row("primaria", "portal_web", "descoberta", "html", "ato oficial", "alta"),
   "CAPTURA-QD": row("primaria", "api_publica", "descoberta", "json_api", "diário municipal", "media"),
+  "CAPTURA-SIGPUB": row("primaria", "portal_web", "descoberta", "html", "matéria de diário municipal", "media"),
+  "CAPTURA-DOM-METAWAY": row("primaria", "api_publica", "descoberta", "json_api", "edição de diário municipal", "media"),
+  "CAPTURA-DOE-BA": row("primaria", "api_publica", "descoberta", "json_api", "página de diário estadual", "alta"),
+  "CAPTURA-DOE-PR": row("primaria", "api_publica", "descoberta", "json_api", "página de diário estadual", "alta"),
+  "CAPTURA-DOE-SP": row("primaria", "api_publica", "descoberta", "json_api", "ato de diário estadual", "alta"),
+  "CAPTURA-DOE-MG": row("primaria", "api_publica", "descoberta", "json_api", "trecho de diário estadual", "alta", "chave"),
+  ...Object.fromEntries(DOE_ESTADOS.map((estado) => {
+    if (estado.motor === "indice_pdf") {
+      return [estado.codigo, row("primaria", "dataset_download", "descoberta", "pdf", "página de diário estadual (PDF indexado)", "alta")];
+    }
+    const html = /HTML/.test(estado.modo);
+    return [estado.codigo, row(
+      "primaria",
+      html ? "portal_web" : "api_publica",
+      "descoberta",
+      html ? "html" : "json_api",
+      `${estado.unidade} de diário estadual`,
+      "alta",
+    )];
+  })),
   "CAPTURA-DOE": row("primaria", "portal_web", "descoberta", "html", "diário estadual", "baixa", "nenhuma", "instavel"),
   "CAPTURA-REIDI": row("primaria", "dataset_download", "descoberta", "csv_zip", "projeto enquadrado", "media"),
   "CAPTURA-DEBENTURES": row("secundaria", "base_consultavel", "enriquecimento", "formulario", "pedido de enquadramento", "baixa"),

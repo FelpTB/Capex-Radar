@@ -1,0 +1,149 @@
+{
+  "took": 417,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": 3,
+    "max_score": 13.108655,
+    "hits": [
+      {
+        "_index": "multidiarios",
+        "_type": "diario",
+        "_id": "5337_113",
+        "_score": 13.108655,
+        "_source": {
+          "conteudo": "GOIÂNIA, SEGUNDA-FEIRA, 03 DE OUTUBRO DE 2022 ANO 186 - DIÁRIO OFICIAL/GO N° 23.893 SUPLEMENTO b) o Superintendente de Gestão e Controle de Parcerias, Contratações e Transferências; e DECRETO Nº 10.152, DE 30 DE SETEMBRO DE 2022 Altera o Decreto nº 4.852, de 29 de dezembro de 1997, Regulamento do Código Tributário do Estado de Goiás - RCTE. c) o Superintendente do Sistema Socioeducativo; II - Secretaria-Geral da Governadoria Superintendente de Prioridades Governamentais; - SGG, o III - Secretaria de Estado da Administração - SEAD, o Subsecretário de Gestão e Desenvolvimento de Pessoas; IV - Agência Goiana de Infraestrutura e Transportes GOINFRA, o Diretor de Obras Civis; V - Procuradoria Geral do Estado - PGE, um representante da Procuradoria Judicial; e VI - Secretaria de Estado da Economia: b) o Subsecretário do Tesouro Estadual. § 1º O comitê será presidido pelo Secretário de Estado de Desenvolvimento Social ou por servidor oficialmente indicado por ele. § 2º Os membros do comitê poderão ser substituídos, em suas ausências e impedimentos, pelos substitutos oficialmente informados à presidência. § 3º O comitê se reunirá, em caráter ordinário, bimestralmente e, em caráter extraordinário, sempre que for convocado por um de seus membros. § 4º Para a abertura dos trabalhos, deverá ser observado o quórum da maioria absoluta em primeira chamada e de um terço do total de seus membros em segunda chamada. § 5º As deliberações serão realizadas por maioria simples de votos, cada membr",
+          "data": "2022-10-03",
+          "paginas": 118,
+          "pagina": 113,
+          "pdf_id": 184269,
+          "year": "2022",
+          "month": "10",
+          "day": "03",
+          "diario_id": 5337,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            "Fica instituído regime especial aos estabelecimentos da Petróleo Brasileiro S.A - Petrobras, CNPJ base: <strong>33.000.167,</strong> e da Petrobras Transportes S.A. - Transpetro, CNPJ base: 02.709.449, aplicável à remessa para armazenagem e à movimentação de petróleo, seus derivados e de derivados líquidos de gás natural realizadas no sistema dutoviário, observado o disposto no § 4º (Ajuste SINIEF 13/17, cláusula primeira). § 1º O regime especial disciplinado neste capítulo aplica-se aos contribuintes localizados"
+          ]
+        },
+        "sort": [
+          1664755200000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Suplemento"
+      },
+      {
+        "_index": "multidiarios",
+        "_type": "diario",
+        "_id": "4755_3",
+        "_score": 12.650176,
+        "_source": {
+          "conteudo": "GOIÂNIA, QUINTA-FEIRA, 17 DE JUNHO DE 2021 ANO 184 - DIÁRIO OFICIAL/GO N° 23.573 NF-e da operação original; e II - remetente deve escriturar a NF-e de retorno simbólico em seu livro Registro de Entradas. § 4º Na hipótese de aplicação do Convênio ICMS 51/00, de 15 de setembro de 2000, devem ser observadas as seguintes obrigações: I - o estabelecimento remetente deve emitir NF-e relativa à entrada simbólica do veículo, com menção dos dados da NF-e da operação original e fazer a sua escrituração no livro Registro de Entradas; e II - o novo destinatário deverá retirar o veículo em concessionária da mesma unidade federada da concessionária envolvida na operação original. § 5º O disposto no inciso I do § 4º deste artigo aplica-se também na hipótese do destinatário original não ser contribuinte do imposto em operação não sujeita ao Convênio ICMS 51/00.” (NR) “Art. 147-A. No caso de novo faturamento, a respectiva NF-e deve fazer referência à NF-e da operação original, bem como constar o seguinte texto: “Nota Fiscal de novo faturamento, objeto de retorno simbólico, emitida nos termos do Ajuste SINIEF 11/11’ (Ajuste SINIEF 11/11, cláusula primeira-A).” (NR) “Art. 147-B. Para os efeitos deste capítulo, fica estabelecido o prazo máximo de 90 (noventa) dias, contados da emissão da NF-e que documentou a remessa inicial, para a emissão da NF-e correspondente ao novo faturamento (Ajuste SINIEF 11/11, cláusula primeira-B).” (NR) “CAPÍTULO XLIII DA OPERAÇÃO COM COMBUSTÍVEIS DERIVADOS DE PETRÓL",
+          "data": "2021-06-17",
+          "paginas": 57,
+          "pagina": 3,
+          "pdf_id": 138635,
+          "year": "2021",
+          "month": "06",
+          "day": "17",
+          "diario_id": 4755,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            "(CNPJ base <strong>33.000.167),</strong> pela Petrobras Distribuidora S.A. (CNPJ base 34.274.233) e postos revendedores de combustíveis, em decorrência de doações a entidades governamentais para uso no âmbito das medidas de prevenção ao contágio, de enfrentamento e de contingenciamento da pandemia da doença infecciosa viral respiratória causada pelo novo agente do coronavírus SARS-CoV-2 (Ajuste SINIEF 14/20, cláusula primeira). Parágrafo único."
+          ]
+        },
+        "sort": [
+          1623888000000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Edição 23573"
+      },
+      {
+        "_index": "multidiarios",
+        "_type": "diario",
+        "_id": "3489_11",
+        "_score": 12.650176,
+        "_source": {
+          "conteudo": "11 GOIÂNIA, QUARTA-FEIRA, 30 DE MAIO DE 2018 ANO 181 - DIÁRIO OFICIAL/GO N° 22.819 SUPLEMENTO Diário Oficial Parágrafo único. Para fins fiscais nas operações de que trata o caput, considera-se não efetivada a exportação a falta de registro do evento de averbação na NF-e de remessa com fim específico, após o prazo de 180 (cento e oitenta) dias contados da data da saída, observando-se, no que couber, o disposto no art. 80. (NR) ..................................................... Art. 106. ...................................... I - ................................................ ..................................................... a.o) com alíquota do IPI de 23%, 36,01%. II - ................................................ ..................................................... a.u) com alíquota do IPI de 23%, 64,66%. III - ............................................... ..................................................... a.s) com alíquota do IPI de 23%, 20,13%. .....................................................(NR) ..................................................... Capítulo XLI DO REGIME ESPECIAL APLICÁVEL À REMESSA PARA ARMAZENAGEM E À MOVIMENTAÇÃO DE PETRÓLEO E SEUS DERIVADOS, E DE DERIVADOS LÍQUIDOS DE GÁS NATURAL NO SISTEMA DUTOVIÁRIO Art. 235. Fica instituído regime especial aos estabelecimentos da Petróleo Brasileiro S.A - Petrobras, CNPJ base: 33.000.167, e da PetrobrasTransportes S.A. -Transpetro, CNPJ base: 02.709.449, aplicável à remessa para armazenagem e ",
+          "data": "2018-05-30",
+          "paginas": 16,
+          "pagina": 11,
+          "pdf_id": 81284,
+          "year": "2018",
+          "month": "05",
+          "day": "30",
+          "diario_id": 3489,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            "Fica instituído regime especial aos estabelecimentos da Petróleo Brasileiro S.A - Petrobras, CNPJ base: <strong>33.000.167,</strong> e da PetrobrasTransportes S.A."
+          ]
+        },
+        "sort": [
+          1527638400000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Suplemento"
+      }
+    ]
+  },
+  "aggregations": {
+    "TipoEdicao": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 1,
+          "doc_count": 3
+        }
+      ]
+    },
+    "Edicoes": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 3489,
+          "doc_count": 1
+        },
+        {
+          "key": 4755,
+          "doc_count": 1
+        },
+        {
+          "key": 5337,
+          "doc_count": 1
+        }
+      ]
+    },
+    "FileYear": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 2018,
+          "doc_count": 1
+        },
+        {
+          "key": 2021,
+          "doc_count": 1
+        },
+        {
+          "key": 2022,
+          "doc_count": 1
+        }
+      ]
+    }
+  },
+  "loggedCredit": true
+}

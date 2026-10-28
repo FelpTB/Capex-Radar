@@ -1,0 +1,12 @@
+Fonte: CAPTURA-DOE-MA
+Formato: JSON do ajax.busca.php do Diario Oficial do Estado do Maranhao (DOEMA), UTF-8; os resultados vem como HTML pronto dentro de busca.es_html
+Campos: envelope busca{erro, scrollId, es_html, total, totalFragmentos, btnLoad, msn}; cada resultado em es_html e um card com caderno, "Publicado em DD/MM/AAAA", trecho com o termo em <b>, "Pagina: N" e setModal('CADERNO','...','CODIGO_EDICAO','caminho .png da capa','PAGINA')
+Data da extracao: 27/10/2026
+Fonte da extracao: https://diariooficial.ma.gov.br/ajax.busca.php?termo=33.592.510&datai=2015-01-01&dataf=2026-10-27&caderno=
+
+Arquivo: busca-cnpj-vale.json, com 3 dos 122 cards da primeira pagina (raiz de CNPJ da Vale; total=173 documentos).
+O es_html foi cortado para os 3 primeiros cards; o restante do envelope esta como veio.
+scrollId e o cursor do Elasticsearch para a proxima pagina (expira); nao e token de acesso.
+Sem login, sem token, sem captcha. TLS ok (cadeia completa).
+Link publico: https://diariooficial.ma.gov.br/download.php?arq={CODIGO_EDICAO} (PDF da edicao inteira; abrir com #page=N).
+Ficou de fora: os outros 119 cards, a segunda pagina (scrollId) e o PDF.

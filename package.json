@@ -10,11 +10,17 @@
     "db:seed": "node scripts/seed.js",
     "db:load-bases": "node scripts/load-bases.js",
     "dadosgov:sync": "node scripts/dadosgov-sync.js",
-    "test": "node --test"
+    "test": "node --test",
+    "docs:fontes": "node scripts/docs-fontes.js",
+    "doe:pdf-sync": "node scripts/doe-pdf-sync.js",
+    "docs:doe": "node scripts/docs-doe.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "commonjs",
   "dependencies": {
     "cheerio": "^1.2.0",

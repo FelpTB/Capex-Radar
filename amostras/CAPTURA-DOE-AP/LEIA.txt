@@ -1,0 +1,11 @@
+Fonte: CAPTURA-DOE-AP
+Formato: JSON do Elasticsearch atrás da busca do Diário Oficial do Amapá (mesmo motor IONEWS do DOE-BA e DIOE-PR), UTF-8
+Campos: took, timed_out, _shards, hits.total + hits.hits[] com _index, _type, _id, _score, _source (10 chaves: conteudo, data, paginas, pagina, pdf_id, year, month, day, diario_id, tipo_edicao) e highlight.conteudo
+Data da extracao: 27/10/2026
+Fonte da extracao: https://diofe.portal.ap.gov.br/busca/busca/buscar/query/0/di:2015-01-01/df:2026-10-27/?1=1&q="33.000.167"
+
+Arquivo: busca-cnpj-petrobras.json, com 3 dos 6 resultados (raiz de CNPJ da Petrobras, 2015 em diante).
+Cada resultado é uma página inteira do diário. O texto de _source.conteudo foi cortado em 1.500 caracteres; o original tem a página toda (2,5 a 9 mil caracteres).
+Paginação começa em 0, com 10 resultados por página. Aspas fazem busca por frase; sem aspas as palavras se combinam com OU.
+PDF da página: https://diofe.portal.ap.gov.br/portal/edicoes/download/{diario_id}/{pagina}. Acervo pesquisável desde 1990.
+Ficou de fora: os outros 3 resultados e o PDF. Nao ha token. TLS ok com as raízes do Node (Let's Encrypt).

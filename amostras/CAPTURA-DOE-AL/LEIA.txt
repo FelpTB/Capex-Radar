@@ -1,0 +1,15 @@
+Fonte: CAPTURA-DOE-AL
+Formato: JSON da API de busca do Diário Oficial do Estado de Alagoas (Imprensa Oficial Graciliano Ramos), Elasticsearch atrás de /apinova/api, UTF-8
+Campos: envelope status + result {items[], aggregations (max_date, min_date, year, edition_type_name, suplement), total_rows {value, relation}}; 8 chaves por item (edition_id, publication_date, page_number, id, edition_number, edition_type_name, is_suplement, highlight[]) e, em parte dos itens, path
+Data da extracao: 27/10/2026
+Fonte da extracao: POST https://diario.imprensaoficial.al.gov.br/apinova/api/editions/searchES?page=1&bucket_size=10
+  corpo JSON: {"keywords":"42.150.391","range":["2015-01-01","2026-10-27"],"edition_number":"","searchType":"frase_exata","order":"novo"}
+
+Arquivo: busca-cnpj-braskem.json, com 3 das 435 páginas (raiz de CNPJ da Braskem). A resposta original tinha 15 itens; os outros 12 foram cortados. Os textos não foram cortados.
+Cada resultado é uma página de uma edição. highlight traz fragmentos de ~100 caracteres com o termo entre <em> e <\/em> (a barra vem escapada no próprio texto).
+path, quando vem, é o caminho do .txt da página no servidor deles; não é URL pública.
+PDF da edição na página: https://diario.imprensaoficial.al.gov.br/apinova/api/editions/viewPdf/{edition_id}#page={page_number}
+Leitor do portal: https://diario.imprensaoficial.al.gov.br/ver-edicao?edition={edition_id}&page={page_number}&searchTerm={termo}
+Paginação: page=1,2,...; 15 itens fixos por página. searchType frase_exata respeita a ordem das palavras; toda_palavra faz E; qualquer_palavra faz OU.
+Em 27/10/2026 o índice ia só até 24/09/2026, embora a edição de 27/10/2026 já estivesse publicada.
+Ficou de fora: os outros 432 resultados e o PDF. Nao ha token. TLS ok (Let's Encrypt, cadeia completa).

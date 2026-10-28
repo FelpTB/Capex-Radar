@@ -1,0 +1,86 @@
+{
+ "total": 121,
+ "pagination": {
+  "from": 0,
+  "size": 3,
+  "total": 121
+ },
+ "resposta": null,
+ "materias": [
+  {
+   "id": 1232829,
+   "nrJornal": "22858",
+   "cdJornal": 4686,
+   "publicacao": "2026-10-09T00:00:00.000Z",
+   "cdCategoria": 4704933,
+   "categoria": "Publicações Diversas",
+   "assunto": "ATA",
+   "cdAssunto": 41,
+   "cancelada": false,
+   "aprovadaTriagem": true,
+   "pronta": true,
+   "publicada": true,
+   "altura": 26.406,
+   "preco": 2462.62,
+   "motivoCancelamento": null,
+   "extrato": "https://portal.doe.sea.sc.gov.br/#/portal/edicao/4686/materia/1232829",
+   "preview": "https://portal.doe.sea.sc.gov.br/repositorio/2026/20261009/Materias/1232829/1232829_final.html",
+   "cdMateria": 1232829,
+   "resumo": "HSG GESTÃO LTDA. CNPJ Nº 38.828.979/0001-63. NIRE 42206295361. JARAGUÁ DO SUL – SC. ATA DE REUNIÃO DE QUOTISTAS REALIZADA EM 30 DE SETEMBRO DE 2026. DATA : 30/09/2026.  HORA : 10h.  LOCAL : Na sede da Sociedade na Avenida Prefeito Waldemar Grubba, nº 2633, Sala F, bairro Vila Lalau, na Cidade de Jaraguá do Sul, Estado de Santa Catarina, CEP 89256-900.  CONVOCAÇÃO : Dispensadas as formalidades de convocação pelo comparecimento de todos os sócios.  PRESENÇAS : Sócios representando a totalidade do Capital Social.  MESA DIRIGENTE : Júlia da Silva Geffert de Oliveira - Presidente; Alberto da Silva Geffert - Secretário.  ORDEM DO DIA :  1) Deliberar sobre a lavratura da presente Ata em forma de sumário e sua publicação com omissão das assinaturas.  2)  Deliberar sobre a redução do Capital Social da Sociedade, em razão deste ser excessivo em relação ao objeto social.  DELIBERAÇÕES TOMADAS POR UNANIMIDADE (conforme ordem do dia): 1) Aprovada a lavratura da presente ata em forma de sumário e sua publicação com omissão das assinaturas.  2)  Aprovada a redução do Capital Social da Sociedade no valor de R$ 16.855.286,00 (dezesseis milhões oitocentos e cinquenta e cinco mil duzentos e oitenta e seis reais), em decorrência deste ser excessivo em relação ao objeto social da Sociedade, nos termos do art. 1.082, II, da Lei nº 10.406/2002, passando o Capital Social  de  R$ 16.856.288,00 (dezesseis milhões oitocentos e cinquenta e seis mil duzentos e oitenta e oito reais)  para  R$ 1.002,00 (mi"
+  },
+  {
+   "id": 1109383,
+   "nrJornal": "22587",
+   "cdJornal": 4165,
+   "publicacao": "2025-08-29T00:00:00.000Z",
+   "cdCategoria": 4704933,
+   "categoria": "Publicações Diversas",
+   "assunto": "ATA",
+   "cdAssunto": 41,
+   "cancelada": false,
+   "aprovadaTriagem": true,
+   "pronta": true,
+   "publicada": true,
+   "altura": 27.437,
+   "preco": 2462.75,
+   "motivoCancelamento": null,
+   "extrato": "https://portal.doe.sea.sc.gov.br/#/portal/edicao/4165/materia/1109383",
+   "preview": "https://portal.doe.sea.sc.gov.br/repositorio/2025/20250829/Materias/1109383/1109383_final.html",
+   "cdMateria": 1109383,
+   "resumo": "CLICA VOIGT ADMINISTRADORA LTDA. CNPJ Nº 09.420.895/0001-98 NIRE 42206257851 JARAGUÁ DO SUL - SC ATA DE REUNIÃO DE QUOTISTAS REALIZADA EM 30 DE JULHO DE 2025. DATA : 30/07/2025.  HORA : 10h.  LOCAL : Na sede da Sociedade na Avenida Prefeito Waldemar Grubba, nº 2633, Sala 8, bairro Vila Lalau, na cidade de Jaraguá do Sul, estado de Santa Catarina, CEP 89256-900.  CONVOCAÇÃO : Dispensadas as formalidades de convocação pelo comparecimento de todos os sócios.  PRESENÇAS : Sócios representando a totalidade do Capital Social.  MESA DIRIGENTE : Clica Voigt Trejes - Presidente; Amelie Voigt Trejes - Secretária.  ORDEM DO DIA :  1)  Deliberar sobre a lavratura da presente Ata em forma de sumário e sua publicação com omissão das assinaturas.  2) Deliberar sobre a redução do Capital Social da Sociedade, em razão deste ser excessivo em relação ao objeto social.  DELIBERAÇÕES TOMADAS POR UNANIMIDADE (conforme ordem do dia):   1)  Aprovada a lavratura da presente ata em forma de sumário e sua publicação com omissão das assinaturas.  2)  Aprovada a redução do Capital Social da Sociedade no valor de R$ 85.838.542,00 (oitenta e cinco milhões oitocentos e trinta e oito mil quinhentos e quarenta e dois reais), em decorrência deste ser excessivo em relação ao objeto social da Sociedade, nos termos do art. 1.082, II, da Lei nº 10.406/2002, passando o Capital Social  de  R$ 137.914.855,00 (cento e trinta e sete milhões novecentos e quatorze mil oitocentos e cinquenta e cinco reais)  para  R$ 52.07"
+  },
+  {
+   "id": 1091598,
+   "nrJornal": "22543",
+   "cdJornal": 4091,
+   "publicacao": "2025-06-30T00:00:00.000Z",
+   "cdCategoria": 4704933,
+   "categoria": "Publicações Diversas",
+   "assunto": "ATA",
+   "cdAssunto": 41,
+   "cancelada": false,
+   "aprovadaTriagem": true,
+   "pronta": true,
+   "publicada": true,
+   "altura": 24.289,
+   "preco": 2180.18,
+   "motivoCancelamento": null,
+   "extrato": "https://portal.doe.sea.sc.gov.br/#/portal/edicao/4091/materia/1091598",
+   "preview": "https://portal.doe.sea.sc.gov.br/repositorio/2025/20250630/Materias/1091598/1091598_final.html",
+   "cdMateria": 1091598,
+   "resumo": "HELANA ADMINISTRADORA LTDA. CNPJ Nº 10.607.167/0001-79. NIRE 42204249061. JARAGUÁ DO SUL – SC. ATA DE REUNIÃO DE QUOTISTAS REALIZADA EM 30 DE MAIO DE 2025.   DATA : 30/05/2025.  HORA : 10h.  LOCAL : Na sede da Sociedade na Avenida Prefeito Waldemar Grubba, nº 2633, Sala 01, bairro Vila Lalau, na cidade de Jaraguá do Sul, Estado de Santa Catarina, CEP 89256-500.  CONVOCAÇÃO : Dispensadas as formalidades de convocação pelo comparecimento de todos os sócios.  PRESENÇAS : Sócias representando a totalidade do Capital Social.  MESA DIRIGENTE : Márcia da Silva Petry - Presidente; Helena Marina da Silva Petry - Secretária.  ORDEM DO DIA :  1)  Deliberar sobre a lavratura da presente Ata em forma de sumário e sua publicação com omissão das assinaturas.  2)  Deliberar sobre a redução do Capital Social da Sociedade, em razão deste ser excessivo em relação ao objeto social.  DELIBERAÇÕES TOMADAS POR UNANIMIDADE (conforme ordem do dia) :  1)  Aprovada a lavratura da presente ata em forma de sumário e sua publicação com omissão das assinaturas.  2)  Aprovada a redução do Capital Social da Sociedade no valor de R$ 49.325.217,00 (quarenta e nove milhões trezentos e vinte e cinco mil duzentos e dezessete reais), em decorrência deste ser excessivo em relação ao objeto social da Sociedade, nos termos do art. 1.082, II, da Lei nº 10.406/2002, passando o Capital Social  de  R$ 90.594.351,00 (noventa milhões quinhentos e noventa e quatro mil trezentos e cinquenta e um reais)  para  R$ 41.269.134,0"
+  }
+ ],
+ "busca": {
+  "texto": "84.429.695",
+  "dtIni": "2015-01-01",
+  "dtFim": "2026-10-27",
+  "schema": null,
+  "filtros": [],
+  "embedding": "openai"
+ },
+ "custos": {
+  "total_tokens": 0,
+  "custo_estimado": 0
+ }
+}

@@ -1,0 +1,10 @@
+Fonte: SEC-SEMAD
+Formato: GeoJSON do WFS da IDE-Sisema (GeoServer da SEMAD-MG), UTF-8
+Campos: envelope com 7 chaves; 24 propriedades por licença
+Data da extracao: 26/10/2026
+Fonte da extracao: https://geoserver.meioambiente.mg.gov.br/ows?service=WFS&version=2.0.0&request=GetFeature&outputFormat=application/json&typeNames=IDE:ide_2101_mg_empreendimentos_licenciados_pto&count=3&CQL_FILTER=nome_pf_pj ILIKE '%GERDAU%ACOMINAS%' AND mun_solic='Ouro Preto'
+
+Arquivo: licencas-gerdau-ouro-preto.json, com 3 das 4 licenças da Gerdau Açominas em Ouro Preto.
+A camada inteira tinha 19.713 licenças do SLA na data da extração.
+O campo cpf_cnpj vem com os últimos dígitos zerados em parte das linhas (ex.: 17227400000000). A busca é pelo nome.
+Ficou de fora: a geometria além da latitude e longitude que já vêm nas propriedades, e as demais licenças. Nao ha token.

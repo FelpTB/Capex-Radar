@@ -1,0 +1,161 @@
+{
+  "took": 273,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": 6,
+    "max_score": 7.8084517,
+    "hits": [
+      {
+        "_index": "multidiarios",
+        "_type": "diario",
+        "_id": "2593_26",
+        "_score": 7.5220103,
+        "_source": {
+          "conteudo": "DIÁRIO OFICIAL • Nº 8.445 Terça-Feira, 08 de Julho de 2025 JESUS DE NAZARÉ DE ALMEIDA VIDAL Secretário de Estado da Fazenda Decreto n° 5095/2025 - GEA . . Secretaria de Fazenda ( P ) Nº 081/2025-SEFAZ Protocolo 110348 O Secretário de Estado da Fazenda do Governo do Estado do Amapá, usando das atribuições que lhe são conferidas por Lei e tendo em vista o teor do OFÍCIO Nº 140101.0077.6564.0023/2025 GADJC - SEFAZ. RESOLVE: Designar o(a) servidor(a) MAIRLA MAIA JADÃO GEMAQUE, Coordenadora da CCONT - Código CDS-3, lotado(a) na Secretaria de Estado da Fazenda, para viajar da sede de suas atividades em Macapá/AP, até a cidade de Brasília/DF, no período de 30/06 a 02/07/2025, a fim de participar da 84ª Reunião Ordinária do Grupo de Gestores das Finanças Estaduais(GEFIN). Para dar cumprimento no que determina o Art. 7º do Decreto nº 1450/2022-GEA, no retorno a sede, o(s) servidor(es) acima nominado(s) deverá(ão) encaminhar ao NUAFI/SEFAZ, no período de 05 (cinco) dias úteis o competente Relatório de Viagem. Publique-se e cumpra-se. Macapá/AP, 18 de junho de 2025 JESUS DE NAZARÉ DE ALMEIDA VIDAL Secretário de Estado da Fazenda Decreto nº 5095/2025 - GEA Protocolo 110303 ( P ) Nº 100/2025 - SEFAZ O Secretário de Estado da Fazenda do Governo do Estado do Amapá, usando das atribuições que lhe são conferidas por Lei e tendo em vista o teor do OFÍCIO Nº 140101.0077.1633.0067/2025 UCC - SEFAZ. RESOLVE: Art.1º: DESIGNAR o servidor ADEMAR CAETANO DA SILVA JUNIOR - Matrícula: 0102710-7-01 - Fi",
+          "data": "2025-07-08",
+          "paginas": 105,
+          "pagina": 26,
+          "pdf_id": 147877,
+          "year": "2025",
+          "month": "07",
+          "day": "08",
+          "diario_id": 2593,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            "Administração podendo ser cessado ou alterado a qualquer tempo, estando resguardado o atendimento aos princípios de maior simplicidade, racionalidade e adequação em face da natureza das operações realizadas pelo contribuinte; Considerando, ainda, o contido no Parecer Fiscal nº 2025.01.00.00112-COTRI/SEFAZ objeto do Processo nº 28730.2273272025-9: DECLARA: Cláusula primeira fica a empresa PETRÓLEO BRASILEIRO S.A - PETROBRAS, sociedade de economia mista, com sede na cidade do Rio de Janeiro, CNPJ <strong>33</strong>.<strong>000</strong>.<strong>167</strong>"
+          ]
+        },
+        "sort": [
+          1751932800000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Edição 8445"
+      },
+      {
+        "_index": "multidiarios",
+        "_type": "diario",
+        "_id": "834_268",
+        "_score": 7.2558403,
+        "_source": {
+          "conteudo": "Diário Oficial • Nº 7.738 Seção 02 405997-PTC-AP, domiciliado e residente nesta cidade; a SECRETARIA DE ESTADO DO DESENVOLVIMENTO DAS CIDADES, órgão da administração pública estadual, inscrita no CNPJ n° 25.098.982/0001-27, com sede na Av. Eliezer Levy, 2353, Centro, Macapá/AP - CEP 68.900083, doravante denominada simplesmente por SDC, neste ato representada por seu Secretário (Interino), Sr. AUGUSTO WANDERLEY ARAGÃO DA SILVA JUNIOR, brasileiro, nomeado através do Decreto Governamental n.2095, de 27 de abril 2022, publicado no DOE nº 7.655, 27/04/2022, inscrito no CPF/MF nº 562.600.082-87 e portador da Cédula de Identidade nº 001375 SSP-AP, domiciliado e residente nesta cidade; o INSTITUTO DE TERRAS DO AMAPÁ, órgão da administração pública estadual, inscrito no CNPJ n° 36.247.306/0001-94, com sede na Av. Almirante Barroso, 619, Centro, Macapá/AP – CEP 68.900-041, doravante denominado simplesmente por AMAPÁ TERRAS, neste ato representada por seu Diretor Presidente, Sr. JULHIANO CESAR AVELAR, brasileiro, nomeado através do Decreto Governamental n. 3.974/2019, de 11 de setembro de 2019, publicado no DOE nº 7.000, de 11/09/2019, inscrito no CPF/MF nº 603.225.781-91 e portador da Cédula de Identidade nº 1362782 SSP/DF, domiciliado e residente nesta cidade; a PREFEITURA MUNICIPAL DE OIAPOQUE, inscrita no CNPJ sob o n. 05.990.445/0001-80, com sede na Rua Joaquim Caetano da Silva, nº 460 Bairro Centro Oiapoque/AP – CEP 68.900-080, doravante denominada simplesmente por PREFEITURA, nes",
+          "data": "2022-08-24",
+          "paginas": 309,
+          "pagina": 268,
+          "pdf_id": 28533,
+          "year": "2022",
+          "month": "08",
+          "day": "24",
+          "diario_id": 834,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            ". – PETROBRAS, sociedade de economia mista, inscrita no CNPJ sob o nº <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/0001-01, com sede na Avenida República do Chile, nº 65, Rio de Janeiro – RJ, doravante denominada PETROBRAS, neste ato representada por seu Gerente Geral de Ativos Exploratórios, Sr."
+          ]
+        },
+        "sort": [
+          1661299200000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Edição 7738"
+      },
+      {
+        "_index": "multidiarios",
+        "_type": "diario",
+        "_id": "834_267",
+        "_score": 6.7762766,
+        "_source": {
+          "conteudo": "Diário Oficial • Nº 7.738 Seção 02 Diretor Presidente, Sr. JOSELITO SANTOS ABRANTES, brasileiro, nomeado através do Decreto Governamental n. 1.574, de 01 de abril de 2022, publicado no DOE nº 7.639, de 01/04/2022, inscrito no CPF/MF nº 142.599.072-04 e portador da Cédula de Identidade nº138720 - SSP-AP, domiciliado e residente nesta cidade, SIGNATÁRIA e gestora do PROTOCOLO DE INTENÇÕES n. 002/2022 – Agência Amapá, resolve editar este segundo Termo de Apostilamento, conforme as seguintes Cláusulas: CLÁUSULA PRIMEIRA – DA FINALIDADE O presente Termo de Apostilamento tem por finalidade a retificação do PROTOCOLO DE INTENÇÕES N. 02/2022-Agência Amapá, quanto ao Representante da SIGNATÁRIA Prefeitura Municipal de Oiapoque, em virtude da mudança do Gestor da Secretaria Municipal de Meio Ambiente/SEMMAM. CLÁUSULA SEGUNDA – DA RETIFICAÇÃO Onde se lê: O GOVERNO DO ESTADO DO AMAPÁ, através da AGÊNCIA DE DESENVOLVIMENTO ECONÔMICO DO AMAPÁ, órgão da administração pública estadual, inscrita no CNPJ n° 22.918.796/0001-07, com sede na Av. Cônego Domingos Maltês, 916, Trem, Macapá/AP, CEP 68901-050, doravante denominada simplesmente por AGÊNCIA AMAPÁ, neste ato representada por seu Diretor Presidente, Sr. JOSELITO SANTOS ABRANTES, brasileiro, nomeado através do Decreto Governamental n. 1.574, de 01 de abril de 2022, publicado no DOE nº 7.639, de 01/04/2022, inscrito no CPF/MF nº 142.599.072-04 e portador da Cédula de Identidade nº138720 - SSP-AP, domiciliado e residente nesta cidade; a SECR",
+          "data": "2022-08-24",
+          "paginas": 309,
+          "pagina": 267,
+          "pdf_id": 28414,
+          "year": "2022",
+          "month": "08",
+          "day": "24",
+          "diario_id": 834,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            ". – PETROBRAS, sociedade de economia mista, inscrita no CNPJ sob o nº <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/0001-01, com sede na Avenida República do Chile, nº 65, Rio de Janeiro – RJ, doravante denominada PETROBRAS, neste ato representada por seu Gerente Geral de Ativos Exploratórios, Sr."
+          ]
+        },
+        "sort": [
+          1661299200000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Edição 7738"
+      }
+    ]
+  },
+  "aggregations": {
+    "TipoEdicao": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 1,
+          "doc_count": 6
+        }
+      ]
+    },
+    "Edicoes": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 834,
+          "doc_count": 2
+        },
+        {
+          "key": 1346,
+          "doc_count": 1
+        },
+        {
+          "key": 2593,
+          "doc_count": 1
+        },
+        {
+          "key": 3373,
+          "doc_count": 1
+        },
+        {
+          "key": 3706,
+          "doc_count": 1
+        }
+      ]
+    },
+    "FileYear": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 2022,
+          "doc_count": 3
+        },
+        {
+          "key": 2015,
+          "doc_count": 1
+        },
+        {
+          "key": 2016,
+          "doc_count": 1
+        },
+        {
+          "key": 2025,
+          "doc_count": 1
+        }
+      ]
+    }
+  },
+  "loggedCredit": true
+}

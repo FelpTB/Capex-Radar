@@ -60,35 +60,61 @@ function kindOf(buffer, contentType, fileName) {
   return "unknown";
 }
 
-async function pdfToMarkdown(buffer) {
+async function pageText(doc, number) {
+  const page = await doc.getPage(number);
+  const content = await page.getTextContent();
+  let line = "";
+  const lines = [];
+  for (const item of content.items) {
+    line += item.str || "";
+    if (item.hasEOL) {
+      if (line.trim()) lines.push(line.trim());
+      line = "";
+    } else if (item.str) {
+      line += " ";
+    }
+  }
+  if (line.trim()) lines.push(line.trim());
+  return lines.join("\n");
+}
+
+async function openPdf(buffer) {
   const pdfjs = await loadPdfjs();
-  const task = pdfjs.getDocument({
+  return pdfjs.getDocument({
     data: new Uint8Array(buffer),
     useSystemFonts: true,
     isEvalSupported: false,
-  });
-  const doc = await task.promise;
+    // Fontes TrueType quebradas dos diários geram avisos "TT: undefined function" sem afetar o texto.
+    verbosity: 0,
+  }).promise;
+}
+
+async function pdfToMarkdown(buffer) {
+  const doc = await openPdf(buffer);
   const pages = [];
   const total = Math.min(doc.numPages, MAX_PAGES);
   for (let number = 1; number <= total; number += 1) {
-    const page = await doc.getPage(number);
-    const content = await page.getTextContent();
-    let line = "";
-    const lines = [];
-    for (const item of content.items) {
-      line += item.str || "";
-      if (item.hasEOL) {
-        if (line.trim()) lines.push(line.trim());
-        line = "";
-      } else if (item.str) {
-        line += " ";
-      }
-    }
-    if (line.trim()) lines.push(line.trim());
-    if (lines.length) pages.push(lines.join("\n"));
+    const text = await pageText(doc, number);
+    if (text) pages.push(text);
   }
   await doc.destroy();
   return textToMarkdown(pages.join("\n\n"));
+}
+
+// Diário oficial tem centenas de páginas: lê só as páginas pedidas, ou procura o termo em todas.
+// match recebe o texto da página e diz se ela fica.
+async function pdfPages(buffer, { pages = null, match = null, maxPages = 600 } = {}) {
+  const doc = await openPdf(Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || []));
+  const wanted = pages
+    ? pages.filter((number) => number >= 1 && number <= doc.numPages)
+    : Array.from({ length: Math.min(doc.numPages, maxPages) }, (_, index) => index + 1);
+  const found = [];
+  for (const number of wanted) {
+    const texto = await pageText(doc, number);
+    if (!match || match(texto)) found.push({ pagina: number, texto });
+  }
+  await doc.destroy();
+  return found;
 }
 
 async function documentToMarkdown(buffer, meta = {}) {
@@ -104,6 +130,7 @@ async function documentToMarkdown(buffer, meta = {}) {
 
 module.exports = {
   documentToMarkdown,
+  pdfPages,
   htmlToMarkdown,
   textToMarkdown,
 };

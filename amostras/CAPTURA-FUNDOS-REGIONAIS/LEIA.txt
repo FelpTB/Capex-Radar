@@ -1,0 +1,7 @@
+Fonte: CAPTURA-FUNDOS-REGIONAIS
+Sem arquivo bruto.
+Data da tentativa: 26/10/2026
+URL testada: https://www.gov.br/sudene/pt-br
+
+O portal da SUDENE é institucional (414.399 bytes de HTML de navegação). Não há lista de projetos aprovados no FDNE ou no FDA com empresa e valor.
+As resoluções dos conselhos também saem no Diário Oficial da União (fonte CAPTURA-DOU), que é o caminho de leitura no Radar.

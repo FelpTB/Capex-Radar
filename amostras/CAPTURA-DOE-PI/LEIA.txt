@@ -1,0 +1,14 @@
+Fonte: CAPTURA-DOE-PI
+Formato: JSON da API do Diario Oficial do Estado do Piaui (www.diario.pi.gov.br/doe/Api), UTF-8
+Campos: busca-nome-petrobras.json -> envelope {resposta[], palavraschave[]}; 4 chaves por item (dadosDiario, nota, anexodiario, acertos)
+        nota-145dd154.json -> {nota{uuid, n_nota, dia, texto (HTML do ato), titulo_nota{texto=secao}, diarios[{numero, dia, anexo, anexo_dir, ...}], ...}}
+Data da extracao: 27/10/2026
+Fonte da extracao: POST https://www.diario.pi.gov.br/doe/Api/buscaavancada.json  corpo filter_texto=petrobras  header X-Requested-With: XMLHttpRequest
+                   POST https://www.diario.pi.gov.br/doe/Api/visualizarnota.json  corpo uuid=145dd154-bc9c-4c39-935b-3fbf26a61564  header X-Requested-With: XMLHttpRequest
+
+Arquivos: busca-nome-petrobras.json com 3 dos 5 resultados; nota-145dd154.json com o texto do 1o resultado (contrato com a Petrobras, CNPJ 33.000.167/0001-01).
+Sem o header X-Requested-With a busca responde "null".
+Sem login, sem token, sem captcha. TLS ok.
+Cortes: nota.texto cortado em 1.500 caracteres (original 6.328). Removidos dados pessoais: nota.aprovado e diarios[].cpf (CPF do responsavel) e diarios[].responsavel (nome).
+Link publico do PDF da edicao: https://www.diario.pi.gov.br/doe/files/diarios/anexo/{anexodiario}
+Ficou de fora: os outros 2 resultados, os PDFs.

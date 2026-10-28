@@ -1,4 +1,4 @@
-const { spawn } = require("node:child_process");
+const { spawnPython } = require("../python-exec");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
 const { fold } = require("./resolve");
@@ -187,9 +187,9 @@ with open(${JSON.stringify(outPath)}, "w", encoding="utf-8") as handle:
     json.dump(out, handle, ensure_ascii=False)
 `;
   return new Promise((resolve, reject) => {
-    const child = spawn("python", ["-c", script], {
+    const child = spawnPython(["-c", script], {
       windowsHide: true,
-      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+      env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
     });
     let stderr = "";
     child.stderr.on("data", (chunk) => {

@@ -17,6 +17,10 @@ function getConfig() {
     throw new Error("SUPABASE_STRING deve ser uma URI Postgres");
   }
 
+  const nodeEnv = process.env.NODE_ENV || "development";
+  const schedulerDisabled =
+    /^(1|true|yes|on)$/i.test(process.env.DISABLE_SCHEDULER?.trim() || "");
+
   return {
     databaseUrl,
     openAiApiKey: process.env.OPENAI_API_KEY?.trim() || null,
@@ -27,7 +31,10 @@ function getConfig() {
       "gpt-4.1-mini",
     dadosGovToken: process.env.TOKEN_DADOS_GOV?.trim() || null,
     port: Number(process.env.PORT || 3000),
-    nodeEnv: process.env.NODE_ENV || "development",
+    nodeEnv,
+    isProduction: nodeEnv === "production",
+    onRailway: Boolean(process.env.RAILWAY_ENVIRONMENT?.trim()),
+    schedulerEnabled: !schedulerDisabled,
   };
 }
 

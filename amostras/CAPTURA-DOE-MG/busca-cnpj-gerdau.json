@@ -1,0 +1,29 @@
+{
+ "dados": [
+  {
+   "idJornal": 331046,
+   "dataPublicacao": "2026-09-29T00:00:00",
+   "tipoCaderno": "Diário do Executivo",
+   "textoResultado": "clarou cancelado o protocolo de intencoes de numero 31/2008, fi rmado com Gerdau Acominas S A (CNPJ:17 227 422/0001-05) e fi liais de Barao de Cocais (CNPJ 07 358 761/0016-45) e Divinopolis (CNPJ 07 358 761/001",
+   "pagina": 31
+  },
+  {
+   "idJornal": 331009,
+   "dataPublicacao": "2026-09-17T00:00:00",
+   "tipoCaderno": "Diário do Executivo",
+   "textoResultado": "/2024-98, Validade: 03 anos contados da concessao: 01/09/2026; *Gerdau Acominas S A, Vigia, CNPJ N: 17 227 422/0140-76, Corte ou aproveitamento de arvores isoladas nativas vivas, Ouro Preto-MG, Processo N: 2100",
+   "pagina": 11
+  },
+  {
+   "idJornal": 329582,
+   "dataPublicacao": "2026-05-29T00:00:00",
+   "tipoCaderno": "Diário do Executivo",
+   "textoResultado": "e arvores isoladas nativas viva, Belo Vale-MG, em: 13/05/2026; *Gerdau Acominas S A, Vigia, CNPJ N: 17 227 422/0140-76, Processo N: 2100 01 0017851/2026-13, Corte ou aproveitamento de arvores isoladas nativas v",
+   "pagina": 37
+  }
+ ],
+ "paginaAtual": 1,
+ "totalDePaginas": 4,
+ "totalDeRegistros": 11,
+ "erros": []
+}

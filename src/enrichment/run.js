@@ -12,13 +12,18 @@ const {
   annotateRegistro,
   annotateSiga,
 } = require("./annotate");
-const { interpretProjectStatus } = require("../ai");
+const { interpretProjectStatus, judgeEvidenceContext } = require("../ai");
+const { correlateLines, linesOf, rebuildFound } = require("./correlacao");
 const { cnoNeedles, matchCno, namesInCno } = require("./cno");
 const { queryAna } = require("./ana");
 const { onsTokens } = require("./ons");
 const { holderTerm, querySigmine } = require("./sigmine");
 const { projectTokens } = require("./anp-listas");
 const { queryDiario, queryDou } = require("./atos");
+const { queryMetaway, querySigpub } = require("./diarios");
+const { DOOL, queryDoeSp, queryDool, queryJornalMg, querySemad } = require("./estaduais");
+const { DOE_CONECTORES } = require("./doe-estados");
+const { DOE_ESTADOS } = require("../doe-registry");
 const { convertCompanyDocuments, cvmExcerpt } = require("./cvm-docs");
 const { artespTokens, concessionariaAliases } = require("./artesp");
 const {
@@ -110,11 +115,12 @@ async function addEvidenceOnce(projectId, codigo, { url, titulo, trecho, campos 
   const fonte = await sourceId(codigo);
   if (!fonte) return false;
   const existing = await pool.query(
-    "select trecho from evidencia where id_projeto = $1 and url = $2 and id_fonte = $3",
-    [projectId, url, fonte],
+    `select trecho, campos_extraidos = $4::jsonb as mesmos_campos
+     from evidencia where id_projeto = $1 and url = $2 and id_fonte = $3`,
+    [projectId, url, fonte, JSON.stringify(campos || {})],
   );
   if (existing.rows.length) {
-    if (existing.rows[0].trecho === trecho) return false;
+    if (existing.rows[0].trecho === trecho && existing.rows[0].mesmos_campos) return false;
     await pool.query(
       `update evidencia
        set titulo_ou_resumo = $1, trecho = $2, campos_extraidos = $3::jsonb
@@ -130,6 +136,17 @@ async function addEvidenceOnce(projectId, codigo, { url, titulo, trecho, campos 
     [projectId, fonte, url, titulo, trecho, JSON.stringify(campos || {})],
   );
   return "created";
+}
+
+// Tira a evidência secundária da fonte quando nenhum registro dela tem correlação direta com o projeto.
+async function removeSourceEvidence(projectId, codigo) {
+  const fonte = await sourceId(codigo);
+  if (!fonte) return false;
+  const { rowCount } = await pool.query(
+    "delete from evidencia where id_projeto = $1 and id_fonte = $2 and papel = 'secundaria'",
+    [projectId, fonte],
+  );
+  return rowCount > 0;
 }
 
 function describeSiga(rows) {
@@ -280,18 +297,29 @@ async function completeProfile(project) {
   };
 }
 
-async function queryRegistro(spec, cnpj, razaoSocial) {
+function msToIso(value) {
+  return typeof value === "number" && value > 0 ? new Date(value).toISOString().slice(0, 10) : value ?? null;
+}
+
+// O payload entra na linha para a correlação ler a atividade, a modalidade e as datas do registro.
+async function queryRegistro(spec, cnpj, razaoSocial, project = {}) {
   if (spec.porNome) {
     const term = fold(razaoSocial).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).slice(0, 2).join("%");
     const { rows } = await pool.query(
-      `select codigo, titulo, uf, municipio
+      `select codigo, titulo, uf, municipio, payload
        from enr_registro
        where codigo = any($1::text[])
          and translate(lower(titulo), 'áàâãäéèêëíìîïóòôõöúùûüç', 'aaaaaeeeeiiiiooooouuuuc') like $2
-       limit 20`,
-      [spec.codigos, `%${term}%`],
+       order by (${folded("coalesce(municipio, '')")} = $3) desc, municipio
+       limit 100`,
+      [spec.codigos, `%${term}%`, fold(project?.municipio || "")],
     );
-    return rows;
+    return rows.map(({ payload, ...row }) => ({
+      ...row,
+      ...(payload || {}),
+      ...(payload?.emissao !== undefined ? { emissao: msToIso(payload.emissao) } : {}),
+      ...(payload?.validade !== undefined ? { validade: msToIso(payload.validade) } : {}),
+    }));
   }
   const { rows } = await pool.query(
     `select codigo, titulo, uf, municipio, valor
@@ -538,9 +566,16 @@ async function querySource(codigo, cnpj, razaoSocial, since = null, project = {}
   if (codigo === "SEC-ANP-PLAT" || codigo === "SEC-ANP-DUTO") return queryAnpLista(codigo, razaoSocial, project, false);
   if (codigo === "CAPTURA-DOU") return queryDou(razaoSocial);
   if (codigo === "CAPTURA-QD") return queryDiario(project);
+  if (codigo === "CAPTURA-SIGPUB") return querySigpub(project, cnpj, razaoSocial);
+  if (codigo === "CAPTURA-DOM-METAWAY") return queryMetaway(project, cnpj, razaoSocial);
+  if (DOOL[codigo]) return queryDool(codigo, project, cnpj, razaoSocial);
+  if (DOE_CONECTORES[codigo]) return DOE_CONECTORES[codigo](project, cnpj, razaoSocial);
+  if (codigo === "CAPTURA-DOE-SP") return queryDoeSp(project, cnpj, razaoSocial);
+  if (codigo === "CAPTURA-DOE-MG") return queryJornalMg(project, cnpj, razaoSocial);
+  if (codigo === "SEC-SEMAD") return querySemad(project, razaoSocial);
   if (codigo === "CAPTURA-ONS-PAR") return queryOns(project);
   if (codigo === "SEC-ANTT-INV") return queryAntt(razaoSocial);
-  if (REGISTRO[codigo]) return queryRegistro(REGISTRO[codigo], cnpj, razaoSocial);
+  if (REGISTRO[codigo]) return queryRegistro(REGISTRO[codigo], cnpj, razaoSocial, project);
   if (codigo === "SEC-BNDES") {
     const { rows } = await pool.query(
       `select count(*)::int as n,
@@ -560,7 +595,7 @@ async function querySource(codigo, cnpj, razaoSocial, since = null, project = {}
          when $2::date is not null and data_contratacao >= $2::date then 0
          else 1
        end, data_contratacao desc nulls last
-       limit 12`,
+       limit 100`,
       [cnpj, since],
     );
     return { ...rows[0], linhas: lines.rows };
@@ -663,6 +698,7 @@ function evidencePayload(project, note, extra = {}) {
       cnpj: onlyDigits(project.cnpj),
       desde: since,
       linhas: note.linhas,
+      ...(project.correlacao ? { correlacao: project.correlacao } : {}),
       ...extra,
     },
   };
@@ -704,6 +740,18 @@ async function writeSourceEvidence(project, codigo, found) {
     "SEC-ANP-DUTO": ["duto na lista da ANP", "dutos na lista da ANP", "https://www.gov.br/anp/pt-br/assuntos/exploracao-e-producao-de-oleo-e-gas/desenvolvimento-e-producao/lista-de-codigos"],
     "CAPTURA-DOU": ["ato no Diário Oficial da União, o mais recente de até cinco guardados", "atos no Diário Oficial da União, os mais recentes da busca, cada um com resumo", found?.linhas?.[0]?.url || "https://www.in.gov.br/consulta/-/buscar/dou"],
     "CAPTURA-QD": ["trecho no diário municipal", "trechos no diário municipal", found?.linhas?.[0]?.url || "https://queridodiario.ok.org.br/"],
+    "CAPTURA-SIGPUB": ["matéria no diário dos municípios", "matérias no diário dos municípios", found?.linhas?.[0]?.url || "https://www.diariomunicipal.com.br/"],
+    "CAPTURA-DOM-METAWAY": ["edição do diário oficial do município", "edições do diário oficial do município", found?.linhas?.[0]?.url || "https://lencois.mentor.metaway.com.br/diario/"],
+    "CAPTURA-DOE-BA": ["página do Diário Oficial da Bahia", "páginas do Diário Oficial da Bahia", found?.linhas?.[0]?.url || "https://dool.egba.ba.gov.br/"],
+    "CAPTURA-DOE-PR": ["página do Diário Oficial do Paraná", "páginas do Diário Oficial do Paraná", found?.linhas?.[0]?.url || "https://www.dioe.pr.gov.br/"],
+    "CAPTURA-DOE-SP": ["ato do Diário Oficial de São Paulo", "atos do Diário Oficial de São Paulo", found?.linhas?.[0]?.url || "https://www.doe.sp.gov.br/"],
+    "CAPTURA-DOE-MG": ["trecho do Jornal Minas Gerais", "trechos do Jornal Minas Gerais", found?.linhas?.[0]?.url || "https://www.jornalminasgerais.mg.gov.br/"],
+    "SEC-SEMAD": ["licença ambiental da SEMAD", "licenças ambientais da SEMAD", found?.linhas?.[0]?.url || "https://geoserver.meioambiente.mg.gov.br/ows"],
+    ...Object.fromEntries(DOE_ESTADOS.map((estado) => [estado.codigo, [
+      `${estado.unidade === "matéria" ? "ato" : estado.unidade} do diário oficial (${estado.uf})`,
+      `${estado.unidade === "matéria" ? "atos" : estado.unidade === "edição" ? "edições" : "páginas"} do diário oficial (${estado.uf})`,
+      found?.linhas?.[0]?.url || estado.portal,
+    ]])),
   };
   if (amostras[codigo]) {
     const [one, many, url] = amostras[codigo];
@@ -767,11 +815,31 @@ async function writeCnoEvidence(project, hit) {
   });
 }
 
+const LIMITE_LINHAS = { "CAPTURA-SIGPUB": 5, "CAPTURA-DOU": 5, "SEC-BNDES": 12 };
+
+// Só fica o registro com correlação direta com o projeto: mesmo estado e contexto que aponta para esta obra.
+async function correlateFound(project, codigo, found, options = {}) {
+  const lines = linesOf(found);
+  if (!found || !lines.length) return { found, resumo: null, vazio: true };
+  const judge = options.judge === undefined ? judgeEvidenceContext : options.judge;
+  const { kept, resumo } = await correlateLines(project, codigo, lines, { judge });
+  return {
+    found: rebuildFound(codigo, found, kept, {
+      since: periodStart(project.status_em),
+      limite: LIMITE_LINHAS[codigo] || 8,
+    }),
+    resumo,
+    vazio: kept.length === 0,
+  };
+}
+
 async function consultViableSources(project, options = {}) {
   const sources = sourcesForProject(project)
     .filter((source) => source.codigo !== "SEC-CNO" || !options.skipCno);
   const gravadas = [];
   const vazias = [];
+  const removidas = [];
+  const relatorio = [];
   for (const source of sources.filter((item) => item.codigo !== "SEC-CNO")) {
     let found = null;
     try {
@@ -786,13 +854,32 @@ async function consultViableSources(project, options = {}) {
       vazias.push(source.codigo);
       continue;
     }
-    const wrote = await writeSourceEvidence(project, source.codigo, found);
-    const empty = Array.isArray(found) ? found.length === 0 : !found?.n;
-    if (wrote === "created") gravadas.push(source.codigo);
-    else if (wrote === "updated") gravadas.push(source.codigo);
-    else if (empty) vazias.push(source.codigo);
+    const correlated = await correlateFound(project, source.codigo, found, options);
+    relatorio.push({ codigo: source.codigo, correlacao: correlated.resumo, linhas: linesOf(correlated.found) });
+    if (options.dryRun) continue;
+    if (correlated.vazio) {
+      if (await removeSourceEvidence(project.id, source.codigo)) removidas.push(source.codigo);
+      vazias.push(source.codigo);
+      continue;
+    }
+    const wrote = await writeSourceEvidence({ ...project, correlacao: correlated.resumo }, source.codigo, correlated.found);
+    if (wrote === "created" || wrote === "updated") gravadas.push(source.codigo);
   }
-  return { sources, gravadas, vazias };
+  return { sources, gravadas, vazias, removidas, relatorio };
+}
+
+function correlatedCnoHit(project, hit, kept) {
+  const since = periodStart(project.status_em);
+  const city = fold(project.municipio || "");
+  return {
+    ...hit,
+    total: kept.length,
+    noUf: kept.filter((row) => row.uf === project.uf).length,
+    noMunicipio: kept.filter((row) => city && fold(row.municipio || "").includes(city)).length,
+    mesmoCnpj: kept.filter((row) => row.ni === onlyDigits(project.cnpj).padStart(14, "0")).length,
+    noPeriodo: kept.filter((row) => since && row.inicio && row.inicio >= since).length,
+    amostra: kept,
+  };
 }
 
 async function enrichProject(project, options = {}) {
@@ -807,8 +894,18 @@ async function enrichProject(project, options = {}) {
   const consulta = await consultViableSources(project, options);
   if (!options.skipCno) {
     const hits = await matchCno([project]);
-    const wrote = await writeCnoEvidence(project, hits.get(project.id));
-    if (wrote) consulta.gravadas.push("SEC-CNO");
+    const hit = hits.get(project.id);
+    const judge = options.judge === undefined ? judgeEvidenceContext : options.judge;
+    const { kept, resumo } = await correlateLines(project, "SEC-CNO", hit?.amostra || [], { judge });
+    consulta.relatorio.push({ codigo: "SEC-CNO", correlacao: resumo, linhas: kept });
+    if (!options.dryRun) {
+      if (!kept.length) {
+        if (await removeSourceEvidence(project.id, "SEC-CNO")) consulta.removidas.push("SEC-CNO");
+      } else {
+        const wrote = await writeCnoEvidence({ ...project, correlacao: resumo }, correlatedCnoHit(project, hit, kept));
+        if (wrote) consulta.gravadas.push("SEC-CNO");
+      }
+    }
   }
   const nomes = consulta.sources.map((source) => source.codigo.replace("SEC-", "")).join(", ");
   const mensagem = [
@@ -817,7 +914,10 @@ async function enrichProject(project, options = {}) {
     consulta.gravadas.length
       ? `Evidências anotadas: ${consulta.gravadas.join(", ")}.`
       : "Nenhuma evidência nova nessas fontes.",
-  ].join(" ");
+    consulta.removidas.length
+      ? `Sem correlação direta com o projeto, saíram: ${consulta.removidas.join(", ")}.`
+      : "",
+  ].filter(Boolean).join(" ");
   return { fase: "coleta", mensagem, consulta };
 }
 
@@ -848,6 +948,7 @@ async function updateProjectFromEvidence(project) {
 }
 
 module.exports = {
+  correlateFound,
   enrichProject,
   ensureStatusDate,
   matchCno,

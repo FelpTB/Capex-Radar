@@ -1,4 +1,22 @@
+const { DOE_ESTADOS } = require("./doe-registry");
 const campo = (chave, tipo, detalhe) => [chave, tipo, detalhe];
+
+// DOE-BA e DIOE-PR usam o mesmo motor de busca e devolvem os mesmos campos.
+const DOOL_CAMPOS = [
+  campo("_id", "texto", "Diário e página, como 21987_41. Usado para tirar repetidos entre buscas; a ficha não copia."),
+  campo("_score", "número", "Relevância da busca. A ficha não copia; ordena por município, tipo de ato e data."),
+  campo("_source.conteudo", "texto", "Texto inteiro da página. A ficha só usa quando falta o destaque."),
+  campo("_source.data", "data AAAA-MM-DD", "Dia da edição. Vira data."),
+  campo("_source.pagina", "texto numérico", "Página da edição. Vira pagina e entra no link."),
+  campo("_source.paginas", "texto numérico", "Total de páginas da edição. A ficha não copia."),
+  campo("_source.diario_id", "texto numérico", "Identificador da edição. Entra no link."),
+  campo("_source.pdf_id", "texto numérico", "Identificador do PDF da edição. A ficha não copia."),
+  campo("_source.year", "texto", "Ano da edição. A ficha não copia."),
+  campo("_source.month", "texto", "Mês da edição. A ficha não copia."),
+  campo("_source.day", "texto", "Dia da edição. A ficha não copia."),
+  campo("_source.tipo_edicao", "texto numérico", "1 para edição regular. A ficha não copia."),
+  campo("highlight.conteudo", "lista de HTML", "Frases da página com o termo em strong. A ficha limpa o HTML e junta até 400 caracteres em trecho."),
+];
 
 const NATIVE = {
   "SEC-BNDES": {
@@ -664,6 +682,145 @@ const NATIVE = {
       ],
     }],
   },
+  "CAPTURA-SIGPUB": {
+    meio: "HTML da página de busca da plataforma SIGPub em diariomunicipal.com.br, uma por associação estadual de municípios. Cada matéria é um li.materia-card com título, origem, trecho e dados da edição. Exemplo bruto em amostras/CAPTURA-SIGPUB/",
+    grupos: [{
+      nome: "Campos de cada li.materia-card",
+      campos: [
+        campo(".materia-card__titulo a", "texto", "Título da matéria, como DECRETO Nº 11.475. Vira titulo na ficha."),
+        campo(".materia-card__titulo a[href]", "caminho relativo", "Caminho /{associacao}/materia/{codigo}. Vira url com o domínio da plataforma."),
+        campo(".materia-card__entidade", "texto", "Prefeitura, câmara ou consórcio que publicou. Vira entidade e decide no_municipio."),
+        campo(".materia-card__orgao", "texto", "Secretaria ou setor que assinou. Vira orgao."),
+        campo(".materia-card__trecho", "HTML", "Trecho com o termo destacado em mark. A ficha limpa o HTML e guarda até 300 caracteres."),
+        campo("Circulação", "data DD/MM/AAAA", "Dia em que a edição circulou. Vira data em AAAA-MM-DD."),
+        campo("Edição", "texto numérico", "Número da edição do diário da associação. Vira edicao."),
+        campo("Código identificador", "texto hexadecimal", "Código da matéria, o mesmo do link. Usado para tirar repetidas entre buscas; a ficha não copia."),
+        campo("Baixar edição (PDF)", "endereço URL", "Link do PDF assinado da edição inteira. A ficha não copia; o link da matéria já leva a ele."),
+      ],
+    }],
+  },
+  "CAPTURA-DOM-METAWAY": {
+    meio: "JSON da plataforma Mentor (Metaway) de cada prefeitura: lista de edições com o termo e detalhe da edição com o caminho do PDF. O texto vem do PDF. Exemplo bruto em amostras/CAPTURA-DOM-METAWAY/",
+    grupos: [{
+      nome: "Campos de cada edição em /recurso/diario/lista",
+      campos: [
+        campo("codigo", "inteiro", "Identificador interno da edição. Usado para chamar o detalhe; a ficha não copia."),
+        campo("edicao", "inteiro", "Número da edição no ano do diário. Vira edicao."),
+        campo("ano", "inteiro", "Ano de circulação do diário, contado desde a criação (2 em 2020). A ficha não copia."),
+        campo("dataPublicacao", "data AAAA-MM-DD", "Dia de publicação. Vira data e ordena as edições."),
+        campo("tipo", "texto", "R para edição regular. A ficha não copia."),
+        campo("assinado", "booleano", "Diz se a edição foi assinada digitalmente. A ficha não copia."),
+        campo("hash", "texto", "Sufixo do nome do PDF. A ficha não copia; o caminho completo vem em srcPDF."),
+        campo("arquivoPdf", "nulo ou texto", "Veio nulo na lista. A ficha não copia."),
+        campo("paginas", "nulo ou lista", "Veio nulo na lista e vazio no detalhe. A ficha não copia."),
+        campo("arquivoPdfEditor", "nulo ou texto", "Arquivo de edição interna. A ficha não copia."),
+        campo("pdfEditado", "booleano", "Marca de PDF editado. A ficha não copia."),
+      ],
+    }, {
+      nome: "Campo extra em /recurso/diario/editar/{codigo}",
+      campos: [
+        campo("srcPDF", "caminho relativo", "Caminho diarios/diario_{ano}_{edicao}_r_{hash}.pdf. Vira url com o domínio da prefeitura."),
+      ],
+    }],
+  },
+  "CAPTURA-DOE-BA": {
+    meio: "JSON do Elasticsearch atrás da busca do DOOL da EGBA. Cada resultado é uma página do diário, com o texto inteiro e o destaque do termo. Exemplo bruto em amostras/CAPTURA-DOE-BA/",
+    grupos: [{
+      nome: "Campos de cada resultado em hits.hits",
+      campos: DOOL_CAMPOS,
+    }],
+  },
+  "CAPTURA-DOE-PR": {
+    meio: "JSON do Elasticsearch atrás da busca do DIOE-PR, o mesmo motor do DOE-BA. Cada resultado é uma página do diário, com o texto inteiro e o destaque do termo. Exemplo bruto em amostras/CAPTURA-DOE-PR/",
+    grupos: [{
+      nome: "Campos de cada resultado em hits.hits",
+      campos: DOOL_CAMPOS,
+    }],
+  },
+  "CAPTURA-DOE-SP": {
+    meio: "JSON da API v2/advanced-search/publications do novo Diário Oficial de São Paulo. O envelope traz items e a paginação. Exemplo bruto em amostras/CAPTURA-DOE-SP/",
+    grupos: [{
+      nome: "Campos de cada ato em items (12)",
+      campos: [
+        campo("id", "texto UUID", "Identificador do ato. Usado para tirar repetidos entre buscas; a ficha não copia."),
+        campo("isLegacy", "booleano", "true quando o ato vem do acervo antigo. Veio false em todos os atos vistos. A ficha não copia."),
+        campo("publicationTypeId", "texto UUID", "Tipo de publicação. A ficha não copia."),
+        campo("secondLevelSectionId", "texto UUID", "Seção de segundo nível. A ficha não copia."),
+        campo("thirdLevelSectionId", "texto UUID", "Seção de terceiro nível. A ficha não copia."),
+        campo("date", "data e hora ISO", "Data da publicação. Vira data em AAAA-MM-DD."),
+        campo("title", "texto", "Título do ato. Vira titulo e abre o trecho."),
+        campo("slug", "texto", "Caminho do ato. O link é https://www.doe.sp.gov.br/ seguido do slug. Vira url."),
+        campo("excerpt", "texto", "Trecho do ato com o termo. A ficha recorta em volta do CNPJ ou do nome."),
+        campo("hierarchy", "texto", "Caderno, seção e órgão separados por >. Vira orgao."),
+        campo("totalTermsFound", "inteiro", "Quantos termos da busca o ato tem. A ficha não copia."),
+        campo("termsFound", "lista de texto", "Termos da busca achados no ato. A ficha não copia."),
+      ],
+    }],
+  },
+  "CAPTURA-DOE-MG": {
+    meio: "JSON da API v1 do Jornal Minas Gerais. A pesquisa pede token anônimo e devolve dados com a paginação. Exemplo bruto em amostras/CAPTURA-DOE-MG/",
+    grupos: [{
+      nome: "Campos de cada trecho em dados (5)",
+      campos: [
+        campo("idJornal", "inteiro", "Identificador do caderno da edição. Entra no link do visualizador."),
+        campo("dataPublicacao", "data e hora ISO", "Dia da edição. Vira data em AAAA-MM-DD."),
+        campo("tipoCaderno", "texto", "Diário do Executivo, dos Municípios ou de Terceiros. Vira caderno."),
+        campo("textoResultado", "texto", "Trecho com o termo, sem acento e com quebras do PDF. Vira trecho."),
+        campo("pagina", "inteiro", "Página do caderno. Vira pagina e entra no link."),
+      ],
+    }, {
+      nome: "Envelope da pesquisa",
+      campos: [
+        campo("paginaAtual", "inteiro", "Página da pesquisa devolvida. A ficha não copia."),
+        campo("totalDePaginas", "inteiro", "Total de páginas da pesquisa. A ficha não copia."),
+        campo("totalDeRegistros", "inteiro", "Total de trechos achados. A ficha não copia."),
+        campo("erros", "lista", "Mensagens de erro da API. Veio vazia. A ficha não copia."),
+      ],
+    }],
+  },
+  "SEC-SEMAD": {
+    meio: "GeoJSON do WFS da IDE-Sisema, camada ide_2101_mg_empreendimentos_licenciados_pto. Cada feição é uma licença do SLA com 24 propriedades. Exemplo bruto em amostras/SEC-SEMAD/",
+    grupos: [{
+      nome: "Propriedades de cada licença (24)",
+      campos: [
+        campo("fid", "inteiro", "Identificador da feição na camada. A ficha não copia."),
+        campo("n_solicit", "texto", "Número da solicitação no SLA. A ficha não copia."),
+        campo("n_processo", "texto", "Número do processo, como 1085/2024. Vira processo."),
+        campo("mun_solic", "texto", "Município da solicitação. Vira municipio e decide no_municipio."),
+        campo("cpf_cnpj", "número", "CPF ou CNPJ do titular, com os últimos dígitos zerados em parte das linhas. A ficha não usa."),
+        campo("nome_pf_pj", "texto", "Nome do titular. Vira titular e recebe o filtro da busca."),
+        campo("tipo_solic", "texto", "Tipo da solicitação, como nova ou ampliação. Vira solicitacao."),
+        campo("listagem", "texto", "Listagem da DN COPAM, como A - Atividades Minerárias. A ficha não copia."),
+        campo("cod_atvpri", "texto", "Código da atividade principal. Entra em atividade."),
+        campo("des_atvpri", "texto", "Descrição da atividade principal. Entra em atividade."),
+        campo("classe", "inteiro", "Classe do empreendimento, de 1 a 6. Vira classe."),
+        campo("fatloc_res", "inteiro", "Fator locacional resultante. A ficha não copia."),
+        campo("modl_licen", "texto", "Modalidade, como LAC1, LAC2 ou LAS. Vira modalidade."),
+        campo("fase_licen", "texto", "Fase, como LP+LI+LO. Vira fase."),
+        campo("und_analis", "texto", "Unidade que analisou o processo. A ficha não copia."),
+        campo("status_pro", "texto", "Situação do processo, como Concluído Deferido. Vira status."),
+        campo("latitude", "coordenada", "Latitude do empreendimento. Vira latitude."),
+        campo("longitude", "coordenada", "Longitude do empreendimento. Vira longitude."),
+        campo("link", "endereço URL", "Link de visitante do processo no SLA. Vira url."),
+        campo("data_emiss", "data DD/MM/AAAA", "Data de emissão. Vira emissao em AAAA-MM-DD."),
+        campo("data_val", "data DD/MM/AAAA", "Data de validade. Vira validade em AAAA-MM-DD."),
+        campo("vig_lic_an", "inteiro", "Anos de vigência. A ficha não copia."),
+        campo("vig_lic_me", "inteiro", "Meses de vigência além dos anos. A ficha não copia."),
+        campo("vig_lic_di", "inteiro", "Dias de vigência além dos meses. A ficha não copia."),
+      ],
+    }, {
+      nome: "Envelope do GeoJSON e da feição",
+      campos: [
+        campo("type", "texto", "FeatureCollection no envelope e Feature em cada licença. A ficha não copia."),
+        campo("totalFeatures / numberMatched", "inteiro", "Quantas licenças batem com o filtro CQL. A ficha conta as linhas devolvidas."),
+        campo("numberReturned", "inteiro", "Quantas vieram nesta resposta, até o count pedido (500)."),
+        campo("timeStamp", "data e hora ISO", "Momento da resposta do servidor. A ficha não copia."),
+        campo("crs", "objeto", "Sistema de coordenadas da camada. A ficha não copia."),
+        campo("id", "texto", "Camada e fid, como ide_2101_mg_empreendimentos_licenciados_pto.9271. A ficha não copia."),
+        campo("geometry", "ponto GeoJSON", "Longitude e latitude do empreendimento, as mesmas de properties. A ficha não copia."),
+      ],
+    }],
+  },
   "CAPTURA-DOU": {
     meio: "HTML da busca da Imprensa Nacional. Os atos vêm no JSON embutido no script BuscaDouPortlet_params, com uma chave jsonArray e 16 campos por ato. Depois, a página de cada ato é lida para montar o resumo. Exemplo bruto em amostras/CAPTURA-DOU/",
     grupos: [{
@@ -721,4 +878,17 @@ const NATIVE = {
   },
 };
 
-module.exports = { NATIVE };
+// Diários estaduais do registro. Os do motor IONEWS devolvem os mesmos campos do DOE-BA.
+for (const estado of DOE_ESTADOS) {
+  NATIVE[estado.codigo] = estado.motor === "ionews"
+    ? {
+      meio: `JSON do Elasticsearch atrás da busca do ${estado.nome}, o mesmo motor do DOE-BA. Cada resultado é uma página do diário, com o texto inteiro e o destaque do termo. Exemplo bruto em amostras/${estado.codigo}/`,
+      grupos: [{ nome: "Campos de cada resultado em hits.hits", campos: DOOL_CAMPOS }],
+    }
+    : {
+      meio: `${estado.formato[0]} Exemplo bruto em amostras/${estado.codigo}/`,
+      grupos: [{ nome: `Campos de cada ${estado.unidade} (${estado.campos.length})`, campos: estado.campos }],
+    };
+}
+
+module.exports = { DOOL_CAMPOS, NATIVE };

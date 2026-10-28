@@ -1,4 +1,4 @@
-const { spawn } = require("node:child_process");
+const { spawnPython } = require("../python-exec");
 const fs = require("node:fs");
 const fsp = require("node:fs/promises");
 const path = require("node:path");
@@ -105,7 +105,7 @@ print(json.dumps(out, ensure_ascii=False))
 
 function readWorkbook() {
   return new Promise((resolve, reject) => {
-    const child = spawn("py", ["-3", "-"], {
+    const child = spawnPython(["-"], {
       stdio: ["pipe", "pipe", "pipe"],
       env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
     });
@@ -142,7 +142,7 @@ async function ensureWorkbook() {
   const archive = path.join(CACHE, "pet-apoio.7z");
   await fsp.writeFile(archive, Buffer.from(await response.arrayBuffer()));
   await new Promise((resolve, reject) => {
-    const child = spawn("py", ["-3", "-"], {
+    const child = spawnPython(["-"], {
       stdio: ["pipe", "pipe", "pipe"],
       env: { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" },
     });

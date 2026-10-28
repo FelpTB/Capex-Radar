@@ -1,0 +1,17 @@
+Fonte: CAPTURA-DOE
+Sem arquivo bruto próprio.
+Esta entrada é a família dos diários oficiais estaduais. Cada estado com conector tem código e amostra próprios em amostras/CAPTURA-DOE-{UF}/.
+Pesquisa de 27/10/2026, com teste ao vivo em cada portal.
+
+Conectados (22): AC, AL, AM, AP, BA, CE, DF, ES, GO, MA, MG, MS, MT, PE, PI, PR, RJ, RS, SC, SE, SP, TO.
+- Motor IONEWS (mesmo do DOE-BA): BA, PR, SE, GO, MT, ES, AP. Código em src/enrichment/estaduais.js (mapa DOOL).
+- API ou busca própria: AC, AL, AM, CE, DF, MA, MS, PE, PI, RJ, RS, SC, TO, em src/enrichment/doe-estados.js; SP e MG em estaduais.js.
+- Fatos de cada portal (endpoint, parâmetros, campos, limites): src/doe-registry.js e docs/fontes-estaduais-municipais.md.
+
+Sem conector (5):
+- PA: busca fora do ar (HTTP 500 em toda consulta, atrás do Cloudflare). Vale testar de novo.
+- PB: só PDF; o texto das edições não está indexado.
+- RN: busca de texto só até 08/11/2022; desde 2023, só o PDF diário.
+- RO: só PDF; o formulário de busca de conteúdo está desligado.
+- RR: só PDF; a busca é o widget do Google, que o servidor ignora.
+Ler todos os PDFs diários desses estados para achar uma empresa seria inviável na coleta da ficha.

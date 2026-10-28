@@ -1,0 +1,7 @@
+Fonte: SEC-SEMACE
+Sem arquivo bruto.
+Data da tentativa: 26/10/2026
+URLs testadas: https://www.semace.ce.gov.br/consulta-de-processos/ (redireciona para https://www.ce.gov.br/semace/consulta-de-processos/) e https://natuur.semace.ce.gov.br/
+
+A página de consulta só aponta para o sistema Natuur. O GET do Natuur respondeu HTTP 200 com corpo vazio: a consulta é montada no navegador e não foi achado endpoint público.
+Uso no Radar: consulta manual pelo Natuur.

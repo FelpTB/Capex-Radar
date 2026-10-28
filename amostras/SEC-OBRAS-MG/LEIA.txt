@@ -1,0 +1,9 @@
+Fonte: SEC-OBRAS-MG
+Formato: CSV separado por ponto e vírgula, UTF-8 com BOM
+Campos: 12 (contrato, contrato_siad, obra, detipoobra, descricao_da_obra, valor_inicial_da_obra, valor_em_aditivos, valor_total_da_obra, valor_medido_precos_iniciais, valor_medido_reajuste, saldo_de_valor_da_obra, portal_de_compras)
+Data da extracao: 01/10/2026 (cópia em data/cache/mg-obras.csv)
+Fonte da extracao: https://dados.mg.gov.br/dataset/portal_obras
+
+Arquivo: portal-obras-mg.csv, com o cabeçalho e 3 das 1.173 linhas.
+São obras públicas contratadas pelo estado de MG, com valor. Não há CNPJ da contratada nem município em coluna própria.
+Ficou de fora: as demais linhas. Nao ha token.

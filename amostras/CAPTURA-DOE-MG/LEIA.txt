@@ -1,0 +1,14 @@
+Fonte: CAPTURA-DOE-MG
+Formato: JSON da API v1 do Jornal Minas Gerais, UTF-8
+Campos: envelope com dados[], paginaAtual, totalDePaginas, totalDeRegistros, erros; 5 chaves por item
+Data da extracao: 26/10/2026
+Fonte da extracao: https://www.jornalminasgerais.mg.gov.br/api/v1/Pesquisa/PesquisarJornaisPaginados?DataPublicacaoInicial=2015-01-01&DataPublicacaoFinal=2026-10-26&TextoPesquisa=17.227.422&DiarioExecutivo=true&DiarioMunicipios=true&DiarioTerceiros=true&EdicaoExtra=true&PaginaAtual=1&TamanhoPagina=3
+
+Arquivo: busca-cnpj-gerdau.json, com 3 dos 11 trechos (raiz de CNPJ da Gerdau Açominas).
+A busca pede token anônimo: POST /api/v1/Autenticacao/Autenticar com corpo {} devolve um JWT em dados. Sem cadastro.
+O JWT é anônimo (usuário "Usuário", emissor segov-portal-ui) e vale 2 horas. A pesquisa vai com o cabeçalho Authorization: Bearer {token}.
+Sem o cabeçalho, ou sem o prefixo Bearer, a pesquisa responde HTTP 401; por isso a URL da pesquisa aberta no navegador dá 401. GET em /Autenticar responde 405.
+Conferido em 27/10/2026: sem token 401; com token 200.
+O token não entra na amostra.
+O servidor manda o certificado sem a cadeia intermediária (Sectigo DV R36). A cadeia fica em src/enrichment/certs/.
+Ficou de fora: os outros 8 trechos e o PDF da página, que a API devolve em base64.

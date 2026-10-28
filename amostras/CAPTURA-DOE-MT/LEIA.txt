@@ -1,0 +1,13 @@
+Fonte: CAPTURA-DOE-MT
+Formato: JSON do Elasticsearch atrás da busca do Diário Oficial de MT (IOMAT), UTF-8. Mesmo motor (IONEWS) do DOE-BA e do DIOE-PR.
+Campos: hits.total + hits.hits[] com _id, _score, _source (10 chaves), highlight.conteudo, sort, diario, suplemento; aggregations (TipoEdicao, Edicoes, FileYear)
+Data da extracao: 27/10/2026
+Fonte da extracao: https://www.iomat.mt.gov.br/busca/busca/buscar/query/0/di:2015-01-01/df:2026-10-26/?1=1&q="33.000.167"
+
+Arquivo: busca-cnpj-petrobras.json, com 3 dos 25 resultados (páginas do diário que citam a raiz de CNPJ da Petrobras).
+Cada resultado é uma página inteira do diário. O texto de _source.conteudo foi cortado em 1.500 caracteres; o original tem a página toda (5 a 10 mil caracteres).
+O destaque marca cada pedaço do CNPJ em separado: <strong>33</strong>.<strong>000</strong>.<strong>167</strong>.
+Paginação começa em 0, com 10 resultados por página. Aspas fazem busca por frase. Acervo pesquisável desde a década de 1960.
+PDF da página, sem login: https://www.iomat.mt.gov.br/portal/edicoes/download/{diario_id}/{pagina}
+Certificado com cadeia completa (Sectigo OV R36). Não há token.
+Ficou de fora: os outros 22 resultados e o PDF da edição.

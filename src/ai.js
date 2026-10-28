@@ -452,7 +452,60 @@ async function summarizeOfficialAct({ titulo, orgao, data, texto, empresa }) {
   return parsed.resumo.replace(/\s+/g, " ").trim().slice(0, 400);
 }
 
+const contextJudgmentSchema = z.object({
+  avaliacoes: z.array(z.object({
+    i: z.number().int(),
+    correlacao: z.enum(["direta", "outro_projeto", "incerta"]),
+    motivo: z.string(),
+  })),
+});
+
+// Lê o contexto de cada registro achado pela empresa e diz se ele é deste projeto.
+// Só "direta" vira evidência; registro de outra planta, mina ou estado da mesma empresa fica fora.
+async function judgeEvidenceContext(project, fonte, registros) {
+  if (!client) throw new Error("OPENAI_API_KEY não configurada");
+  const completion = await client.chat.completions.create({
+    model: config.openAiDecisionModel,
+    temperature: 0,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content:
+          "Você decide se cada registro de uma fonte oficial tem correlação direta com um projeto CapEx específico. " +
+          "Os registros foram achados pelo CNPJ ou pelo nome da empresa, então muitos são de outros projetos da mesma empresa. " +
+          "direta: o registro trata desta obra, planta, mina, terreno ou empreendimento, no mesmo local do projeto, ou de licença, incentivo, terreno, outorga ou contrato que só faz sentido para ele. " +
+          "outro_projeto: o registro é de outra unidade, outro município ou estado, outra atividade ou outro empreendimento da empresa, ou é compra pública, multa de trânsito, processo trabalhista ou ato administrativo sem relação com a obra. " +
+          "incerta: o texto não traz local, objeto ou atividade suficiente para ligar ao projeto. " +
+          "Município ou estado diferente do projeto é outro_projeto, salvo quando o texto diz que a obra abrange esse local. " +
+          "Na dúvida, use incerta. Use só o que está no registro. " +
+          "Retorne somente JSON {\"avaliacoes\":[{\"i\":número,\"correlacao\":\"direta|outro_projeto|incerta\",\"motivo\":\"frase curta\"}]}, um item por registro.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          projeto: {
+            nome: project.nome,
+            nicho: project.nicho,
+            uf: project.uf,
+            municipio: project.municipio,
+            empresa: project.empresa_nome,
+            status: project.status,
+            leitura: project.leitura || null,
+          },
+          fonte,
+          registros,
+        }),
+      },
+    ],
+  });
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) throw new Error("O modelo de correlação não retornou conteúdo");
+  return contextJudgmentSchema.parse(JSON.parse(raw)).avaliacoes;
+}
+
 module.exports = {
+  judgeEvidenceContext,
   extractProject,
   extractProjects,
   identifyProjectCompany,

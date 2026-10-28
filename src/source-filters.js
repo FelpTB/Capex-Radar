@@ -24,6 +24,7 @@ function filterAndSortSources(sources, query = {}) {
   const extracao = query.extracao || "";
   const noticia = query.noticia || "";
   const estagio = query.estagio || "";
+  const abrangencia = query.abrangencia || "";
   const ordenar = query.ordenar || "nome";
 
   const filtered = sources.filter((source) => {
@@ -33,6 +34,7 @@ function filterAndSortSources(sources, query = {}) {
     if (extracao && source.categoria !== extracao) return false;
     if (noticia && source.esfera_noticia !== noticia) return false;
     if (estagio && source.estagio !== estagio) return false;
+    if (abrangencia && source.abrangencia !== abrangencia) return false;
     return true;
   });
 

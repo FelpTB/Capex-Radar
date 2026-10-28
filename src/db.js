@@ -47,6 +47,25 @@ async function latestBaseLoads(codigos) {
   return rows;
 }
 
+// Evidência mais recente da fonte que tem registros de comprovação, com o projeto de origem.
+async function latestEvidenceSample(codigo) {
+  const { rows } = await pool.query(
+    `select e.campos_extraidos -> 'linhas' as linhas, e.titulo_ou_resumo, e.coletado_em,
+            p.id as projeto_id, p.nome as projeto_nome
+     from evidencia e
+     join fonte f on f.id = e.id_fonte
+     join projeto p on p.id = e.id_projeto
+     where f.codigo = $1
+       and e.papel = 'secundaria'
+       and jsonb_typeof(e.campos_extraidos -> 'linhas') = 'array'
+       and jsonb_array_length(e.campos_extraidos -> 'linhas') > 0
+     order by e.coletado_em desc
+     limit 1`,
+    [codigo],
+  );
+  return rows[0] || null;
+}
+
 async function listSourcesByCodes(codigos) {
   const { rows } = await pool.query(
     `select * from fonte
@@ -679,6 +698,7 @@ module.exports = {
   listSources,
   getSourceByCode,
   latestBaseLoads,
+  latestEvidenceSample,
   listPrimarySources,
   listSourcesByCodes,
   listProjects,

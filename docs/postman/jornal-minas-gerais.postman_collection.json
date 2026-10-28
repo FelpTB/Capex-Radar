@@ -1,0 +1,221 @@
+{
+  "info": {
+    "name": "Radar CapEx — Jornal Minas Gerais (CAPTURA-DOE-MG)",
+    "description": "Teste da API v1 do Jornal Minas Gerais, a mesma que o conector queryJornalMg (src/enrichment/estaduais.js) usa.\n\nComo funciona o acesso:\n1. POST /api/v1/Autenticacao/Autenticar com corpo {} devolve um JWT anônimo em `dados`, válido por 2 horas.\n2. A pesquisa exige o cabeçalho `Authorization: Bearer {token}`. Sem ele, ou sem o prefixo Bearer, responde 401.\n\nO script da coleção pede o token sozinho antes de cada requisição que precisa dele e o renova quando faltam menos de 5 minutos. Basta rodar \"Pesquisar trechos\".\n\nCertificado: o servidor não envia o intermediário (Sectigo DV R36). Se o Postman acusar erro de SSL (unable to verify the first certificate), adicione o arquivo src/enrichment/certs/sectigo-dv-r36.pem em Settings > Certificates > CA Certificates. Não desligue a verificação de SSL.\n\nVariáveis: `termo` (raiz do CNPJ com pontos, ex. 17.227.422, ou nome da empresa), `dataInicial` (AAAA-MM-DD) e `dataFinal` (vazia = hoje).\n\nDocumentação completa: docs/fontes-estaduais-municipais.md e /fontes/CAPTURA-DOE-MG.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://www.jornalminasgerais.mg.gov.br/api/v1" },
+    { "key": "termo", "value": "17.227.422" },
+    { "key": "dataInicial", "value": "2015-01-01" },
+    { "key": "dataFinal", "value": "" },
+    { "key": "tamanhoPagina", "value": "40" },
+    { "key": "token", "value": "" },
+    { "key": "tokenExpira", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Data final vazia vale hoje.",
+          "if (!pm.collectionVariables.get('dataFinal')) {",
+          "  pm.variables.set('dataFinal', new Date().toISOString().slice(0, 10));",
+          "}",
+          "",
+          "// Só as requisições marcadas com {{token}} precisam do token.",
+          "const auth = JSON.stringify(pm.request.auth || {});",
+          "if (!auth.includes('{{token}}')) return;",
+          "",
+          "const expira = Number(pm.collectionVariables.get('tokenExpira') || 0);",
+          "if (pm.collectionVariables.get('token') && expira - Date.now() > 5 * 60 * 1000) return;",
+          "",
+          "pm.sendRequest({",
+          "  url: pm.collectionVariables.get('baseUrl') + '/Autenticacao/Autenticar',",
+          "  method: 'POST',",
+          "  header: { 'content-type': 'application/json' },",
+          "  body: { mode: 'raw', raw: '{}' }",
+          "}, (err, res) => {",
+          "  if (err) { console.error('Falha ao pedir o token:', err); return; }",
+          "  const token = res.json().dados;",
+          "  const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+          "  pm.collectionVariables.set('token', token);",
+          "  pm.collectionVariables.set('tokenExpira', String(payload.exp * 1000));",
+          "  console.log('Token anônimo obtido; expira em', new Date(payload.exp * 1000).toISOString());",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticar (token anônimo)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "content-type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{}" },
+        "url": "{{baseUrl}}/Autenticacao/Autenticar",
+        "description": "Sem usuário nem senha. Devolve {\"dados\": \"<JWT>\"}. O JWT é anônimo (usuário \"Usuário\", emissor segov-portal-ui) e vale 2 horas. Esta requisição também grava o token na coleção."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const token = pm.response.json().dados;",
+              "pm.test('dados traz um JWT', () => pm.expect(token.split('.')).to.have.length(3));",
+              "const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+              "pm.test('token vale cerca de 2 horas', () => {",
+              "  const minutos = (payload.exp * 1000 - Date.now()) / 60000;",
+              "  pm.expect(minutos).to.be.within(100, 125);",
+              "});",
+              "pm.collectionVariables.set('token', token);",
+              "pm.collectionVariables.set('tokenExpira', String(payload.exp * 1000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Pesquisar trechos (com token)",
+      "request": {
+        "method": "GET",
+        "auth": {
+          "type": "bearer",
+          "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+        },
+        "header": [{ "key": "accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/Pesquisa/PesquisarJornaisPaginados?DataPublicacaoInicial={{dataInicial}}&DataPublicacaoFinal={{dataFinal}}&TextoPesquisa={{termo}}&DiarioExecutivo=true&DiarioMunicipios=true&DiarioTerceiros=true&EdicaoExtra=true&PaginaAtual=1&TamanhoPagina={{tamanhoPagina}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["Pesquisa", "PesquisarJornaisPaginados"],
+          "query": [
+            { "key": "DataPublicacaoInicial", "value": "{{dataInicial}}", "description": "Início do período, AAAA-MM-DD. O conector usa 2015-01-01." },
+            { "key": "DataPublicacaoFinal", "value": "{{dataFinal}}", "description": "Fim do período, AAAA-MM-DD. Vazio na coleção = hoje." },
+            { "key": "TextoPesquisa", "value": "{{termo}}", "description": "Raiz do CNPJ com pontos (17.227.422) ou nome da empresa. O conector faz uma chamada para cada." },
+            { "key": "DiarioExecutivo", "value": "true" },
+            { "key": "DiarioMunicipios", "value": "true" },
+            { "key": "DiarioTerceiros", "value": "true" },
+            { "key": "EdicaoExtra", "value": "true" },
+            { "key": "PaginaAtual", "value": "1", "description": "O conector lê só a primeira página." },
+            { "key": "TamanhoPagina", "value": "{{tamanhoPagina}}", "description": "O conector pede 40." }
+          ]
+        },
+        "description": "A mesma chamada do conector. Cada item de dados é um trecho de ~200 caracteres em volta do termo: idJornal, dataPublicacao, tipoCaderno, pagina e textoResultado. O texto vem do PDF sem acento e com o CNPJ separado por espaços (17 227 422)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('envelope com dados e paginação', () => {",
+              "  pm.expect(body).to.have.all.keys('dados', 'paginaAtual', 'totalDePaginas', 'totalDeRegistros', 'erros');",
+              "  pm.expect(body.dados).to.be.an('array');",
+              "});",
+              "pm.test('cada trecho tem os 5 campos documentados', () => {",
+              "  body.dados.forEach((item) => pm.expect(item).to.have.all.keys('idJornal', 'dataPublicacao', 'tipoCaderno', 'textoResultado', 'pagina'));",
+              "});",
+              "const termo = pm.variables.get('termo');",
+              "const digitos = termo.replace(/\\D/g, '');",
+              "if (digitos.length >= 8) {",
+              "  pm.test('os trechos citam a raiz do CNPJ (comparando só dígitos)', () => {",
+              "    body.dados.forEach((item) => pm.expect(item.textoResultado.replace(/\\D/g, '')).to.include(digitos));",
+              "  });",
+              "}",
+              "// Link do visualizador, montado como o conector monta (jmgLink).",
+              "const links = body.dados.map((item) => 'https://www.jornalminasgerais.mg.gov.br/edicao-do-dia?dados=' + encodeURIComponent(JSON.stringify({",
+              "  dataPublicacaoSelecionada: item.dataPublicacao,",
+              "  idCadernoEdicaoSelecionado: item.idJornal,",
+              "  paginaSelecionada: item.pagina,",
+              "  textoPesquisa: termo",
+              "})));",
+              "console.log(body.totalDeRegistros + ' trecho(s). Links do visualizador:', links);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Pesquisar sem token (espera 401)",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "noauth" },
+        "url": {
+          "raw": "{{baseUrl}}/Pesquisa/PesquisarJornaisPaginados?DataPublicacaoInicial={{dataInicial}}&DataPublicacaoFinal={{dataFinal}}&TextoPesquisa={{termo}}&PaginaAtual=1&TamanhoPagina=3",
+          "host": ["{{baseUrl}}"],
+          "path": ["Pesquisa", "PesquisarJornaisPaginados"],
+          "query": [
+            { "key": "DataPublicacaoInicial", "value": "{{dataInicial}}" },
+            { "key": "DataPublicacaoFinal", "value": "{{dataFinal}}" },
+            { "key": "TextoPesquisa", "value": "{{termo}}" },
+            { "key": "PaginaAtual", "value": "1" },
+            { "key": "TamanhoPagina", "value": "3" }
+          ]
+        },
+        "description": "Mostra por que abrir a URL no navegador dá 401: a pesquisa só responde com o cabeçalho Authorization."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('HTTP 401 sem token', () => pm.response.to.have.status(401));"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Pesquisar com token sem 'Bearer' (espera 401)",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "noauth" },
+        "header": [{ "key": "Authorization", "value": "{{token}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/Pesquisa/PesquisarJornaisPaginados?DataPublicacaoInicial={{dataInicial}}&DataPublicacaoFinal={{dataFinal}}&TextoPesquisa={{termo}}&PaginaAtual=1&TamanhoPagina=3",
+          "host": ["{{baseUrl}}"],
+          "path": ["Pesquisa", "PesquisarJornaisPaginados"],
+          "query": [
+            { "key": "DataPublicacaoInicial", "value": "{{dataInicial}}" },
+            { "key": "DataPublicacaoFinal", "value": "{{dataFinal}}" },
+            { "key": "TextoPesquisa", "value": "{{termo}}" },
+            { "key": "PaginaAtual", "value": "1" },
+            { "key": "TamanhoPagina", "value": "3" }
+          ]
+        },
+        "description": "O token vale, mas sem o prefixo Bearer a API também responde 401. Rode a requisição 1 antes, para ter o token."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('HTTP 401 sem o prefixo Bearer', () => pm.response.to.have.status(401));"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Autenticar por GET (espera 405)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/Autenticacao/Autenticar",
+        "description": "A autenticação só aceita POST."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('HTTP 405 em GET', () => pm.response.to.have.status(405));"]
+          }
+        }
+      ]
+    }
+  ]
+}

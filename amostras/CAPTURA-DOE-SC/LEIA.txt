@@ -1,0 +1,14 @@
+Fonte: CAPTURA-DOE-SC
+Formato: JSON da API do portal do DOE-SC (portal.doe.sea.sc.gov.br/apis, sistema "doe-cli"), UTF-8
+Campos: envelope com total, pagination {from, size, total}, resposta, materias[]; 19 chaves por matéria (id, nrJornal, cdJornal, publicacao, cdCategoria, categoria, assunto, cdAssunto, cancelada, aprovadaTriagem, pronta, publicada, altura, preco, motivoCancelamento, extrato, preview, cdMateria, resumo)
+Data da extracao: 27/10/2026
+Fonte da extracao: POST https://portal.doe.sea.sc.gov.br/apis/busca-materia
+  corpo (JSON): {"busca":"84.429.695","dtIni":"2015-01-01","dtFim":"2026-10-27","tipoBusca":2,"pagination":{"from":0,"size":3},"resumo":false}
+
+Arquivo: busca-cnpj-weg.json, com 3 das 121 matérias (raiz de CNPJ da WEG Equipamentos Elétricos).
+Com "resumo": false o campo resumo traz o texto inteiro da matéria; foi cortado em 1.500 caracteres (os originais têm 4.403 a 4.992).
+tipoBusca 2 = "Exata" (frase, ordem por data decrescente); tipoBusca 1 = "Qualquer Resultado" (palavras com OU, ordem por relevância).
+Sem resultado, a API responde {"error":true,"mensagem":"Não encontramos resultados para sua busca!"}.
+O HTML da matéria fica em preview sem o sufixo _final: https://portal.doe.sea.sc.gov.br/repositorio/{AAAA}/{AAAAMMDD}/Materias/{id}/{id}.html
+O certificado TLS (Let's Encrypt) valida com as raízes do Node; não falta intermediário.
+Ficou de fora: as outras 118 matérias e o PDF da edição. Nao ha token nem login.

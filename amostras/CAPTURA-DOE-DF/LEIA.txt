@@ -1,0 +1,13 @@
+Fonte: CAPTURA-DOE-DF
+Formato: JSON do endpoint interno da busca do DODF (Casa Civil do DF), UTF-8
+Campos: envelope type, result, flashMsg, filtros, listaMaterias[], totalMaterias, totalPaginas, pagina; 15 chaves por matéria (co_materia, ds_titulo, ds_nome, ds_materia_tipo, ds_secao, dt_previsao_publicacao, nu_jornal, tx_resumo, slug etc.)
+Data da extracao: 27/10/2026
+Fonte da extracao: POST https://dodf.df.gov.br/dodf/materia/listar com corpo (form-urlencoded) termo="33.000.167"&dtInicial=2015-01-01&dtFinal=2026-10-26&tpBusca=exata&pagina=1
+
+Arquivo: busca-cnpj-petrobras.json, com 3 das 4 matérias (atos que citam a raiz de CNPJ da Petrobras).
+Cada resultado é uma matéria (ato), não uma página. tx_resumo é o trecho em volta do termo (~300 caracteres, com <strong>); não foi cortado.
+Página com 10 matérias, fixa. tpBusca=exata faz busca por frase; contexto exige todas as palavras.
+A busca digital cobre matérias desde 06/2020. Para edições anteriores há outra busca, em PDF: POST /dodf/jornal/listar-pdfs.
+Link público do ato: https://dodf.df.gov.br/dodf/materia/visualizar?co_data={co_materia}&p={slug}
+Certificado com cadeia completa (Sectigo OV R36). Sem token, sem login.
+Ficou de fora: a outra matéria e o PDF da edição.

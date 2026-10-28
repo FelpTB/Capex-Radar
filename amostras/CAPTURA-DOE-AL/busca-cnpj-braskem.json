@@ -1,0 +1,129 @@
+{
+  "status": "success",
+  "result": {
+    "items": [
+      {
+        "id": 803479,
+        "page_number": 90,
+        "edition_id": 51815,
+        "publication_date": "2026-09-03",
+        "edition_number": 2877,
+        "edition_type_name": "Diário Oficial do Estado de Alagoas",
+        "is_suplement": false,
+        "highlight": [
+          ", Povoado Francês, Marechal Deodoro - AL.\nProtocolo 1111113\nA Braskem, CNPJ: <em>42.150.391<\\/em>/0020-33"
+        ]
+      },
+      {
+        "id": 801611,
+        "page_number": 34,
+        "edition_id": 51793,
+        "publication_date": "2026-08-26",
+        "edition_number": 2872,
+        "edition_type_name": "Diário Oficial do Estado de Alagoas",
+        "is_suplement": false,
+        "highlight": [
+          "/2022.\nAUTO DE INFRAÇÃO Nº: 70.93460-001\nAUTUADA: BRASKEM S.A\nCNPJ: <em>42.150.391<\\/em>/0022-03; CACEAL"
+        ]
+      },
+      {
+        "id": 799256,
+        "page_number": 27,
+        "edition_id": 51773,
+        "publication_date": "2026-08-13",
+        "edition_number": 2863,
+        "edition_type_name": "Diário Oficial do Estado de Alagoas",
+        "is_suplement": false,
+        "highlight": [
+          ".\nPROCESSO Nº: 1500.501003/2020\nAUTO DE INFRAÇÃO Nº: 70.69995-001\nAUTUADA: BRASKEM S.A\nCNPJ: <em>42.150.391<\\/em>"
+        ]
+      }
+    ],
+    "aggregations": {
+      "max_date": {
+        "value": 1788393600000,
+        "value_as_string": "2026-09-03 00:00:00"
+      },
+      "year": {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 15,
+        "buckets": [
+          {
+            "key": "2026",
+            "doc_count": 20
+          },
+          {
+            "key": "2025",
+            "doc_count": 56
+          },
+          {
+            "key": "2024",
+            "doc_count": 97
+          },
+          {
+            "key": "2023",
+            "doc_count": 64
+          },
+          {
+            "key": "2022",
+            "doc_count": 34
+          },
+          {
+            "key": "2021",
+            "doc_count": 49
+          },
+          {
+            "key": "2020",
+            "doc_count": 29
+          },
+          {
+            "key": "2019",
+            "doc_count": 25
+          },
+          {
+            "key": "2018",
+            "doc_count": 34
+          },
+          {
+            "key": "2017",
+            "doc_count": 12
+          }
+        ]
+      },
+      "min_date": {
+        "value": 1420156800000,
+        "value_as_string": "2015-01-02 00:00:00"
+      },
+      "edition_type_name": {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 0,
+        "buckets": [
+          {
+            "key": "Diário Oficial do Estado de Alagoas",
+            "doc_count": 435
+          }
+        ]
+      },
+      "suplement": {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 0,
+        "buckets": [
+          {
+            "key": 1,
+            "key_as_string": "true",
+            "doc_count": 7
+          },
+          {
+            "key": 0,
+            "key_as_string": "false",
+            "doc_count": 428
+          }
+        ]
+      }
+    },
+    "total_rows": {
+      "value": 435,
+      "relation": "eq"
+    }
+  }
+}

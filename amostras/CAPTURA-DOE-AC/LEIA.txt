@@ -1,0 +1,13 @@
+Fonte: CAPTURA-DOE-AC
+Formato: fragmento HTML da página de resultados da busca por palavra-chave do Diário Oficial do Acre, ISO-8859-1
+Campos: "Quantidade de resultados encontrados" + tabela com 2 linhas por resultado: (1) data dd/mm/aaaa, link de download do PDF da edição com número e caderno, tamanho; (2) trecho de ~200 caracteres em volta do termo, com o termo em <span class="destaque">
+Data da extracao: 27/10/2026
+Fonte da extracao: POST https://diario.ac.gov.br/ com corpo palavra=04.065.033&ano_palavra=2026&paginaIni=0&palavraTipo=0
+
+Arquivo: busca-cnpj-energisa-acre.html, com 3 dos 58 resultados de 2026 (raiz de CNPJ da Energisa Acre).
+Cada resultado é uma edição (caderno) do diário, com só o primeiro trecho que cita o termo. Não há número de página.
+O recorte vai do contador até o fim da tabela; o resto da página (cabeçalho, formulários, paginação) ficou de fora. O conteúdo não foi alterado nem cortado.
+A busca é por ano (ano_palavra, 2010 até o atual), 10 resultados por página, paginaIni começa em 0.
+palavraTipo=0 é "Texto exato" (frase literal, sem aspas; aspas quebram a busca); palavraTipo=1 é "Contém o texto" (todas as palavras).
+O link download.php?arquivo= leva base64 do nome interno do PDF e devolve a edição inteira em PDF (MBs).
+TLS ok com as raízes do Node. Nao ha token.

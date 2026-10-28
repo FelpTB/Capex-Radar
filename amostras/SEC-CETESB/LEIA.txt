@@ -1,0 +1,10 @@
+Fonte: SEC-CETESB
+Formato: HTML da consulta pública de licenciamento da CETESB, UTF-8
+Campos: 7 por linha (Número, Data solicitação, Interessado, Endereço, Município, Validade, Situação)
+Data da extracao: 26/10/2026
+Fonte da extracao: https://sistemasinter02.cetesb.sp.gov.br/consultaLicenciamento/public/Index.php?nomeEmprn=BRACELL&muncp=&dateInic=2017-12-29
+
+Arquivo: consulta-bracell.html, com o cabeçalho e 4 das 21 linhas da tabela de resultados.
+A página completa tinha 121.735 bytes. Ficaram de fora o formulário, o menu, os scripts e as outras 17 linhas.
+A consulta pública só devolve Autorizações (as opções de LP, LI e LO estão desativadas no formulário). Por isso as 21 linhas são da Bracell SP Florestal, não da fábrica de celulose. As LP, LI e LO saem nas listas mensais publicadas no DOE-SP (fonte CAPTURA-DOE-SP).
+Nao ha token nem login.

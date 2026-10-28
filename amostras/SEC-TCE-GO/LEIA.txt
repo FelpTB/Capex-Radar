@@ -1,0 +1,7 @@
+Fonte: SEC-TCE-GO
+Sem arquivo bruto.
+Data da tentativa: 26/10/2026
+URL testada: https://geoobras.tce.go.gov.br/cidadao/
+
+O GeoObras respondeu HTTP 500 (310 bytes, página de erro do servidor). Nenhum registro de obra foi lido.
+Tentar de novo antes de rever a fonte; o status de acesso no catálogo continua como estava.

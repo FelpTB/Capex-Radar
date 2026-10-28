@@ -35,13 +35,15 @@ test("cada fonte conectada explica o dado e o acesso", () => {
       assert.equal(tipo.length > 3, true, `${codigo} ${chave}`);
       assert.equal(detalhe.length > 12, true, `${codigo} ${chave}`);
     }
-    assert.equal(guide.url.startsWith("https://"), true, codigo);
+    // Exceção só para portal que não responde em HTTPS e diz isso na nota do link.
+    const soHttp = (link) => /só responde em HTTP/.test(link.nota);
+    assert.equal(guide.url.startsWith("https://") || guide.origem.links.some(soHttp), true, codigo);
     assert.equal(Boolean(guide.copia), true, codigo);
     assert.equal(guide.origem.orgao.length > 2, true, `${codigo} orgao`);
     assert.equal(guide.origem.acesso.length > 40, true, `${codigo} acesso da origem`);
     assert.equal(guide.origem.links.length >= 1, true, `${codigo} links`);
     for (const link of guide.origem.links) {
-      assert.equal(link.url.startsWith("https://"), true, `${codigo} ${link.papel}`);
+      assert.equal(link.url.startsWith("https://") || soHttp(link), true, `${codigo} ${link.papel}`);
       assert.equal(typeof link.fixa, "boolean", `${codigo} ${link.papel}`);
       assert.equal(link.nota.length > 20, true, `${codigo} ${link.papel}`);
     }

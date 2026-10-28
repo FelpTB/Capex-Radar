@@ -1,0 +1,11 @@
+Fonte: CAPTURA-DOE-CE
+Formato: HTML (ISO-8859-1) da Pesquisa Textual do Diario Oficial do Estado do Ceara (SEPLAG, aplicacao Java "doepesquisa")
+Campos: tabela "Resultado" com uma linha por pagina encontrada: Data do Diario (link para o PDF do caderno com #page=N), N do Diario, N do Caderno, N da Pagina; rodape "N registros encontrados. Pagina X de Y"
+Data da extracao: 27/10/2026
+Fonte da extracao: http://pesquisa.doe.seplag.ce.gov.br/doepesquisa/sead.to?page=pesquisaTextual&action=PesquisarTextual&cmd=11&flag=1&numDiario=&numCaderno=&numPagina=&RadioGroup1=radio3&pesqEx=33.000.167&dataini=01/01/2015&datafim=26/10/2026
+
+Arquivo: busca-cnpj-petrobras.html, com 3 das 16 paginas encontradas (raiz de CNPJ da Petrobras), 8 por pagina de resultado.
+O arquivo e so o bloco <table> de resultados; o resto da pagina (menu, formulario, scripts, ~32 KB) ficou de fora. As 5 linhas restantes da 1a pagina foram removidas.
+Nao ha trecho do texto: o resultado aponta so a pagina. O texto sai do PDF (ex. pdftotext -f N -l N).
+Verificado: http://imagens.seplag.ce.gov.br/pdf/20251105/do20251105p01.pdf pagina 13 contem "CNPJ/MF sob o n 33.000.167/0001-01" (Petroleo Brasileiro S.A.).
+Sem login, token ou captcha. A pesquisa so responde em HTTP (HTTPS nao conecta). Paginacao depende do cookie JSESSIONID.

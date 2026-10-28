@@ -1,0 +1,62 @@
+{
+  "type": "success",
+  "result": true,
+  "flashMsg": "Lista de matérias resgatada com sucesso!",
+  "filtros": [],
+  "listaMaterias": [
+    {
+      "co_materia": 361524,
+      "ds_titulo": "PORTARIA Nº 452, DE 28 DE DEZEMBRO DE 2023",
+      "co_demandante": 3829,
+      "co_jornal_secao": 10,
+      "co_materia_tipo": 293,
+      "ds_nome": "Secretaria de Estado de Fazenda",
+      "ds_materia_tipo": "Portaria",
+      "ds_secao": "Seção I",
+      "dt_previsao_publicacao": "2024-01-02T08:00:00Z",
+      "co_jornal_tipo": 15,
+      "nu_jornal": 1,
+      "co_regra_jornal_tipo": 31,
+      "ds_descricao_jornal_tipo": "Normal",
+      "tx_resumo": "07.749.94233.856.394PETROLEO BRASILEIRO S A PETROBRAS 07.342.722<strong>33.000.167</strong>PETROLEO BRASILEIRO S A PETROBRAS 07.371.937<strong>33.000.167</strong>POLISYS INFORMATICA LTDA. 07.439.52205.361.437POSTALIS - INSTITUTO DE SEGURIDADE SOCIAL DOS CORREIOS E TELEGRAFOS07.348.07200.627.638PREMIER AUTOMÓVEIS LTDA. ...",
+      "slug": "portaria-n-452-de-28-de-dezembro-de-2023"
+    },
+    {
+      "co_materia": 218161,
+      "ds_titulo": "DECRETO Nº 43.418, DE 07 DE JUNHO DE 2022",
+      "co_demandante": 602,
+      "co_jornal_secao": 10,
+      "co_materia_tipo": 256,
+      "ds_nome": "Poder Executivo",
+      "ds_materia_tipo": "Decreto",
+      "ds_secao": "Seção I",
+      "dt_previsao_publicacao": "2022-06-08T08:00:00Z",
+      "co_jornal_tipo": 15,
+      "nu_jornal": 107,
+      "co_regra_jornal_tipo": 31,
+      "ds_descricao_jornal_tipo": "Normal",
+      "tx_resumo": "...instituído regime especial aos estabelecimentos da Petróleo Brasileiro S.A. - Petrobras, CNPJ base: <strong>33.000.167</strong>, e da Petrobras Transportes S.A. - Transpetro, CNPJ base: 02.709.449, localizados nos estados de São Paulo, Minas Gerais, Goiás e no Distrito Federal, aplicável à remessa para armazenagem e à ...",
+      "slug": "decreto-n-43418-de-07-de-junho-de-2022"
+    },
+    {
+      "co_materia": 129948,
+      "ds_titulo": "PORTARIA Nº 238, DE 1º DE SETEMBRO DE 2021",
+      "co_demandante": 690,
+      "co_jornal_secao": 10,
+      "co_materia_tipo": 293,
+      "ds_nome": "Secretaria de Estado de Economia",
+      "ds_materia_tipo": "Portaria",
+      "ds_secao": "Seção I",
+      "dt_previsao_publicacao": "2021-09-15T08:00:00Z",
+      "co_jornal_tipo": 15,
+      "nu_jornal": 174,
+      "co_regra_jornal_tipo": 31,
+      "ds_descricao_jornal_tipo": "Normal",
+      "tx_resumo": "...em observados nas operações com gasolina C e diesel B, realizadas pela Petróleo Brasileiro S.A. (CNPJ base <strong>33.000.167</strong>), pela Petrobras Distribuidora S.A. (CNPJ base 34.274.233) e por postos revendedores de combustíveis, em decorrência de doações a entidades governamentais para uso no âmbito das medidas de prevenção ao ...",
+      "slug": "portaria-n-238-de-1-de-setembro-de-2021"
+    }
+  ],
+  "totalMaterias": 4,
+  "totalPaginas": 1,
+  "pagina": 1
+}

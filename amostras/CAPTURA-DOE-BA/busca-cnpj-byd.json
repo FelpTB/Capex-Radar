@@ -1,0 +1,170 @@
+{
+ "took": 26,
+ "timed_out": false,
+ "_shards": {
+  "total": 1,
+  "successful": 1,
+  "skipped": 0,
+  "failed": 0
+ },
+ "hits": {
+  "total": 9,
+  "max_score": 10.970192,
+  "hits": [
+   {
+    "_index": "ionews",
+    "_type": "diario",
+    "_id": "21987_41",
+    "_score": 6.5791407,
+    "_source": {
+     "conteudo": "41 SALVADOR, SEXTA-FEIRA, 29 DE MAIO DE 2026 - ANO CX - No 24.405 Matrícula 10368152 Nome JOSE FRANCISCO AZEVEDO JUNIOR Quinquênio Data Início 02.08.2016/01.08.2021 25.05.2026 Data Fim 03.06.2026 EDUARDO MENDONÇA SODRÉ MARTINS SECRETARIA DO MEIO AMBIENTE Portaria Nº 01065552 de 28 de Maio de 2026 O(A) SECRETÁRIO(A) DE ESTADO do(a) SECRETARIA DO MEIO AMBIENTE - SEMA, no uso de suas atribuições, resolve designar LUCIANA MATOS SANTA RITA, matrícula nº 27534359, para, em razão de Férias no período de 08 de Junho de 2026 a 22 de Junho de 2026, substituir HANS UNGAR NETO, matrícula nº 92020263, no cargo Diretor, do(a) DIRETORIA PROGRAMAS E PROJETOS. EDUARDO MENDONÇA SODRÉ MARTINS SECRETARIA DO MEIO AMBIENTE Instituto do Meio Ambiente e Recursos Hídricos - INEMA O DIRETOR GERAL DO INSTITUTO DO MEIO AMBIENTE E RECURSOS HÍDRICOS - INEMA, no uso de suas atribuições, RESOLVE:PORTARIA Nº 34.792/2026. Tornar público a designação do servidor abaixo na função de Fiscal do Termo Particular de Transferência de Animais, sendo responsável pelo mesmo, acompanhando o desenvolvimento das atividades nele previstas e demais incumbências pertinentes à sua execução. Nº Termo Particular de Instituições Transferência de Animais SN/2026 Companhia Brasileira de Metalurgia e Mineração - CBMM Instituto do Meio Ambiente e Recursos Hídricos - INEMA Fiscais Alberto Vinicius Dantas Oliveira GABINETE DO DIRETOR GERAL, em 28/05/2026. Ass.: EDUARDO FARIAS TOPÁZIO - Diretor Geral. PORTARIA Nº 34.793 DE 28 DE MAIO D",
+     "data": "2026-05-29",
+     "paginas": "92",
+     "pagina": "41",
+     "pdf_id": "819567",
+     "year": "2026",
+     "month": "05",
+     "day": "29",
+     "diario_id": "21987",
+     "tipo_edicao": "1"
+    },
+    "highlight": {
+     "conteudo": [
+      "O INSTITUTO DO MEIO AMBIENTE E RECURSOS HÍDRICOS - INEMA, com fulcro nas atribuições e competências que lhe foram delegadas pela Lei Estadual nº 12.212/11 e Lei Estadual nº 10.431/06, alterada pela Lei nº 12.377/11, regulamentada pelo Decreto Estadual nº 14.024/12 e alterações, tendo em vista o que consta do Processo nº 2026.001.002146/INEMA/LIC-02146, RESOLVE: Art. 1º - Conceder LICENÇA DE ALTERAÇÃO, válida até 19/07/2030, à BYD AUTO DO BRASIL LTDA, inscrito no CNPJ sob o nº <strong>50</strong>.<strong>351</strong>.<strong>104</strong>/0001-19,"
+     ]
+    },
+    "sort": [
+     1780012800000
+    ],
+    "suplemento": "Edição 24405"
+   },
+   {
+    "_index": "ionews",
+    "_type": "diario",
+    "_id": "21425_54",
+    "_score": 6.1394978,
+    "_source": {
+     "conteudo": "54 SALVADOR, TERÇA-FEIRA, 10 DE FEVEREIRO DE 2026 - ANO CX - No 24.335 acessar o endereço eletrônico www.seia.ba.gov.br, formando requerimento de cumprimento de reposição florestal.” Oportunidade em que o concede prazo para cumprimento de 90 (noventa) dias a partir da data de publicação deste edital, salientando, que o não cumprimento desta notificação implicará na aplicação das penalidades previstas na legislação ambiental do Estado da Bahia. Salvador, 09 de Fevereiro de 2026. EDUARDO FARIAS TOPÁZIO - Diretor Geral EDITAL DE NOTIFICAÇÃO O INSTITUTO DO MEIO AMBIENTE E RECURSOS HÍDRICOS - INEMA, através do seu Diretor Geral, nos termos do art. 261, inciso III do Decreto Estadual nº. 14.024 de 06 de junho de 2012, que aprova o Regulamento da Lei 10.431/2006, c/c artigo 231, inciso I do Código Civil, FAZ SABER a todos quando o presente virem, ou dele conhecimento tiverem e, principalmente, por se encontrar em lugar incerto e não sabido, ao Autuado: CORTE REAL MINERAÇÃO INDÚSTRIA COMÉRCIO E EXPORTAÇÃO LTDA, CNPJ 07.979.635/0001-21 nos autos do processo administrativo nº 2018-010460/TEC/NOT-2766, que “ deverá apresentar ao Instituto do Meio Ambiente - IMA, num prazo de sessenta (60) dias a contar da data de recebimento desta, documentação de regularidade ambiental (LICENÇA AMBIENTAL) e PRAD conforme Alvará expedido pelo DNPM.” Oportunidade em que o concede prazo para cumprimento de 60 (sessenta) dias a partir da data de publicação deste edital, salientando, que o não cumprimento d",
+     "data": "2026-02-10",
+     "paginas": "102",
+     "pagina": "54",
+     "pdf_id": "795646",
+     "year": "2026",
+     "month": "02",
+     "day": "10",
+     "diario_id": "21425",
+     "tipo_edicao": "1"
+    },
+    "highlight": {
+     "conteudo": [
+      "atribuições e competências que lhe foram delegadas pela Lei Estadual nº 12.212/11 e Lei Estadual nº 10.431/06, alterada pela Lei nº 12.377/11, regulamentada pelo Decreto Estadual nº 14.024/12 e alterações, tendo em vista o que consta do Processo nº 2025.001.009138/INEMA/LIC-09138, RESOLVE: Art. 1º - Conceder REVISÃO DOS CONDICIONANTES XVI, XXX, XXXIII da Portaria nº 33.476/2025 publicada no D.O.E de 19/07/2025 que concedeu Licença de Operação à BYD AUTO DO BRASIL LTDA, inscrita no CNPJ sob o n° <strong>50</strong>.<strong>351</strong>.<strong>104</strong>"
+     ]
+    },
+    "sort": [
+     1770681600000
+    ],
+    "suplemento": "Edição 24335"
+   },
+   {
+    "_index": "ionews",
+    "_type": "diario",
+    "_id": "21407_67",
+    "_score": 7.0866046,
+    "_source": {
+     "conteudo": "67 SALVADOR, SEXTA-FEIRA, 6 DE FEVEREIRO DE 2026 - ANO CX - No 24.333 3º - Estabelecer que esta autorização, bem como cópias dos documentos relativos ao seu cumprimento sejam mantidas disponíveis à fiscalização do INEMA e aos demais órgãos do Sistema Nacional de Meio Ambiente - SISNAMA. Art. 4º - Estabelecer que os documentos para cumprimento dos condicionantes desta portaria devem ser protocolados exclusivamente no Sistema Eletrônico de Informações - SEI BAHIA, conforme disposto no Art. 1º da Portaria INEMA nº 21.953 de 07 de dezembro de 2020. Art. 5º - Esta Portaria entrará em vigor na data de sua publicação. EDUARDO FARIAS TOPÁZIO - Diretor Geral PORTARIA Nº 34.373 DE 05 DE FEVEREIRO DE 2026. O INSTITUTO DO MEIO AMBIENTE E RECURSOS HÍDRICOS - INEMA, com fulcro nas atribuições e competências que lhe foram delegadas pela Lei Estadual n° 12.212/11 e Leis Estaduais n° 10.431/06 e 11.612/09, e suas alterações, regulamentadas pelo Decreto Estadual n° 14.024/12 e alterações, tendo em vista o que consta do Processo nº 2024.001.010439/INEMA/LIC-10439, RESOLVE: Art. 1.º - Autorizar o direito de uso dos recursos hídricos, válido pelo prazo de 4 (quatro) anos, à ITAUEIRA AGROPECUÁRIA S.A., inscrita no CNPJ nº 07.231.103/0008-88, com sede na Fazenda Espanha, s/n, Zona Rural, no município de Ribeira do Amparo, para captação subterrânea, na Bacia Hidrográfica do Rio Itapicuru, no poço 1, nas coordenadas Lat.11°07’39”S e Long.38°23’19.59”W, datum Sirgas 2000, de vazão 1.180 m³/dia, durant",
+     "data": "2026-02-06",
+     "paginas": "108",
+     "pagina": "67",
+     "pdf_id": "794858",
+     "year": "2026",
+     "month": "02",
+     "day": "06",
+     "diario_id": "21407",
+     "tipo_edicao": "1"
+    },
+    "highlight": {
+     "conteudo": [
+      "DO MEIO AMBIENTE E RECURSOS HÍDRICOS - INEMA, com fulcro nas atribuições e competências que lhe foram delegadas pela Lei Estadual n° 12.212/11 e Leis Estaduais n° 10.431/06 e 11.612/09, e suas alterações, regulamentadas pelo Decreto Estadual n° 14.024/12 e alterações, tendo em vista o que consta do Processo nº 2026.001.000413/INEMA/LIC-00413, RESOLVE: Art. 1.º - Autorizar o direito de uso dos recursos hídricos, válido pelo prazo de 4 (quatro) anos, à BYD AUTO DO BRASIL LTDA, inscrita no CNPJ nº <strong>50</strong>.<strong>351</strong>.<strong>104</strong>"
+     ]
+    },
+    "sort": [
+     1770336000000
+    ],
+    "suplemento": "Edição 24333"
+   }
+  ]
+ },
+ "aggregations": {
+  "TipoEdicao": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 1,
+     "doc_count": 9
+    }
+   ]
+  },
+  "Edicoes": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 17556,
+     "doc_count": 1
+    },
+    {
+     "key": 17635,
+     "doc_count": 1
+    },
+    {
+     "key": 17700,
+     "doc_count": 1
+    },
+    {
+     "key": 18807,
+     "doc_count": 1
+    },
+    {
+     "key": 20346,
+     "doc_count": 1
+    },
+    {
+     "key": 21189,
+     "doc_count": 1
+    },
+    {
+     "key": 21407,
+     "doc_count": 1
+    },
+    {
+     "key": 21425,
+     "doc_count": 1
+    },
+    {
+     "key": 21987,
+     "doc_count": 1
+    }
+   ]
+  },
+  "FileYear": {
+   "doc_count_error_upper_bound": 0,
+   "sum_other_doc_count": 0,
+   "buckets": [
+    {
+     "key": 2024,
+     "doc_count": 4
+    },
+    {
+     "key": 2026,
+     "doc_count": 3
+    },
+    {
+     "key": 2025,
+     "doc_count": 2
+    }
+   ]
+  }
+ },
+ "loggedCredit": true
+}

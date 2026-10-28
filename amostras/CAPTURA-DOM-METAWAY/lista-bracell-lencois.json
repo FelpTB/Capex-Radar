@@ -1,0 +1,41 @@
+[
+ {
+  "codigo": 209,
+  "edicao": 194,
+  "ano": 2,
+  "dataPublicacao": "2020-03-17",
+  "tipo": "R",
+  "arquivoPdf": null,
+  "assinado": true,
+  "hash": "XIgKBddfLSoSbVO",
+  "paginas": null,
+  "arquivoPdfEditor": null,
+  "pdfEditado": false
+ },
+ {
+  "codigo": 296,
+  "edicao": 270,
+  "ano": 2,
+  "dataPublicacao": "2020-07-13",
+  "tipo": "R",
+  "arquivoPdf": null,
+  "assinado": true,
+  "hash": "DpgYExlp8uHXbcF",
+  "paginas": null,
+  "arquivoPdfEditor": null,
+  "pdfEditado": false
+ },
+ {
+  "codigo": 1838,
+  "edicao": 45,
+  "ano": 8,
+  "dataPublicacao": "2026-03-10",
+  "tipo": "R",
+  "arquivoPdf": null,
+  "assinado": true,
+  "hash": "OnGcGoPSkqSR8Ql",
+  "paginas": null,
+  "arquivoPdfEditor": null,
+  "pdfEditado": false
+ }
+]

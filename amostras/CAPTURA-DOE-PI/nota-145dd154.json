@@ -1,0 +1,58 @@
+{
+  "nota": {
+    "uuid": "145dd154-bc9c-4c39-935b-3fbf26a61564",
+    "orgao_id": null,
+    "unidade_id": null,
+    "departamento_id": null,
+    "titulo_nota_id": 7,
+    "disponibilizado": false,
+    "publicado": true,
+    "arquivado": false,
+    "n_nota": 27010,
+    "dia": "2023-12-12",
+    "texto": "<p style=\"\" align=\"center\">&nbsp;<p style=\"\" align=\"center\"><strong><span style=\"font-variant: normal;\"><span style=\"color: #000000;\"><span style=\"letter-spacing: normal;\"><span style=\"font-style: normal;\">AG&Ecirc;NCIA DE ATRA&Ccedil;&Atilde;O DE INVESTIMENTOS ESTRAT&Eacute;GICOS DO PIAU&Iacute; &ndash;</span></span></span></span><span style=\"font-variant: normal;\"><span style=\"color: #000000;\"><span style=\"letter-spacing: normal;\"><span style=\"font-style: normal;\"> INVESTEPIAUI</span></span></span></span></strong></p><p style=\" margin-bottom: 0cm;\" align=\"center\">&nbsp;</p><table style=\"border-collapse: collapse; width: 100%;\" border=\"1px\" cellspacing=\"0\" cellpadding=\"7\"><colgroup><col> <col> </colgroup>\r\n<tbody>\r\n<tr>\r\n<td style=\"border: 1px solid #000000; padding: 0cm 0.19cm;\" colspan=\"2\" height=\"12\">\r\n<p style=\"text-align: center;\" align=\"justify\"><span><span><strong>AVISO DE ORDEM FORNECIMENTO </strong></span></span></p>\r\n</td>\r\n</tr>\r\n<tr>\r\n<td style=\"border: 1px solid #000000; padding: 0cm 0.19cm;\" height=\"31\">\r\n<p align=\"justify\"><span><span>N&ordm; do Processo Sei</span></span></p>\r\n</td>\r\n<td style=\"border: 1px solid #000000; padding: 0cm 0.19cm;\">\r\n<p align=\"justify\"><span><span>00346.000266/2023-46</span></span></p>\r\n</td>\r\n</tr>\r\n<tr>\r\n<td style=\"border: 1px solid #000000; padding: 0cm 0.19cm;\">\r\n<p align=\"justify\"><span><span>Fundamento Legal</span></span></p>\r\n</td>\r\n<td style=\"border: 1px solid #000000; padding: 0cm 0.19cm;\">\r\n<p align=\"justify\"><span><span>D",
+    "digitado": null,
+    "aprovado": "[CPF REMOVIDO]",
+    "created": "2023-12-12T14:55:49-03:00",
+    "modified": "2023-12-12T17:08:31-03:00",
+    "nota_anexos": [],
+    "titulo_nota": {
+      "id": 7,
+      "caderno_id": 2,
+      "ordem": 0,
+      "texto": "AVISOS",
+      "created": "2022-11-29T11:47:59-03:00",
+      "modified": "2022-11-29T11:47:59-03:00"
+    },
+    "diarios": [
+      {
+        "uuid": "dc4e9d0f-2681-4710-8280-d99487c6234e",
+        "diarios_dado_id": 5,
+        "responsavel": "[NOME REMOVIDO]",
+        "cpf": "[CPF REMOVIDO]",
+        "dia": "2023-12-12",
+        "ano": 2023,
+        "numero": 236,
+        "ativo": true,
+        "tipo": null,
+        "disponibilizado": "2023-12-12T18:05:17-03:00",
+        "publicado": "2023-12-13T00:00:00-03:00",
+        "anexo": "DOEEPI_236_2023.pdf",
+        "anexo_dir": "76bc217d-e12e-494e-b4d2-784b3ebb2f5f",
+        "created": "2023-12-12T08:27:05-03:00",
+        "modified": "2023-12-12T18:07:52-03:00",
+        "_joinData": {
+          "id": 28720,
+          "diario": "dc4e9d0f-2681-4710-8280-d99487c6234e",
+          "nota": "145dd154-bc9c-4c39-935b-3fbf26a61564",
+          "ativo": false,
+          "created": "2023-12-12T17:08:31-03:00",
+          "modified": "2023-12-12T17:08:31-03:00"
+        }
+      }
+    ],
+    "departamento": null,
+    "unidade": null,
+    "orgao": null
+  }
+}

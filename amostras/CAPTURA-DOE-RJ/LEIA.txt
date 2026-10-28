@@ -1,0 +1,12 @@
+Fonte: CAPTURA-DOE-RJ
+Formato: HTML (UTF-8) devolvido pela busca do Diário Oficial do RJ na Imprensa Oficial (IOERJ), módulo conteudoonline
+Campos: contagem ("<b>N</b> matérias encontradas") e, por matéria, 3 linhas de tabela: link view_publicacao.php (d=data, j=jornal, p=página, i=id da matéria, todos em base64; s=assinatura), "DD/MM/AAAA página N - Matéria Id: N", Jornal (parte do DO), Tipo e um trecho de ~150 a 190 caracteres com o termo em <em>
+Data da extracao: 27/10/2026
+Fonte da extracao: POST https://www.ioerj.com.br/portal/modules/conteudoonline/busca_do.php?acao=busca
+  corpo (form-urlencoded): textobusca="33.000.167"&busca[jornal]=&datapublicacao[dia]=&datapublicacao[mes]=&datapublicacao[ano]=2026&tipobusca=texto&buscaordem=datapublicacao desc&buscar=Buscar
+
+Arquivo: busca-cnpj-petrobras.html, recorte com a contagem e os 3 primeiros dos 39 resultados de 2026 (raiz de CNPJ da Petrobras). Sem filtro de ano a mesma busca acha 1.366.
+O HTML tem também uma versão antiga da lista dentro de um comentário <!-- -->; ela ficou de fora do recorte. Menu, formulário e rodapé também.
+A busca devolve no máximo 100 matérias e não pagina; para passar disso, filtrar por ano (datapublicacao[ano]) ou por ano+mês.
+O link do resultado (view_publicacao.php) abre a página da edição no visualizador PDF.js sem login; o parâmetro s é uma assinatura do servidor e precisa vir da busca (s inválido responde "Acesso negado - Token inválido").
+Ficou de fora: o texto integral da matéria (a busca só traz o trecho) e o PDF da página. Nao ha token de API nem login; a sessão PHP não é necessária.

@@ -1,0 +1,15 @@
+Fonte: CAPTURA-DOE-RS
+Formato: JSON da API pública do novo Diário Oficial do RS (doe-backend.pro.rs.gov.br, PROCERGS), UTF-8
+Campos: envelope com collection[], collectionSize, pageSize e três facetas (filtroTiposMateria, filtroEntidades, filtroAssuntos); 9 chaves por item (id, data, texto, origem, nroPagina, tipoDiario, textoLink, dataUrl, tipoMateria)
+Data da extracao: 27/10/2026
+Fonte da extracao: https://doe-backend.pro.rs.gov.br/public/materias/?page=1&tipoDiario=doe&queryString=42.150.391&dataIni=2015-01-01&dataFim=2026-10-27
+
+Arquivo: busca-cnpj-braskem.json, com 3 dos 14 itens (raiz de CNPJ da Braskem). A API devolve 10 por página; os outros 7 da página foram retirados.
+texto é um trecho de ~300 a 520 caracteres com o termo em <mark>; não foi cortado.
+origem "MATERIA" (acervo novo, data DD/MM/AAAA): o ato abre em https://www.diariooficial.rs.gov.br/materia?id={id} e o texto integral sai em https://doe-backend.pro.rs.gov.br/public/materias/{id}.
+origem "PAGINA" (acervo antigo, id nulo, data DD-MM-AAAA): a página abre em https://www.diariooficial.rs.gov.br/diario?td={tipoDiario}&dt={dataUrl}&pg={nroPagina}.
+tipoDiario=doe é o Diário Oficial; qualquer outro valor cai no Diário da Indústria e Comércio (dic), onde saem publicações de empresas.
+Atenção: palavras sem aspas são buscadas como frase; com aspas viram OU. AND entre palavras funciona.
+dataFim é obrigatória (sem ela: HTTP 400 "Data fim da publicação é obrigatória").
+O certificado TLS valida com as raízes do Node; não falta intermediário.
+Ficou de fora: os demais itens e o texto integral de cada matéria. Nao ha token nem login.

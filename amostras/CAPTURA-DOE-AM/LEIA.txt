@@ -1,0 +1,13 @@
+Fonte: CAPTURA-DOE-AM
+Formato: JSON da API de busca (apibusca/multidiarios) da Imprensa Oficial do Amazonas, UTF-8
+Campos: envelope data com resultados[], total e years[] ({year, total_by_year}); 23 chaves por item (highlight, id, publicado_em, edicao_id, edicao_pagina, materia_id, materia_titulo, materia_categoria, materia_caderno etc.)
+Data da extracao: 27/10/2026
+Fonte da extracao: https://diario.imprensaoficial.am.gov.br/apibusca/multidiarios/busca?page=1&q=33.000.167&exata=1&data_init=01-01-2015&data_end=27-10-2026
+
+Arquivo: busca-cnpj-petrobras.json, com 3 dos 14 resultados (raiz de CNPJ da Petrobras, 2015 em diante).
+Cada resultado é uma matéria (ato) do diário, com página da edição. O highlight já é curto (300 a 1.200 caracteres) e não foi cortado.
+O JSON original vem compacto com escapes \u; aqui foi reindentado, sem mudar valores.
+Paginação começa em 1, 10 resultados por página. exata=1 busca a frase; sem exata, todas as palavras. Aspas não mudam nada.
+Mesma família de portal do DOE-BA e DIOE-PR (ver-flip, portal/edicoes/download), mas a busca é outra rota: /busca/busca/buscar/query responde 404 aqui.
+PDF da página: https://diario.imprensaoficial.am.gov.br/portal/edicoes/download/{edicao_id}/{edicao_pagina}.
+Ficou de fora: os outros 11 resultados. Nao ha token. TLS ok com as raízes do Node.

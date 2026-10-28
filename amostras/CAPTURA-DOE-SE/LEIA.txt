@@ -1,0 +1,12 @@
+Fonte: CAPTURA-DOE-SE
+Formato: JSON do Elasticsearch atrás da busca do Diário Oficial de Sergipe (IOSE/Segrase), mesmo motor IONEWS do DOE-BA e do DIOE-PR, UTF-8
+Campos: took, timed_out, _shards, hits.total + hits.hits[] com _index, _type, _id, _score, _source (10 chaves: conteudo, data, paginas, pagina, pdf_id, year, month, day, diario_id, tipo_edicao) e highlight.conteudo; aggregations (TipoEdicao, Edicoes, FileYear); loggedCredit
+Data da extracao: 27/10/2026
+Fonte da extracao: https://iose.se.gov.br/busca/busca/buscar/query/0/di:2015-01-01/df:2026-10-27/?1=1&q="33.000.167"
+
+Arquivo: busca-cnpj-petrobras.json, com 3 dos 29 resultados (páginas do diário que citam a raiz de CNPJ da Petrobras). A resposta original tinha 10 hits; os outros 7 foram cortados.
+Cada resultado é uma página inteira do diário. O texto de _source.conteudo foi cortado em 1.500 caracteres; o original tem a página toda (8 a 11 mil caracteres nas amostras). highlight.conteudo traz frases com o termo marcado em <strong>, e o CNPJ vem quebrado em tokens (<strong>33</strong>.<strong>000</strong>.<strong>167</strong>).
+Paginação começa em 0, com 10 resultados por página. Com aspas a busca é por frase; sem aspas as palavras se somam com OU (33.000.167 sem aspas devolveu 35.188).
+Link que abre sem login: https://iose.se.gov.br/ver-flip/{diario_id}/#/e:{diario_id}/p:{pagina}?find={termo}. O PDF (/portal/edicoes/download/{diario_id}/{pagina} e /ver/{diario_id}/{pagina}/{termo}) redireciona para /login.
+Acervo pesquisável a partir de dezembro de 2011. TLS ok (GlobalSign, cadeia completa).
+Ficou de fora: os outros 26 resultados e o PDF da edição, que pede login. Nao ha token.

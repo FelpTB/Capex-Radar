@@ -55,6 +55,7 @@ function layout({ title, body, active = "", scripts = "" }) {
     <nav>
       <a class="${active === "projetos" ? "active" : ""}" href="/projetos">Projetos</a>
       <a class="${active === "fontes" ? "active" : ""}" href="/fontes">Fontes</a>
+      <a class="${active === "hub" ? "active" : ""}" href="/fontes/hub">Hub de fontes</a>
       <a class="${active === "captura" ? "active" : ""}" href="/captura">Captura</a>
       <a class="button button--small" href="/prospeccao">Prospectar</a>
     </nav>

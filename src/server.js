@@ -8,6 +8,7 @@ const { extractProjects } = require("./ai");
 const { enrichProject, updateProjectFromEvidence } = require("./enrichment/run");
 const { collectableSources } = require("./enrichment/viability");
 const { sourceGuide } = require("./source-guides");
+const { REGRA_CORRELACAO, sourceExtraction } = require("./source-extraction");
 const { scanPrimarySources } = require("./scanner");
 const { startScheduler } = require("./scheduler");
 const { NEWS_QUERIES, googleNewsUrl } = require("./news-queries");
@@ -17,6 +18,10 @@ const { fieldSpecRow } = require("./field-detail-html");
 const { formatDay } = require("./status-date");
 const { SOURCE_CATEGORIES, sourceCategory } = require("./source-categories");
 const { filterAndSortSources } = require("./source-filters");
+const { SCOPES, sourceScope } = require("./source-scope");
+const { catalogPageBody, hasSourcePage, hubBody, scopeBadge, scopeSection } = require("./source-hub-html");
+const { BRAZIL_UFS } = require("./source-lifecycle");
+const { readRawSample, sampleSectionHtml } = require("./source-sample");
 const {
   CAPTURE_DECISIONS,
   DASHBOARD_PROFILES,
@@ -27,6 +32,10 @@ const {
 
 const config = getConfig();
 const app = express();
+
+if (config.isProduction || config.onRailway) {
+  app.set("trust proxy", 1);
+}
 
 function proofLine(row) {
   if (row && typeof row === "object" && row.texto) {
@@ -52,7 +61,7 @@ function stageCell(value) {
 
 function sourceTitle(source) {
   const name = esc(source.nome);
-  if (!sourceGuide(source.codigo)) return `<strong>${name}</strong>`;
+  if (!hasSourcePage(source.codigo)) return `<strong>${name}</strong>`;
   return `<strong><a href="/fontes/${esc(source.codigo)}">${name}</a></strong>`;
 }
 
@@ -73,7 +82,7 @@ function accessBadge(status) {
 }
 
 function sourceLinks(source) {
-  const page = sourceGuide(source.codigo)
+  const page = hasSourcePage(source.codigo)
     ? `<a href="/fontes/${esc(source.codigo)}">Página</a>`
     : "";
   const external = source.url_base
@@ -415,6 +424,7 @@ const sourceFilterQuery = z.object({
   extracao: z.enum(["", ...Object.keys(SOURCE_CATEGORIES)]).optional(),
   noticia: z.enum(["", "publica", "privada"]).optional(),
   estagio: z.enum(["", "sugerida", "prova", "fixa", "aposentada"]).optional(),
+  abrangencia: z.enum(["", ...Object.keys(SCOPES)]).optional(),
   ordenar: z.enum(["nome", "papel", "acesso", "recorrencia"]).optional(),
 });
 
@@ -516,9 +526,35 @@ function bytesLabel(value) {
   return `${size} bytes`;
 }
 
+const hubQuery = z.object({
+  uf: z.enum(["", ...BRAZIL_UFS]).optional(),
+  municipio: z.string().trim().max(80).optional(),
+});
+
+app.get("/fontes/hub", async (req, res) => {
+  const parsed = hubQuery.safeParse(req.query);
+  const filters = parsed.success ? parsed.data : {};
+  const sources = await db.listSources();
+  res.send(layout({
+    title: "Hub de fontes",
+    active: "hub",
+    body: hubBody(sources, filters),
+  }));
+});
+
 app.get("/fontes/:codigo", async (req, res) => {
   const codigo = String(req.params.codigo || "").toUpperCase();
   const guide = sourceGuide(codigo);
+  if (!guide && hasSourcePage(codigo)) {
+    const source = await db.getSourceByCode(codigo);
+    if (source) {
+      return res.send(layout({
+        title: source.nome,
+        active: "hub",
+        body: catalogPageBody(source),
+      }));
+    }
+  }
   if (!guide) {
     return res.status(404).send(layout({
       title: "Fonte",
@@ -526,10 +562,12 @@ app.get("/fontes/:codigo", async (req, res) => {
       body: `<div class="empty"><h1>Fonte sem página</h1><p>Esta fonte ainda não tem uma página de explicação.</p><a href="/fontes">Voltar às fontes</a></div>`,
     }));
   }
-  const [source, loads] = await Promise.all([
+  const [source, loads, evidenceSample] = await Promise.all([
     db.getSourceByCode(codigo),
     db.latestBaseLoads(guide.cargas),
+    db.latestEvidenceSample(codigo),
   ]);
+  const amostra = sampleSectionHtml({ raw: readRawSample(codigo), evidence: evidenceSample });
   const nome = source?.nome || guide.nome;
   const grupos = guide.extraido?.grupos || [];
   const formato = `
@@ -545,6 +583,25 @@ app.get("/fontes/:codigo", async (req, res) => {
         </div>`).join("")}
     </section>`;
   const paragraphs = (items) => (items || []).map((item) => `<p>${esc(item)}</p>`).join("");
+  const extracao = sourceExtraction(codigo);
+  const extracaoHtml = extracao ? `
+    <section class="source-extraction">
+      <h2>Como o dado aparece na fonte</h2>
+      ${paragraphs(extracao.formato)}
+      <h2>Chamadas feitas pelo Radar</h2>
+      ${extracao.requisicoes.map((item) => `
+        <div class="source-request">
+          <p><code>${esc(item.metodo)}</code> <code>${esc(item.url)}</code></p>
+          ${item.parametros.length ? `<table class="source-request__params">
+            <thead><tr><th>Parâmetro</th><th>Valor</th><th>Para quê</th></tr></thead>
+            <tbody>${item.parametros.map(([nome, valor, funcao]) => `
+              <tr><td><code>${esc(nome)}</code></td><td><code>${esc(valor)}</code></td><td>${esc(funcao)}</td></tr>`).join("")}</tbody>
+          </table>` : ""}
+          ${item.nota ? `<p class="muted">${esc(item.nota)}</p>` : ""}
+        </div>`).join("")}
+      <h2>Passo a passo da extração</h2>
+      <ol class="source-steps">${extracao.passos.map((step) => `<li>${esc(step)}</li>`).join("")}</ol>
+    </section>` : "";
   const fluxo = (guide.fluxo || []).map((step, index) => `
     <li>
       <span class="source-flow__n">${index + 1}</span>
@@ -581,6 +638,7 @@ app.get("/fontes/:codigo", async (req, res) => {
         <a class="button button--secondary" href="${esc(guide.url)}" target="_blank" rel="noopener">Publicação original ↗</a>
       </section>
       <section class="stats">
+        <div><strong>${esc(SCOPES[sourceScope(codigo).abrangencia].label)}</strong><span>Abrangência</span></div>
         <div><strong>${esc(source?.tipo || "secundaria")}</strong><span>Papel no Radar</span></div>
         <div><strong>${guide.cargas.length ? (linhas || "—") : "na coleta"}</strong><span>${guide.cargas.length ? "Linhas na última carga" : "Cópia lida na hora da ficha"}</span></div>
         <div><strong>ok</strong><span>Acesso na coleta</span></div>
@@ -590,7 +648,10 @@ app.get("/fontes/:codigo", async (req, res) => {
           <h2>O que a fonte informa</h2>
           ${paragraphs(guide.informa)}
         </section>
+        ${scopeSection(codigo)}
         ${formato}
+        ${extracaoHtml}
+        ${amostra}
         <section>
           <h2>Origem e links de acesso</h2>
           <p><strong>Fonte inicial.</strong> ${esc(guide.origem.orgao)}. ${esc(guide.origem.publicacao)}</p>
@@ -617,13 +678,16 @@ app.get("/fontes/:codigo", async (req, res) => {
           <h2>Como é feita a correlação</h2>
           <p class="source-mode"><strong>Modo principal:</strong> ${esc(guide.modo || "Definido na descrição abaixo.")}</p>
           ${paragraphs(guide.associacao)}
+          <h3>Correlação direta com o projeto</h3>
+          ${paragraphs(REGRA_CORRELACAO)}
+          ${extracao?.correlacao?.length ? `<h3>Nesta fonte</h3>${paragraphs(extracao.correlacao)}` : ""}
         </section>
         <section>
           <h2>Limitações</h2>
           ${paragraphs(guide.alcance)}
         </section>
       </article>
-      <p class="manual-link"><a href="/fontes">Todas as fontes</a></p>`,
+      <p class="manual-link"><a href="/fontes/hub">Hub de fontes</a> · <a href="/fontes">Todas as fontes</a></p>`,
   }));
 });
 
@@ -633,6 +697,7 @@ app.get("/fontes", async (req, res) => {
   const allSources = (await db.listSources()).map((source) => ({
     ...source,
     status_acesso: dashboardAccess(source, connectedCodes),
+    abrangencia: sourceScope(source.codigo).abrangencia,
   }));
   const sources = filterAndSortSources(allSources, filters);
   const rows = sources.map((source) => {
@@ -641,6 +706,7 @@ app.get("/fontes", async (req, res) => {
     <tr>
       <td>${sourceTitle(source)}<br><span class="muted">${esc(source.codigo)}</span>${source.ativo ? "" : ` ${badge("inativa", "warning")}`}</td>
       <td>${badge(source.tipo, source.tipo === "primaria" ? "info" : "neutral")}</td>
+      <td>${scopeBadge(source.codigo)}</td>
       <td>${newsSphereCell(source.esfera_noticia)}</td>
       <td>${stageCell(source.estagio)}</td>
       <td><strong>${esc(extraction.label)}</strong><br><span class="muted">${esc(extraction.description)}</span></td>
@@ -657,7 +723,7 @@ app.get("/fontes", async (req, res) => {
       <p>${esc(category.description)}</p>
       <span class="muted">${sources.filter((source) => source.categoria === key).length} fonte(s)</span>
     </article>`).join("");
-  const tableBody = rows || `<tr><td colspan="10"><div class="empty"><h2>Nenhuma fonte neste filtro</h2><p>Ajuste acesso, papel, notícia, estágio, extração ou recorrência.</p></div></td></tr>`;
+  const tableBody = rows || `<tr><td colspan="11"><div class="empty"><h2>Nenhuma fonte neste filtro</h2><p>Ajuste acesso, papel, abrangência, notícia, estágio, extração ou recorrência.</p></div></td></tr>`;
 
   res.send(layout({
     title: "Fontes",
@@ -665,6 +731,7 @@ app.get("/fontes", async (req, res) => {
     body: `
       <section class="page-heading">
         <div><p class="eyebrow">Saúde operacional</p><h1>Dashboard de Fontes</h1><p>Acesso ok marca só as fontes que a coleta já usa. O nome e o link Página abrem a explicação de cada uma.</p></div>
+        <a class="button button--secondary" href="/fontes/hub">Hub de fontes</a>
       </section>
       <form class="source-filters" method="get" action="/fontes">
         <label>Acesso
@@ -683,6 +750,12 @@ app.get("/fontes", async (req, res) => {
             ["primaria", "primária"],
             ["secundaria", "secundária"],
           ], filters.papel || "")}</select>
+        </label>
+        <label>Abrangência
+          <select name="abrangencia">${selectOptions([
+            ["", "Todas"],
+            ...Object.entries(SCOPES).map(([key, scope]) => [key, scope.label]),
+          ], filters.abrangencia || "")}</select>
         </label>
         <label>Recorrência
           <select name="recorrencia">${selectOptions([
@@ -732,7 +805,7 @@ app.get("/fontes", async (req, res) => {
       <section class="category-legend" aria-label="Categorias de extração">${categoryLegend}</section>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fonte</th><th>Papel</th><th>Notícia</th><th>Estágio</th><th>Extração</th><th>Acesso</th><th>Recorrência</th><th>O que publica</th><th>Explicação</th><th>Link</th></tr></thead>
+          <thead><tr><th>Fonte</th><th>Papel</th><th>Abrangência</th><th>Notícia</th><th>Estágio</th><th>Extração</th><th>Acesso</th><th>Recorrência</th><th>O que publica</th><th>Explicação</th><th>Link</th></tr></thead>
           <tbody>${tableBody}</tbody>
         </table>
       </div>`,
@@ -884,7 +957,7 @@ app.get("/projetos/:id", async (req, res) => {
       <h3>${esc(item.titulo_ou_resumo || item.fonte_nome || "Evidência")}</h3>
       <p>${esc(item.trecho || "")}</p>
       ${proof}
-      <p class="evidence-links">${sourceGuide(item.fonte_codigo) ? `<a href="/fontes/${esc(item.fonte_codigo)}">${esc(item.fonte_nome || "Fonte")}</a>` : ""}${item.url ? `<a href="${esc(item.url)}" target="_blank" rel="noopener">Abrir a publicação ↗</a>` : ""}</p>
+      <p class="evidence-links">${item.fonte_codigo && hasSourcePage(item.fonte_codigo) ? `<a href="/fontes/${esc(item.fonte_codigo)}">${esc(item.fonte_nome || "Fonte")}</a>` : ""}${item.url ? `<a href="${esc(item.url)}" target="_blank" rel="noopener">Abrir a publicação ↗</a>` : ""}</p>
     </article>`;
   }).join("");
   const usedSourceIds = new Set(evidence.map((item) => item.id_fonte).filter(Boolean));
@@ -902,7 +975,7 @@ app.get("/projetos/:id", async (req, res) => {
       <li class="${used ? "is-used" : ""}">
         <span class="source-check${used ? " is-on" : ""}" role="img" aria-label="${used ? "Utilizada nesta ficha" : "Ainda não utilizada"}">${used ? "✓" : ""}</span>
         <div>
-          ${sourceTitle(source)}
+          ${sourceTitle(source)} ${scopeBadge(source.codigo)}
           <span>${esc(sourceGuide(source.codigo)?.resumo || source.conteudo || "Sem explicação cadastrada.")}</span>
         </div>
       </li>`;
@@ -959,6 +1032,7 @@ app.get("/projetos/:id", async (req, res) => {
             <h2>Fontes conectadas</h2>
             <p>${usedSecondary} de ${secondarySources.length} fontes conectadas já deixaram evidência nesta ficha.</p>
           </div>
+          ${project.uf ? `<a class="button button--secondary" href="/fontes/hub?${esc(new URLSearchParams({ uf: project.uf, municipio: project.municipio || "" }).toString())}">Fontes para ${esc([project.municipio, project.uf].filter(Boolean).join("/"))}</a>` : ""}
         </div>
         <ul>${secondaryHtml}</ul>
       </section>`,
@@ -1014,7 +1088,13 @@ app.use((error, _req, res, _next) => {
   }));
 });
 
-app.listen(config.port, () => {
-  console.log(`Radar CapEx local: http://localhost:${config.port}`);
-  startScheduler();
+app.listen(config.port, "0.0.0.0", () => {
+  const where = config.onRailway
+    ? "Railway"
+    : config.isProduction
+      ? "produção"
+      : "local";
+  console.log(`Radar CapEx (${where}) na porta ${config.port}`);
+  if (config.schedulerEnabled) startScheduler();
+  else console.log("Agendador desligado (DISABLE_SCHEDULER).");
 });

@@ -1,0 +1,14 @@
+Fonte: CAPTURA-DOE-PE
+Formato: JSON da busca pública do Diário Oficial do Estado de Pernambuco (CEPE), UTF-8
+Campos: envelope com list[], rowCount, pageSize, map, notEmpty, empty; 5 chaves por item (codigo, texto, resumo, nomeCategoria, dataPublicacao)
+Data da extracao: 27/10/2026
+Fonte da extracao: POST https://diariooficial.cepe.com.br/diariooficial/public/search
+  corpo JSON: {"first":0,"maxResults":3,"palavras":"33.000.167","dataInicial":"01/01/2015","dataFinal":"27/10/2026","intervaloAno":"01/01/2015-27/10/2026","codigoDiario":"1"}
+  cabeçalhos: content-type: application/json e Referer: https://diariooficial.cepe.com.br/diariooficialweb/ (sem Referer o servidor responde 403 {"error":"forbidden","reason":"referer_mismatch"})
+
+Arquivo: busca-cnpj-petrobras.json, com 3 dos 95 atos (raiz de CNPJ da Petrobras). Nada foi cortado.
+Cada resultado é uma matéria (ato) do Poder Executivo (codigoDiario 1). texto traz os fragmentos com o termo marcado em <span class="highlight">, separados por linha em branco (até ~850 caracteres); resumo é o começo do ato (até ~400 caracteres, com "...").
+O texto integral do ato vem de GET https://diariooficial.cepe.com.br/diariooficial/public/buscarMateria?codigoMateria={codigo} (mesmo Referer).
+Link público do ato: https://diariooficial.cepe.com.br/diariooficialweb/#/visualizar-publicacao?publicacao={base64(codigo)}
+Paginação por first/maxResults (maxResults 500 devolveu todos os 478 de "petrobras"). A busca é por frase: a ordem das palavras importa, com ou sem aspas. O acervo pesquisável começa em janeiro de 2019.
+Ficou de fora: os outros 92 atos e o PDF de cada matéria. Nao ha token. TLS ok (cadeia Amazon completa).

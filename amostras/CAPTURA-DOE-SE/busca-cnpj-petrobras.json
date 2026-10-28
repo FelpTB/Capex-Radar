@@ -1,0 +1,253 @@
+{
+  "took": 97,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": 29,
+    "max_score": 10.740456,
+    "hits": [
+      {
+        "_index": "segrase_homolog",
+        "_type": "diario",
+        "_id": "7336_15",
+        "_score": 5.3266773,
+        "_source": {
+          "conteudo": "quinta-feira, 18 de Dezembro de 2025 Aracaju - Sergipe Diário Oficial Nº 29.793 15 Meio Ambiente, Sustentabilidade e Ações Climáticas GOVERNO DE SERGIPE SECRETARIA DE ESTADO DO MEIO AMBIENTE, SUSTENTABILIDADE E AÇÕES CLIMÁTICAS Extrato: Portaria de Outorga de Direito de Uso de Recursos Hídricos nº. 193/2025, de 15/12/2025. Outorga de Direito de Uso de Recursos Hídricos Superficiais. Processo nº. 035.000.05374/2025-6. Outorgante: Secretaria de Estado do Meio Ambiente, Sustentabilidade e Ações Climáticas - SEMAC/Diretoria de Recursos Hídricos - DIREHI. Outorgado: Companhia de Saneamento de Sergipe - DESO. Manancial Superficial: rio Itamirim. Bacia Hidrográfica do rio Real; Unidade de Planejamento: 26 - Itamirim. Município: Umbaúba. Localização UTM: N 8.730.404 m e E 645.776 m; SIRGAS 2000 - FUSO 24 Sul. Vazão máxima diária, regime de operação e volume mensais correspondentes aos valores abaixo relacionados: Mês Vazão (m3/h) outorgada (m3/h) Tempo (h/dia) Período (dias/ mês) Jan 390,8 Fev 390,8 Mar 390,8 Abr 390,8 Mai 390,8 Jun 390,8 Jul 390,8 Ago 390,8 Set 390,8 Out 390,8 Nov 390,8 Dez 390,8 24 31 24 28 24 31 24 30 24 31 24 30 24 31 24 31 24 30 24 31 24 30 24 31 290.755,2 262.617,6 290.775,2 281.376,0 290.775,2 281.376,0 290.775,2 290.775,2 281.376,0 290.775,2 281.376,0 290.775,2 outorgados ((m3)(m3/h) outorgados Volume (m3) Destinação: Abastecimento Público. Prazo: 2 (dois) anos. Deveres e Obrigações da Outorgada: a outorgada deverá implantar e manter em funcionamento equipame",
+          "data": "2025-12-18",
+          "paginas": 18,
+          "pagina": 15,
+          "pdf_id": 161512,
+          "year": "2025",
+          "month": "12",
+          "day": "18",
+          "diario_id": 7336,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            "Objeto: Deferir o credenciamento como AUTOPRODUTOR(A) E AUTOIMPORTADOR(A) de Gás Natural à Fábrica de Fertilizantes de Sergipe - FAFEN-SE, pessoa jurídica, inscrita no CNPJ/MF sob o n° <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/1123-<strong>33</strong>, localizada em Laranjeiras/SE, com base no art. 44, §1° do Regulamento dos Serviços Locais de Gás Canalizado no Estado de Sergipe. Vigência: com a publicação deste Extrato no D.O.E., sendo disponibilizada, na íntegra, no site da AGRESE."
+          ]
+        },
+        "sort": [
+          1766016000000
+        ],
+        "diario": "D.O. ESTADO SERGIPE",
+        "suplemento": "Edição 29793"
+      },
+      {
+        "_index": "segrase_homolog",
+        "_type": "diario",
+        "_id": "7074_48",
+        "_score": 4.1744833,
+        "_source": {
+          "conteudo": "Diário Oficial quarta-feira, 10 de Setembro de 2025 Aracaju - Sergipe FUNDAÇÃO DE CULTURA E ARTE APERIPÊ DE SERGIPE - FUNCAP/SE EXTRATO DO TERMO DE COMPROMISSO DE ESTÁGIO CONTRATANTE: FUNDAÇÃO DE CULTURA E ARTE APERIPÊ DE SERGIPE - FUNCAP/SE OBJETIVO: Desenvolver atividade que estejam relacionadas com a sua formação profissional - pedagógica, sem vínculo empregatício. CARGA HÓRARIA: 20 (trinta) horas semanais UNIDADE ORÇAMENTÁRIA: 18201 PROGRAMAÇÃO DE TRABALHO 24.122.0047.2439.0000 - NATUREZA DE DESPESA 3.3.90.36 - FONTE DE RECURSO 01.01000000 REMUNERAÇÃO: Bolsa de Complementação Educacional/ SEFAZ PORTARIA Nº 56/2025 De 01 de setembro de 2025 O DIRETOR GERAL DA FUNDAÇÃO DE SAÚDE PARREIRAS HORTA, no uso das atribuições que lhe conferem o art. 12 do Estatuto da FSPH, aprovado pelo Decreto Governamental nº 25.404, de 10 de julho de 2008, RESOLVE: Art. 1º - Designar Marcos José Costa Resende, CPF nº 058. xxx.xxx-48, Assessor Especial II, para responder interinamente pela Coordenação Financeira desta Fundação, em substituição ao titular que se encontra em gozo de férias, no período de 01/09/2025 a 20/09/2025. EXTRATO DE TERMO DE FOMENTO Espécie: Termo de Fomento nº 2154/2025, nº do processo: 48/2025, Administração Pública: FUNDAÇÃO DE CULTURA E ARTE APERIPÊ, OSC: ASSOCIAÇÃO DOS JOVENS RURAIS DO POVOADO BRASILIA, CNPJ: 16.212.128/0001-59 , Objeto: projeto para despesas de custeio, visando à consecução de finalidade de interesse público e recíproco, que envolve a transferência de r",
+          "data": "2025-09-10",
+          "paginas": 50,
+          "pagina": 48,
+          "pdf_id": 155163,
+          "year": "2025",
+          "month": "09",
+          "day": "10",
+          "diario_id": 7074,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            ". - PETROBRAS - FAFEN, CNPJ nº <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/1123-<strong>33</strong>, torna público que recebeu da Administração Estadual do Meio Ambiente - Adema, a Renovação Licença de Operação Nº 387/2022, para fabricação de fertilizantes mistos, amônia, ureia, sulfato de amônio, fertilizantes nitrogenados e gás carbônico (CO2), válida até 29/08/2027."
+          ]
+        },
+        "sort": [
+          1757462400000
+        ],
+        "diario": "D.O. ESTADO SERGIPE",
+        "suplemento": "Edição 29726"
+      },
+      {
+        "_index": "segrase_homolog",
+        "_type": "diario",
+        "_id": "4922_7",
+        "_score": 4.877897,
+        "_source": {
+          "conteudo": "segunda-feira, 19 de Dezembro de 2022 Aracaju - Sergipe Diário Oficial GOVERNO DE SERGIPE SECRETARIA DE ESTADO DA SAÚDE EXTRATO DA ATA DE REGISTRO DE PREÇO Nº 1183/2022-SES Pregão Eletrônico nº 243/2022 Processo: 6991/2021; Ata de Registro de Preços do Pregão Eletrônico nº 243/2022; Objeto: REGISTRO DE PREÇO VISANDO FUTURAS E EVENTUAIS CONTRATAÇÕES DE MATERIAIS DE USO COMUM (EXPEDIENTE E APOIO PARTE VI) - PARA SUPRIR A DEMANDA DO ANO DE 2021 (RELICITAÇÃO DOS ITENS FRACASSADOS DO PE 241/2021), conforme especificações constantes neste Edital e na tabela anexa, especificado(s) no(s) item(s) 01, 03 e 12 em conformidade com as especificações do Edital e de seus Anexos; Fonte de Recursos: A cargo da unidade orçamentária do órgão gerenciador; Unidade Gerenciadora: Secretaria de Estado da Saúde - SES/SE -CNPJ nº 04.384.829/0001-96; Empresa: VTA MACHADO DE ARRUDA E CIA LTDA; CNPJ: 16.667.433/0001-35; Vigência: 12 (doze) meses, a partir da assinatura do Órgão Gerenciador. Parecer Jurídico:5095/2021- PGE; Base Legal: Leis Federais nºs 10520/2002 e 8666/1993, Leis Estaduais nºs 6206/2007, 5.848/2006 e 8234/2017, Decretos nºs 25728/2008, 26531/2009, 26533/2009 e 30785/2017; Preços registrados: ITEM 01 03 12 DESCRIÇÃO RESUMIDA UC VALOR UNIT. (R$) 3,59 Marca UND QTDE. (12 MESES) 5.000 PASTA CLASSIFICADORA POLIONDA ENVELOPE BRANCO, SEM TIMBRE, 240X340MM ENVELOPE TIPO OFICIO BRANCO, SEM TIMBRE 114X229 UND 8.000 0,42 SCRITY UND 16.000 0,10 SCRITY ALAPLAST Aracaju/SE, 16de Dezembro de 2022. MER",
+          "data": "2022-12-19",
+          "paginas": 18,
+          "pagina": 7,
+          "pdf_id": 99760,
+          "year": "2022",
+          "month": "12",
+          "day": "19",
+          "diario_id": 4922,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            "Outorgado: PETRÓLEO BRASILEIRO S.A - PETROBRÁS/ UN-SEAL; CNPJ nº <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/0577-23. Manancial Subterrâneo: aquífero granular da Formação Riachuelo/Membro Maruim, através de poço tubular profundo denominado 9-CP-1431-SE. Bacia Hidrográfica do Rio Japaratuba; Unidade de Planejamento 7 - Baixo Japaratuba. Município: Carmópolis. Localização: UTM 8.822.862m N e 722.078m E; SIRGAS 2000 - FUSO 24 SUL."
+          ]
+        },
+        "sort": [
+          1671408000000
+        ],
+        "diario": "D.O. ESTADO SERGIPE",
+        "suplemento": "Edição 29054"
+      }
+    ]
+  },
+  "aggregations": {
+    "TipoEdicao": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 1,
+          "doc_count": 29
+        }
+      ]
+    },
+    "Edicoes": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 947,
+          "doc_count": 2
+        },
+        {
+          "key": 1239,
+          "doc_count": 2
+        },
+        {
+          "key": 1325,
+          "doc_count": 2
+        },
+        {
+          "key": 1700,
+          "doc_count": 2
+        },
+        {
+          "key": 3269,
+          "doc_count": 2
+        },
+        {
+          "key": 4096,
+          "doc_count": 2
+        },
+        {
+          "key": 858,
+          "doc_count": 1
+        },
+        {
+          "key": 899,
+          "doc_count": 1
+        },
+        {
+          "key": 1143,
+          "doc_count": 1
+        },
+        {
+          "key": 1351,
+          "doc_count": 1
+        },
+        {
+          "key": 1383,
+          "doc_count": 1
+        },
+        {
+          "key": 1465,
+          "doc_count": 1
+        },
+        {
+          "key": 1496,
+          "doc_count": 1
+        },
+        {
+          "key": 1552,
+          "doc_count": 1
+        },
+        {
+          "key": 1775,
+          "doc_count": 1
+        },
+        {
+          "key": 1844,
+          "doc_count": 1
+        },
+        {
+          "key": 1991,
+          "doc_count": 1
+        },
+        {
+          "key": 2020,
+          "doc_count": 1
+        },
+        {
+          "key": 3615,
+          "doc_count": 1
+        },
+        {
+          "key": 4907,
+          "doc_count": 1
+        },
+        {
+          "key": 4922,
+          "doc_count": 1
+        },
+        {
+          "key": 7074,
+          "doc_count": 1
+        },
+        {
+          "key": 7336,
+          "doc_count": 1
+        }
+      ]
+    },
+    "FileYear": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 2016,
+          "doc_count": 6
+        },
+        {
+          "key": 2015,
+          "doc_count": 4
+        },
+        {
+          "key": 2017,
+          "doc_count": 4
+        },
+        {
+          "key": 2018,
+          "doc_count": 4
+        },
+        {
+          "key": 2020,
+          "doc_count": 3
+        },
+        {
+          "key": 2019,
+          "doc_count": 2
+        },
+        {
+          "key": 2021,
+          "doc_count": 2
+        },
+        {
+          "key": 2022,
+          "doc_count": 2
+        },
+        {
+          "key": 2025,
+          "doc_count": 2
+        }
+      ]
+    }
+  },
+  "loggedCredit": false
+}

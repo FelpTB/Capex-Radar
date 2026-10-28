@@ -2,11 +2,14 @@ const db = require("./db");
 const { scanPrimarySources } = require("./scanner");
 const { discoverPublishers } = require("./publisher-radar");
 const { applyYieldDecisions, retireStaleSources } = require("./source-lifecycle");
+const { DIARIOS_PDF, syncDoePdf } = require("./enrichment/doe-pdf");
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const SCAN_MS = WEEK_MS;
 const DISCOVER_MS = WEEK_MS;
 const RETIRE_MS = WEEK_MS;
+const DOE_PDF_MS = 24 * 60 * 60 * 1000;
+const DOE_PDF_DIAS = 7;
 const TICK_MS = 60 * 1000;
 const FIXA_RUN_LIMIT = 80;
 const PROVA_RUN_LIMIT = 40;
@@ -30,6 +33,32 @@ async function runScheduledScan() {
   return { fixa, prova, promocoes };
 }
 
+// Diários sem busca no portal (PA, PB, RO, RR): o índice de PDFs é relido todo dia.
+// A última carga de cada UF em base_carga marca quando a sincronização rodou.
+async function doePdfDue(now = Date.now()) {
+  const codigos = Object.keys(DIARIOS_PDF).map((uf) => `CAPTURA-DOE-${uf}`);
+  const loads = await db.latestBaseLoads(codigos);
+  if (loads.length < codigos.length) return true;
+  return loads.some((load) => isDue(load.carregado_em, DOE_PDF_MS, now));
+}
+
+async function runDoePdfSync() {
+  const resultados = [];
+  for (const uf of Object.keys(DIARIOS_PDF)) {
+    try {
+      resultados.push(await syncDoePdf(uf, { dias: DOE_PDF_DIAS }));
+    } catch (error) {
+      resultados.push({ uf, lidas: 0, paginas: 0, erros: 1, falha: error.message });
+      // Sem esta linha a UF ficaria sempre vencida e seria tentada a cada minuto.
+      await db.pool.query(
+        "insert into base_carga (codigo, recurso, status, erro) values ($1, 'doe_pdf_pagina', 'erro', $2)",
+        [`CAPTURA-DOE-${uf}`, String(error.message).slice(0, 500)],
+      ).catch(() => {});
+    }
+  }
+  return resultados;
+}
+
 function summarize(summary) {
   const parts = [];
   if (summary.descoberta) {
@@ -50,6 +79,11 @@ function summarize(summary) {
   if (summary.aposentadoria) {
     parts.push(`${summary.aposentadoria.length} fontes aposentadas`);
   }
+  if (summary.doePdf) {
+    const lidas = summary.doePdf.reduce((total, item) => total + item.lidas, 0);
+    const paginas = summary.doePdf.reduce((total, item) => total + item.paginas, 0);
+    parts.push(`diários em PDF: ${lidas} edições, ${paginas} páginas`);
+  }
   return parts.join(" · ") || "ciclo em dia";
 }
 
@@ -68,6 +102,9 @@ async function tick() {
     if (isDue(state.ultima_aposentadoria_em, RETIRE_MS)) {
       summary.aposentadoria = await retireStaleSources();
       await db.touchCycle("ultima_aposentadoria_em");
+    }
+    if (await doePdfDue()) {
+      summary.doePdf = await runDoePdfSync();
     }
     if (Object.keys(summary).length) {
       const text = summarize(summary);
@@ -101,6 +138,8 @@ module.exports = {
   SCAN_MS,
   DISCOVER_MS,
   RETIRE_MS,
+  DOE_PDF_MS,
+  doePdfDue,
   isDue,
   runScheduledScan,
   summarize,

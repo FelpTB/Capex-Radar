@@ -1,0 +1,13 @@
+Fonte: CAPTURA-DOE-PA
+Formato: (1) recorte HTML da página /Frame do IOEPA com as edições de um dia; (2) JSON com uma página de PDF como o índice do Radar a guarda
+Campos (1): datepicker (data efetivamente mostrada), link do Google Drive (uc?id={id}&export=download) e capa (pages/AAAA/AAAA.MM.DD.{DOE|EXTRA}.jpg) de cada edição
+Campos (2): edicao {uf, chave, data, titulo, url, paginas, bytes}, pagina, raizes (raízes de CNPJ achadas na página), texto (texto integral da página extraído com pdfjs)
+Data da extracao: 28/10/2026
+Fonte da extracao: GET https://www.ioepa.com.br/Frame/?dts=23/10/2026 e o PDF https://drive.google.com/uc?id=1or1Oc8xcWxzIbFnUGQPCxhJuHcPGgPLM&export=download (27/10/2026)
+
+Arquivo 1: 1-edicoes-23-10-2026.html, só o bloco #mid (edição normal e extra do dia). Arquivo 2: 2-pagina-indexada.json, página 63 da edição de 27/10/2026, com aviso de licença recebida da SEMAS e 14 CNPJs.
+A busca de texto do portal (/pesquisa/resultado/QueryTexto, que redireciona para /pesquisa/?q=…&di=…&df=…) responde HTTP 500 em toda consulta (testado em 27 e 28/10/2026), por isso o Radar mantém um índice próprio.
+O Frame aceita qualquer data; sem edição no dia ele mostra a anterior (05/03/2019 devolveu 01/03/2019), então o conector só aceita quando o datepicker bate com a data pedida.
+Cada consulta ao Frame leva de 5 a 8 s. O PDF vem direto do Google Drive (3,7 MB e 124 páginas em 23/10/2026), assinado digitalmente, com camada de texto.
+O texto sai com versalete partido ("g ov ERNAD o R", "c NP j"); os dígitos do CNPJ ficam inteiros. Por isso o índice guarda também o texto compacto, sem espaços nem acentos.
+Nao ha token. Cloudflare na frente; a home às vezes responde 520, o /Frame não.

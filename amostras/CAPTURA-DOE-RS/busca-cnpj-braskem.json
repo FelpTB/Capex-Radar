@@ -1,0 +1,98 @@
+{
+ "collection": [
+  {
+   "id": 1363737,
+   "data": "05/01/2026",
+   "texto": "...SIDERURGICA NACIONAL 33.131.541 COMPANHIA BRASILEIRA DE METALURGIA E MINERACAO 33.391.434 BRENNTAG QUIMICA BRASIL LTDA. 33.453.598 RAIZEN S.A. 33.592.510 VALE S.A. 33.611.500 GERDAU S.A. 34.274.233 VIBRA ENERGIA S.A. 37.267.980 CRC DISTRIBUIDORA DE BEBIDAS E ALIMENTOS SA 40.432.544 CLARO S.A. <mark>42.150.391</mark>...",
+   "origem": "MATERIA",
+   "nroPagina": null,
+   "tipoDiario": null,
+   "textoLink": null,
+   "dataUrl": null,
+   "tipoMateria": "Portarias"
+  },
+  {
+   "id": 1362695,
+   "data": "26/12/2025",
+   "texto": "...6 00.070.112 ALL NATIONS COMERCIO EXTERIOR S.A. 7 05.848.387 ALUNORTE ALUMINA DO NORTE DO BRASIL S/A 8 15.436.940 AMAZON SERVICOS DE VAREJO DO BRASIL LTDA. 9 07.526.557 AMBEV S.A. 10 17.469.701 ARCELORMITTAL BRASIL S.A. 11 49.475.833 BIOLAB SANUS FARMACEUTICA LTDA 12 <mark>42.150.391</mark>...",
+   "origem": "MATERIA",
+   "nroPagina": null,
+   "tipoDiario": null,
+   "textoLink": null,
+   "dataUrl": null,
+   "tipoMateria": "Portarias"
+  },
+  {
+   "id": 660523,
+   "data": "24/12/2021",
+   "texto": "...CHP nº Empresa Inscrição Estadual CNPJ Valor (R$) 8006/2020 Companhia de Gás do Estado do Rio Grande do Sul - SULGÁS 096/2358401 72.300.122/0001-04 1.336.220,21 8008/2020 Braskem S/A 149/0040827 <mark>42.150.391</mark>/0037-81 342.191,25 8009/2020 Ambev SA 132/0148570 07.526.557/0039-82 600.000,00...",
+   "origem": "MATERIA",
+   "nroPagina": null,
+   "tipoDiario": null,
+   "textoLink": null,
+   "dataUrl": null,
+   "tipoMateria": "Atos Administrativos"
+  }
+ ],
+ "collectionSize": 14,
+ "pageSize": 10,
+ "filtroTiposMateria": {
+  "tipo": null,
+  "resultados": [
+   {
+    "valor": "Atos Administrativos",
+    "qtdResultados": 2
+   },
+   {
+    "valor": "Portarias",
+    "qtdResultados": 2
+   },
+   {
+    "valor": "Diversos",
+    "qtdResultados": 1
+   },
+   {
+    "valor": "Editais",
+    "qtdResultados": 1
+   }
+  ]
+ },
+ "filtroEntidades": {
+  "tipo": null,
+  "resultados": [
+   {
+    "valor": "Secretaria da Fazenda",
+    "qtdResultados": 3
+   },
+   {
+    "valor": "Secretaria da Cultura",
+    "qtdResultados": 2
+   },
+   {
+    "valor": "Secretaria de Trabalho, Emprego e Renda",
+    "qtdResultados": 1
+   }
+  ]
+ },
+ "filtroAssuntos": {
+  "tipo": null,
+  "resultados": [
+   {
+    "valor": "Atos Administrativos",
+    "qtdResultados": 2
+   },
+   {
+    "valor": "Portaria",
+    "qtdResultados": 2
+   },
+   {
+    "valor": "Edital de Notificação",
+    "qtdResultados": 1
+   },
+   {
+    "valor": "Súmula",
+    "qtdResultados": 1
+   }
+  ]
+ }
+}

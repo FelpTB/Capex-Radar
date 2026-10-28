@@ -1,0 +1,17 @@
+# Node (package.json) + Python (requirements.txt) para cargas ONS/ARTESP.
+# "..." mantém os pacotes do provider Node (nodejs, npm); sem ele a imagem fica sem Node.
+[phases.setup]
+nixPkgs = ["...", "python312", "p7zip"]
+
+# O provider Python não roda num projeto Node: as dependências vão num venv próprio.
+[phases.python]
+dependsOn = ["setup"]
+cmds = [
+  "python3 -m venv --copies /opt/venv",
+  "/opt/venv/bin/pip install --no-cache-dir -r requirements.txt",
+]
+
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+# Lido por src/python-exec.js.
+PYTHON_BIN = "/opt/venv/bin/python"

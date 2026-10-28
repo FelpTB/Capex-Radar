@@ -1,3 +1,4 @@
+const { DOE_ESTADOS, doeEstado } = require("./doe-registry");
 const { sourceOrigin } = require("./source-origin");
 
 const GUIDES = {
@@ -537,6 +538,206 @@ const GUIDES = {
       "Um município ausente da base volta vazio. O trecho mostra que o nome saiu no diário municipal. O ato em si precisa ser lido no PDF.",
     ],
   },
+  "CAPTURA-SIGPUB": {
+    nome: "Diários oficiais dos municípios (SIGPub)",
+    url: "https://www.diariomunicipal.com.br/",
+    arquivo: "Sem arquivo local. Exemplo bruto em amostras/CAPTURA-SIGPUB/",
+    copia: "Consulta ao vivo, sem tabela local",
+    cargas: [],
+    resumo: "Matérias dos diários oficiais das associações estaduais de municípios, consultadas pelo CNPJ e pelo nome da empresa na UF da ficha.",
+    informa: [
+      "A busca devolve o título do ato, a prefeitura, câmara ou consórcio que publicou, o órgão, um trecho com o termo, a data de circulação, a edição e o link da matéria. Serve para decreto, lei, alvará e licença municipal.",
+      "Cobre os municípios que publicam pela associação do estado. Capitais e cidades grandes costumam ter diário próprio e ficam fora, como Ouro Preto, Sete Lagoas e Camaçari.",
+    ],
+    campos: [
+      ["Título", "Nome do ato publicado, como decreto, lei ou extrato."],
+      ["Entidade", "Prefeitura, câmara ou consórcio que publicou a matéria."],
+      ["Trecho", "Pedaço do texto em que o CNPJ ou o nome aparece."],
+      ["Data", "Dia de circulação da edição."],
+      ["Link", "Endereço da matéria no diário da associação."],
+    ],
+    acesso: [
+      "Na coleta, o Radar escolhe os diários de associação da UF da ficha e abre a página pública de busca com o CNPJ completo, a raiz do CNPJ e as primeiras palavras da razão social. Não há chave nem login.",
+      "A busca exige um período. O Radar pede de 2015 até a data da coleta e lê a primeira página de resultados, com até 25 matérias por termo.",
+    ],
+    associacao: [
+      "A busca da plataforma combina as palavras com OU. O Radar só guarda a matéria que traz a raiz do CNPJ ou todas as palavras do nome no título ou no trecho. As do município da ficha vêm primeiro, depois atos como licença e decreto, e por último compras públicas.",
+    ],
+    alcance: [
+      "O nome da empresa também aparece como marca de produto em compra de prefeitura, como vergalhão Gerdau ou refrigerante Ambev. Matéria achada só pelo nome fica de fora se não for licença, decreto ou ato parecido; com a raiz do CNPJ, sempre fica.",
+    ],
+  },
+  "CAPTURA-DOM-METAWAY": {
+    nome: "Diários municipais Metaway (Mentor)",
+    url: "https://lencois.mentor.metaway.com.br/diario/",
+    arquivo: "Sem arquivo local. Exemplo bruto em amostras/CAPTURA-DOM-METAWAY/",
+    copia: "Consulta ao vivo, sem tabela local",
+    cargas: [],
+    resumo: "Edições do diário oficial de prefeituras da plataforma Metaway, consultadas pela marca da empresa quando a ficha é de um município mapeado.",
+    informa: [
+      "A busca devolve as edições em que o termo aparece, com número e data. O Radar abre o PDF das seis mais recentes e guarda o trecho em volta da marca.",
+      "Serve para decreto, alvará, permissão de uso e doação municipal ligados à obra. Hoje o mapa tem Lençóis Paulista/SP, com edições desde abril de 2019.",
+    ],
+    campos: [
+      ["Edição", "Número da edição do diário municipal."],
+      ["Data", "Dia de publicação da edição."],
+      ["Trecho", "Texto do PDF em volta da marca da empresa."],
+      ["PDF", "Link do arquivo da edição na plataforma."],
+    ],
+    acesso: [
+      "Na coleta, o Radar acha a prefeitura pelo município e pela UF da ficha e chama a API pública /recurso/diario/lista com a marca e o período. Não há chave.",
+      "Para cada edição lida, chama /recurso/diario/editar/{codigo}, que devolve srcPDF, baixa o PDF e extrai o texto das primeiras 20 páginas.",
+    ],
+    associacao: [
+      "A busca usa a primeira palavra do nome da empresa, que costuma ser a marca, porque a plataforma trata várias palavras como frase. O município da ficha já é a barreira contra homônimos.",
+    ],
+    alcance: [
+      "Só cobre prefeituras que estão no mapa do conector. A busca não traz trecho, então edição sem texto legível no PDF fica sem trecho e marcada como não lida.",
+    ],
+  },
+  "CAPTURA-DOE-BA": {
+    nome: "Diário Oficial do Estado da Bahia",
+    url: "https://dool.egba.ba.gov.br/",
+    arquivo: "Sem arquivo local. Exemplo bruto em amostras/CAPTURA-DOE-BA/",
+    copia: "Consulta ao vivo, sem tabela local",
+    cargas: [],
+    resumo: "Páginas do Diário Oficial da Bahia que citam a raiz do CNPJ ou o nome da empresa, com o trecho destacado pela busca.",
+    informa: [
+      "Cada resultado é uma página do diário com data, número da página e o trecho em que o termo aparece. Traz portarias de licença do INEMA, resoluções do DESENVOLVE e do PROAUTO, contratos da SDE e despachos.",
+      "O texto do ato costuma ter o número do processo, a capacidade licenciada e a validade. O valor do investimento raramente aparece nas resoluções de incentivo.",
+    ],
+    campos: [
+      ["Data", "Dia da edição em que a página saiu."],
+      ["Página", "Número da página na edição."],
+      ["Trecho", "Frase destacada pela busca com o CNPJ ou o nome."],
+      ["Link", "Visualizador da edição aberto na página do ato."],
+    ],
+    acesso: [
+      "Na coleta, o Radar chama a busca pública /busca/busca/buscar/query com a raiz do CNPJ e o nome entre aspas, de 2015 até a data da coleta. Lê até duas páginas de dez resultados por termo.",
+      "O servidor não manda o certificado intermediário. O conector soma a cadeia de src/enrichment/certs às raízes do Node e mantém a verificação TLS ligada.",
+    ],
+    associacao: [
+      "O resultado só fica se o trecho trouxer a raiz do CNPJ ou todas as palavras do nome. Os que citam o município da ficha vêm primeiro, depois licença e decreto, por data.",
+    ],
+    alcance: [
+      "O PDF da edição pede login, então a evidência fica com o trecho e o visualizador. Página com vários atos pode trazer o nome em ato de outra empresa.",
+    ],
+  },
+  "CAPTURA-DOE-PR": {
+    nome: "Diário Oficial do Estado do Paraná",
+    url: "https://www.dioe.pr.gov.br/",
+    arquivo: "Sem arquivo local. Exemplo bruto em amostras/CAPTURA-DOE-PR/",
+    copia: "Consulta ao vivo, sem tabela local",
+    cargas: [],
+    resumo: "Páginas do Diário Oficial do Paraná que citam a raiz do CNPJ ou o nome da empresa, com o trecho destacado pela busca.",
+    informa: [
+      "Cada resultado é uma página do diário com data, número da página e trecho. Traz súmulas de licença e autorização do IAT, TAC, outorgas de água e decretos estaduais.",
+      "A súmula costuma dizer a modalidade da licença, o endereço da planta e a atividade. É o texto publicado do que o FeatureServer do IAT mostra como registro.",
+    ],
+    campos: [
+      ["Data", "Dia da edição em que a página saiu."],
+      ["Página", "Número da página na edição."],
+      ["Trecho", "Frase destacada pela busca com o CNPJ ou o nome."],
+      ["PDF", "Link do PDF da página no portal do DIOE."],
+    ],
+    acesso: [
+      "Na coleta, o Radar chama a busca pública /busca/busca/buscar/query do DIOE com a raiz do CNPJ e o nome entre aspas, de 2015 até a data da coleta. Lê até duas páginas de dez resultados por termo.",
+      "O motor é o mesmo do DOE-BA e o conector compartilha o código. O PDF da página fica em /portal/edicoes/download/{diario_id}/{pagina}, sem login.",
+    ],
+    associacao: [
+      "O resultado só fica se o trecho trouxer a raiz do CNPJ ou todas as palavras do nome. Os que citam o município da ficha vêm primeiro, depois licença, outorga e TAC, por data.",
+    ],
+    alcance: [
+      "A filial pode ter CNPJ próprio com a mesma raiz e outro município; o trecho mostra qual unidade foi licenciada. O host antigo documentos.dioe.pr.gov.br não é usado.",
+    ],
+  },
+  "CAPTURA-DOE-SP": {
+    nome: "Diário Oficial do Estado de São Paulo",
+    url: "https://www.doe.sp.gov.br/",
+    arquivo: "Sem arquivo local. Exemplo bruto em amostras/CAPTURA-DOE-SP/",
+    copia: "Consulta ao vivo, sem tabela local",
+    cargas: [],
+    resumo: "Atos do Diário Oficial de São Paulo que citam a raiz do CNPJ ou o nome da empresa, com título, órgão e trecho.",
+    informa: [
+      "Cada ato traz data, título, a hierarquia do órgão e um trecho com o termo. Traz as listas mensais de licenças concedidas e solicitadas da CETESB, autuações e outorgas do DAEE e da SP Águas.",
+      "Nas listas da CETESB, a linha da empresa diz o número e o tipo da licença, a atividade e o endereço, o que confirma LP, LI e LO da planta.",
+    ],
+    campos: [
+      ["Data", "Dia da publicação do ato."],
+      ["Título", "Título do ato, como Licenças Concedidas ou Portaria."],
+      ["Órgão", "Hierarquia de quem publicou, do caderno até a unidade."],
+      ["Trecho", "Texto em volta do CNPJ ou do nome."],
+      ["Link", "Página do ato no portal do DOE-SP."],
+    ],
+    acesso: [
+      "Na coleta, o Radar chama a API pública de busca avançada do DOE-SP com a raiz do CNPJ e depois com o nome, de 2015 até a data da coleta, e lê até 100 atos por termo.",
+      "A API não exige chave. Ela só indexa atos a partir de maio de 2023; o acervo legado do diário anterior fica de fora.",
+    ],
+    associacao: [
+      "O ato só fica se o trecho trouxer a raiz do CNPJ ou todas as palavras do nome. O trecho é recortado em volta do termo, e os atos que citam o município da ficha vêm primeiro.",
+    ],
+    alcance: [
+      "Obra concluída antes de 2023 aparece só pelos atos posteriores, como LO e renovação. As listas da CETESB são longas, e o recorte pode cortar parte da linha da empresa.",
+    ],
+  },
+  "CAPTURA-DOE-MG": {
+    nome: "Jornal Minas Gerais",
+    url: "https://www.jornalminasgerais.mg.gov.br/",
+    arquivo: "Sem arquivo local. Exemplo bruto em amostras/CAPTURA-DOE-MG/",
+    copia: "Consulta ao vivo, sem tabela local",
+    cargas: [],
+    resumo: "Trechos do Jornal Minas Gerais que citam a raiz do CNPJ ou o nome da empresa, nos cadernos do Executivo, dos Municípios e de Terceiros.",
+    informa: [
+      "Cada trecho traz data, caderno e página. Aparecem licenças da SEMAD e decisões do COPAM, protocolos de intenção e cancelamentos da Invest Minas, outorgas, intervenções ambientais e regimes tributários.",
+      "O texto vem sem acento e com quebras do PDF, como fi rmado. O número da licença, a fase LP, LI ou LO e o empreendimento costumam estar no próprio trecho.",
+    ],
+    campos: [
+      ["Data", "Dia da edição."],
+      ["Caderno", "Diário do Executivo, dos Municípios ou de Terceiros."],
+      ["Página", "Número da página no caderno."],
+      ["Trecho", "Texto em volta do termo, como a API devolve."],
+      ["Link", "Visualizador da edição aberto na página e no termo."],
+    ],
+    acesso: [
+      "Na coleta, o Radar pede um token anônimo em /api/v1/Autenticacao/Autenticar e chama /Pesquisa/PesquisarJornaisPaginados com a raiz do CNPJ e depois com o nome, de 2015 até a data da coleta.",
+      "O servidor não manda o certificado intermediário. O conector soma a cadeia de src/enrichment/certs às raízes do Node e mantém a verificação TLS ligada.",
+    ],
+    associacao: [
+      "O trecho só fica se trouxer a raiz do CNPJ, com ponto, espaço ou sem separador, ou todas as palavras do nome. Os que citam o município da ficha vêm primeiro, depois licença e decreto.",
+    ],
+    alcance: [
+      "Empresa com muitas filiais em MG traz atos de outras plantas; o município no trecho separa a unidade da ficha. Várias palavras na busca viram frase exata.",
+    ],
+  },
+  "SEC-SEMAD": {
+    nome: "SEMAD Licenças GIS (MG)",
+    url: "https://geoserver.meioambiente.mg.gov.br/ows",
+    arquivo: "Sem arquivo local. Exemplo bruto em amostras/SEC-SEMAD/",
+    copia: "Consulta ao vivo, sem tabela local",
+    cargas: [],
+    resumo: "Licenças ambientais do sistema SLA de Minas Gerais, encontradas pelo nome do titular na camada pública da IDE-Sisema.",
+    informa: [
+      "Cada licença traz processo, município, titular, tipo de solicitação, atividade principal com código, classe, modalidade, fase, status, emissão, validade, coordenada e link de visitante do SLA.",
+      "A camada cobre licenças do SLA, de 2019 em diante, com milhares de registros. Licença anterior ao SLA não aparece e continua no Jornal Minas Gerais.",
+    ],
+    campos: [
+      ["Processo", "Número do processo no SLA."],
+      ["Município", "Município da solicitação."],
+      ["Atividade", "Código e descrição da atividade principal."],
+      ["Fase", "LP, LI, LO ou combinação, e a modalidade LAC ou LAS."],
+      ["Emissão", "Data de emissão da licença."],
+    ],
+    acesso: [
+      "Na coleta, o Radar chama o WFS público do GeoServer da SEMAD com a camada ide_2101_mg_empreendimentos_licenciados_pto e um filtro CQL pelo nome. Não há chave.",
+      "A resposta vem em GeoJSON, com até 500 licenças. O conector lê as propriedades e descarta a geometria, porque latitude e longitude já vêm como campos.",
+    ],
+    associacao: [
+      "O filtro usa as duas primeiras palavras do nome, porque o campo cpf_cnpj vem com os últimos dígitos zerados em parte das linhas. As licenças do município da ficha vêm primeiro, por data de emissão.",
+    ],
+    alcance: [
+      "Nome genérico traz licença de outra empresa; o município e a atividade separam. A camada não traz valor de investimento nem o parecer, que fica no link do SLA.",
+    ],
+  },
   "CAPTURA-DOU": {
     nome: "Diário Oficial da União",
     url: "https://www.in.gov.br/consulta/-/buscar/dou",
@@ -806,6 +1007,97 @@ const DEEP_PROFILES = {
     evidence: "Expor edição, trecho contextual e link do PDF municipal",
     implication: "Inferir possível ato local, sujeito à leitura integral",
   },
+  "CAPTURA-SIGPUB": {
+    modo: "CNPJ completo, raiz do CNPJ e nome da empresa contra o texto das matérias do diário da associação da UF",
+    status: "Decreto de desmembramento, lei de incentivo, alvará ou licença municipal indicam terreno, autorização ou implantação. A fase só se confirma lendo o ato.",
+    acesso: "Na coleta ao vivo, a página pública de busca de cada associação da UF é aberta por HTTP GET com período de 2015 até hoje, sem token, cache ou tabela.",
+    secundario: "A UF da ficha escolhe a associação. O filtro exige a raiz do CNPJ ou todas as palavras do nome, e o município da ficha ordena primeiro.",
+    limite: "Só cobre municípios associados à plataforma. A primeira página traz até 25 matérias por termo, nomes de marca geram ruído em licitação e mudanças no HTML interrompem a leitura.",
+    fetch: "Abrir a busca HTML pública do diário da associação",
+    store: "Consultar ao vivo sem persistir matérias localmente",
+    query: "Buscar CNPJ, raiz e nome da empresa no período",
+    match: "Exigir CNPJ ou todas as palavras e ordenar pelo município",
+    evidence: "Expor título, entidade, órgão, trecho, data, edição e link",
+    implication: "Inferir ato municipal ligado ao terreno ou à obra, sujeito à leitura integral",
+  },
+  "CAPTURA-DOM-METAWAY": {
+    modo: "Marca da empresa contra o texto das edições do diário da prefeitura do município da ficha",
+    status: "Decreto, permissão de uso, doação ou alvará citando a empresa marcam terreno, apoio local ou obra em curso; a fase só se confirma no ato.",
+    acesso: "Na coleta ao vivo, a API JSON da plataforma lista as edições com o termo e cada PDF é baixado e lido, sem token, cache ou tabela.",
+    secundario: "O município e a UF da ficha escolhem a prefeitura; sem prefeitura no mapa, a fonte não roda. As seis edições mais recentes são lidas.",
+    limite: "Só cobre prefeituras mapeadas, a busca não traz trecho e o PDF pode ter texto ilegível ou mais de 20 páginas.",
+    fetch: "Listar as edições com o termo na API da prefeitura",
+    store: "Ler os PDFs ao vivo sem persistir edições localmente",
+    query: "Buscar a marca da empresa no período",
+    match: "Exigir o município da ficha e achar o termo no PDF",
+    evidence: "Expor edição, data, trecho do PDF e link do arquivo",
+    implication: "Inferir ato municipal sobre o terreno ou a obra, sujeito à leitura integral",
+  },
+  "CAPTURA-DOE-BA": {
+    modo: "Raiz do CNPJ e nome da empresa entre aspas contra o texto integral das páginas do DOE-BA",
+    status: "Portaria de LI, LO ou licença de alteração do INEMA, habilitação em DESENVOLVE ou PROAUTO e contrato de terreno da SDE marcam autorização, incentivo e implantação.",
+    acesso: "Na coleta ao vivo, a API JSON da busca do DOOL é chamada por HTTPS com a cadeia intermediária embutida, sem token, cache ou tabela.",
+    secundario: "O trecho tem de trazer a raiz do CNPJ ou todas as palavras do nome; o município da ficha e o tipo de ato ordenam o resultado.",
+    limite: "Página com vários atos traz ruído, o PDF pede login e a resolução de incentivo raramente traz valor; a leitura para em duas páginas de resultado por termo.",
+    fetch: "Chamar a busca JSON do Diário Oficial da Bahia",
+    store: "Consultar ao vivo sem persistir páginas localmente",
+    query: "Buscar raiz de CNPJ e nome entre aspas desde 2015",
+    match: "Exigir CNPJ ou nome no trecho e ordenar pelo município",
+    evidence: "Expor data, página, trecho destacado, tipo de ato e link",
+    implication: "Inferir licença, incentivo ou terreno estadual ligado à obra",
+  },
+  "CAPTURA-DOE-PR": {
+    modo: "Raiz do CNPJ e nome da empresa entre aspas contra o texto integral das páginas do DIOE-PR",
+    status: "Súmula de LP, LI ou LO do IAT, TAC e outorga de água marcam autorização ambiental e implantação da planta no Paraná.",
+    acesso: "Na coleta ao vivo, a API JSON da busca do DIOE é chamada por HTTPS, sem token, cache ou tabela; o motor é o mesmo do DOE-BA.",
+    secundario: "O trecho tem de trazer a raiz do CNPJ ou todas as palavras do nome; o município da ficha e o tipo de ato ordenam o resultado.",
+    limite: "Página com vários atos traz ruído e filiais da mesma raiz aparecem com outro município; a leitura para em duas páginas de resultado por termo.",
+    fetch: "Chamar a busca JSON do Diário Oficial do Paraná",
+    store: "Consultar ao vivo sem persistir páginas localmente",
+    query: "Buscar raiz de CNPJ e nome entre aspas desde 2015",
+    match: "Exigir CNPJ ou nome no trecho e ordenar pelo município",
+    evidence: "Expor data, página, trecho destacado, tipo de ato e PDF",
+    implication: "Inferir licença, outorga ou TAC estadual ligado à planta",
+  },
+  "CAPTURA-DOE-SP": {
+    modo: "Raiz do CNPJ e nome da empresa contra título e texto dos atos do DOE-SP",
+    status: "Linha da empresa nas listas de licenças da CETESB, outorga do DAEE e autuação ambiental marcam LP, LI, LO e operação.",
+    acesso: "Na coleta ao vivo, a API JSON de busca avançada do DOE-SP é chamada sem token, cache ou tabela.",
+    secundario: "O ato tem de trazer a raiz do CNPJ ou todas as palavras do nome; o trecho é recortado no termo e o município da ficha ordena.",
+    limite: "Só indexa desde maio de 2023, as listas da CETESB são longas e a primeira página traz até 100 atos por termo.",
+    fetch: "Chamar a busca avançada JSON do Diário Oficial de SP",
+    store: "Consultar ao vivo sem persistir atos localmente",
+    query: "Buscar raiz de CNPJ e nome desde 2015",
+    match: "Exigir CNPJ ou nome e recortar o trecho no termo",
+    evidence: "Expor data, título, órgão, trecho, tipo de ato e link",
+    implication: "Inferir licença CETESB ou outorga estadual ligada à planta",
+  },
+  "CAPTURA-DOE-MG": {
+    modo: "Raiz do CNPJ e nome da empresa contra o texto do Jornal Minas Gerais",
+    status: "Licença da SEMAD, decisão do COPAM, protocolo de intenção da Invest Minas e regime tributário marcam anúncio, autorização e implantação.",
+    acesso: "Na coleta ao vivo, a API v1 é chamada com token anônimo e cadeia intermediária embutida, sem cache ou tabela.",
+    secundario: "O trecho tem de trazer a raiz do CNPJ, em qualquer separador, ou todas as palavras do nome; o município da ficha ordena primeiro.",
+    limite: "Empresa com várias plantas traz atos de outras unidades, o texto vem sem acento e a primeira página traz até 40 trechos por termo.",
+    fetch: "Pedir token anônimo e chamar a pesquisa paginada do Jornal",
+    store: "Consultar ao vivo sem persistir trechos localmente",
+    query: "Buscar raiz de CNPJ e nome desde 2015",
+    match: "Exigir CNPJ ou nome no trecho e ordenar pelo município",
+    evidence: "Expor data, caderno, página, trecho, tipo de ato e link",
+    implication: "Inferir licença, protocolo ou incentivo estadual ligado à obra",
+  },
+  "SEC-SEMAD": {
+    modo: "Duas primeiras palavras do nome contra o titular das licenças do SLA",
+    status: "Modalidade, fase LP, LI ou LO e status deferido com data de emissão dizem em que etapa ambiental a planta está.",
+    acesso: "Na coleta ao vivo, o WFS público devolve GeoJSON filtrado por CQL, sem token, cache ou tabela.",
+    secundario: "O município da ficha ordena primeiro; a atividade com código separa mina, planta industrial e apoio.",
+    limite: "O CNPJ está corrompido em parte das linhas, o nome genérico traz homônimos e a camada só cobre o SLA, de 2019 em diante.",
+    fetch: "Chamar o WFS da IDE-Sisema com filtro CQL pelo nome",
+    store: "Consultar ao vivo sem persistir licenças localmente",
+    query: "Filtrar o titular pelas duas primeiras palavras do nome",
+    match: "Ordenar pelo município da ficha e pela emissão",
+    evidence: "Expor processo, município, atividade, fase, status, datas e link do SLA",
+    implication: "Inferir a etapa do licenciamento estadual da planta",
+  },
   "CAPTURA-DOU": {
     modo: "Razão social em palavras contra título ou trecho do ato no DOU",
     status: "Portarias, outorgas, licenças e enquadramentos podem marcar aprovação ou autorização federal; data, seção e conteúdo determinam a fase, não a simples menção da empresa.",
@@ -911,8 +1203,43 @@ const OBTENCAO = {
   },
   "CAPTURA-QD": {
     identificar: "O conector resolve o município da ficha na API de localidades do IBGE para obter o territory_id usado pelo Querido Diário.",
-    acessar: "Consulta ao vivo a API pública queridodiario.ok.org.br com esse território, sem token e sem arquivo local.",
+    acessar: "Consulta ao vivo a API pública api.queridodiario.org.br com esse território, sem token e sem arquivo local.",
     extrair: "Busca a empresa ou o projeto no texto das edições e devolve data, município, trecho e URL do PDF, até o limite da coleta.",
+  },
+  "CAPTURA-SIGPUB": {
+    identificar: "O conector escolhe pela UF da ficha os diários de associação na plataforma diariomunicipal.com.br, como amm-mg, amp ou apm.",
+    acessar: "Abre a página pública /pesquisar de cada associação por HTTP GET, com texto, dataInicio e dataFim, sem chave e sem arquivo local.",
+    extrair: "Lê cada li.materia-card e devolve título, entidade, órgão, trecho, data de circulação, edição, tipo do ato e link, ficando com as cinco mais relevantes.",
+  },
+  "CAPTURA-DOM-METAWAY": {
+    identificar: "O conector acha a prefeitura da ficha no mapa METAWAY_MUNICIPIOS, pela UF e pelo município sem acento.",
+    acessar: "Chama /recurso/diario/lista com a marca e o período, depois /recurso/diario/editar/{codigo} e baixa o PDF de srcPDF, sem chave.",
+    extrair: "Converte o PDF em texto, acha a marca e devolve edição, data, trecho, tipo do ato, link do PDF e se o texto foi lido, para as seis edições mais recentes.",
+  },
+  "CAPTURA-DOE-BA": {
+    identificar: "O conector monta a busca do DOOL com a raiz do CNPJ e o nome da empresa entre aspas e o período desde 2015.",
+    acessar: "Chama /busca/busca/buscar/query/{pagina} por HTTPS com a cadeia intermediária embutida, sem chave, até duas páginas por termo.",
+    extrair: "Lê hits.hits, junta o destaque de conteudo e devolve data, página, trecho, tipo do ato, município e link do visualizador, ficando com os oito mais relevantes.",
+  },
+  "CAPTURA-DOE-PR": {
+    identificar: "O conector monta a busca do DIOE com a raiz do CNPJ e o nome da empresa entre aspas e o período desde 2015.",
+    acessar: "Chama /busca/busca/buscar/query/{pagina} do DIOE por HTTPS, sem chave, até duas páginas por termo.",
+    extrair: "Lê hits.hits, junta o destaque de conteudo e devolve data, página, trecho, tipo do ato, município e link do PDF da página, ficando com os oito mais relevantes.",
+  },
+  "CAPTURA-DOE-SP": {
+    identificar: "O conector monta a busca avançada do DOE-SP com a raiz do CNPJ e depois com o nome, no período desde 2015.",
+    acessar: "Chama a API v2/advanced-search/publications por HTTPS, sem chave, com até 100 atos por termo.",
+    extrair: "Lê items, recorta o trecho no termo e devolve data, título, órgão, trecho, tipo do ato, município e link do ato, ficando com os oito mais relevantes.",
+  },
+  "CAPTURA-DOE-MG": {
+    identificar: "O conector pede um token anônimo e monta a pesquisa paginada com a raiz do CNPJ e depois com o nome, desde 2015.",
+    acessar: "Chama /api/v1/Pesquisa/PesquisarJornaisPaginados com o token, em todos os cadernos, por HTTPS com a cadeia intermediária embutida.",
+    extrair: "Lê dados e devolve data, caderno, página, trecho, tipo do ato, município e link do visualizador, ficando com os oito mais relevantes.",
+  },
+  "SEC-SEMAD": {
+    identificar: "O conector monta o filtro CQL nome_pf_pj ILIKE com as duas primeiras palavras da razão social.",
+    acessar: "Chama o WFS GetFeature da camada ide_2101_mg_empreendimentos_licenciados_pto em GeoJSON, sem chave, com até 500 licenças.",
+    extrair: "Lê as propriedades de cada feição e devolve processo, município, titular, solicitação, atividade, classe, modalidade, fase, status, datas, coordenada e link do SLA.",
   },
   "CAPTURA-DOU": {
     identificar: "O conector monta a URL de busca da Imprensa Nacional com as palavras iniciais da razão social da ficha.",
@@ -939,9 +1266,92 @@ const DESCRICOES = {
   "SEC-ANP-PLAT": "Plataformas em operacao, encontradas pelo nome do operador. CSV baixado e transformado em base, com as 13 colunas. Por meio dessa fonte e possivel saber se a empresa opera plataforma, a lamina, a coordenada, a capacidade e desde que ano.",
   "SEC-ANP-DUTO": "Dutos de exploracao e producao, encontrados pelo nome do operador. CSV baixado e transformado em base, com as 9 colunas. Por meio dessa fonte e possivel saber se a empresa opera duto, o tipo, se e integrante, a funcao do umbilical e a situacao.",
   "CAPTURA-QD": "Trechos de diário municipal, encontrados pelo nome da empresa ou do projeto no município da ficha. Consulta ao vivo, sem cópia local. Por meio dessa fonte é possível achar alvará, licença ou decreto local que mencione o projeto.",
+  "CAPTURA-SIGPUB": "Matérias dos diários das associações de municípios, encontradas pelo CNPJ ou pelo nome da empresa na UF da ficha. Busca lida ao vivo, sem cópia local. Por meio dessa fonte é possível achar decreto, lei, alvará ou licença de prefeitura que cite a empresa, com o município primeiro.",
+  "CAPTURA-DOM-METAWAY": "Edições do diário oficial da prefeitura, encontradas pela marca da empresa no município da ficha. Lista lida ao vivo e PDF aberto na hora. Por meio dessa fonte é possível achar decreto, permissão de uso ou doação municipal ligados à obra.",
+  "CAPTURA-DOE-BA": "Páginas do Diário Oficial da Bahia, encontradas pela raiz do CNPJ ou pelo nome da empresa. Busca lida ao vivo, sem cópia local. Por meio dessa fonte é possível ver licença do INEMA, incentivo DESENVOLVE ou PROAUTO e contrato de terreno do estado.",
+  "CAPTURA-DOE-PR": "Páginas do Diário Oficial do Paraná, encontradas pela raiz do CNPJ ou pelo nome da empresa. Busca lida ao vivo, sem cópia local. Por meio dessa fonte é possível ver súmula de licença, TAC e outorga do Instituto Água e Terra.",
+  "CAPTURA-DOE-SP": "Atos do Diário Oficial de São Paulo, encontrados pela raiz do CNPJ ou pelo nome da empresa. Busca lida ao vivo, desde maio de 2023. Por meio dessa fonte é possível ver licença da CETESB, outorga do DAEE e autuação ambiental.",
+  "CAPTURA-DOE-MG": "Trechos do Jornal Minas Gerais, encontrados pela raiz do CNPJ ou pelo nome da empresa. Busca lida ao vivo com token anônimo. Por meio dessa fonte é possível ver licença da SEMAD, decisão do COPAM, protocolo de intenção e incentivo do estado.",
+  "SEC-SEMAD": "Licenças ambientais do SLA de Minas Gerais, encontradas pelas primeiras palavras da razão social. Camada WFS lida ao vivo. Por meio dessa fonte é possível ver a modalidade, a fase, a atividade, o status, a emissão e a validade da licença no estado.",
   "CAPTURA-DOU": "Atos do Diário Oficial da União, encontrados pelas primeiras palavras da razão social. Página de busca lida ao vivo, sem cópia local; ficam os cinco atos mais recentes, cada um com um resumo curto. Por meio dessa fonte é possível achar portaria, licença ou outorga publicada.",
   "SEC-ARTESP": "Programação de obras das concessões paulistas, encontrada pelo lote da concessionária e por palavras da rodovia, só em São Paulo. Arquivo do portal baixado e transformado em base. Por meio dessa fonte é possível ver a obra programada, o trecho e as datas, sem valor em reais.",
 };
+
+// Diários estaduais do registro: o guia sai dos fatos testados em cada portal.
+const DOE_PLURAL = { página: "Páginas", matéria: "Matérias", edição: "Edições", "página do PDF": "Páginas" };
+const DOE_LINHAS = {
+  data: ["Data", "Dia da publicação do ato ou da edição."],
+  pagina: ["Página", "Página da edição em que o termo aparece."],
+  titulo: ["Título", "Título, tipo do ato ou nome da edição."],
+  orgao: ["Órgão", "Órgão ou seção que publicou."],
+  caderno: ["Caderno", "Parte ou caderno do diário."],
+  trecho: ["Trecho", "Texto em volta do CNPJ ou do nome, até 400 caracteres."],
+  url: ["Link", "Endereço do ato, da página ou do PDF da edição."],
+};
+for (const estado of DOE_ESTADOS) {
+  const principal = estado.requisicoes[0];
+  // PA, PB, RO e RR: sem busca no portal, a ficha lê o índice de PDFs que o sincronizador grava.
+  const indice = estado.motor === "indice_pdf";
+  const leitura = indice
+    ? "Índice próprio dos PDFs, atualizado todo dia."
+    : "Busca lida ao vivo, sem cópia local.";
+  const resumo = `${DOE_PLURAL[estado.unidade]} do ${estado.nome}, encontradas pela raiz do CNPJ ou pelo nome da empresa. ${leitura} Por meio dessa fonte é possível ver ${estado.atos}.`;
+  GUIDES[estado.codigo] = {
+    nome: estado.nome,
+    url: estado.portal,
+    arquivo: indice
+      ? `Tabelas doe_pdf_edicao e doe_pdf_pagina (sql/016). Exemplo bruto em amostras/${estado.codigo}/`
+      : `Sem arquivo local. Exemplo bruto em amostras/${estado.codigo}/`,
+    copia: indice
+      ? `Texto de cada página dos PDFs do ${estado.uf}, gravado por npm run doe:pdf-sync e pelo agendador diário`
+      : "Consulta ao vivo, sem tabela local",
+    cargas: indice ? [estado.codigo] : [],
+    resumo,
+    informa: [
+      `A busca devolve, para cada ${estado.unidade} que cita a empresa, ${estado.linhas.map((key) => DOE_LINHAS[key][0].toLowerCase()).join(", ")}. ${estado.acervo}`,
+      `Serve para achar ${estado.atos}. A menção da empresa não basta: a fase e o vínculo com a obra só se confirmam lendo o ato.`,
+    ],
+    campos: estado.linhas.map((key) => DOE_LINHAS[key]),
+    acesso: indice
+      ? [
+        `O portal não tem busca de texto. O sincronizador lista as edições em ${principal.url}, baixa cada PDF, extrai o texto de todas as páginas e grava no banco. O agendador repete isso todo dia para os últimos 7 dias.`,
+        `Na coleta, o Radar escolhe o diário pela UF da ficha (${estado.uf}) e consulta o índice pela raiz do CNPJ e pelo nome da empresa, sem chamar o portal.`,
+      ]
+      : [
+        `Na coleta, o Radar escolhe o diário pela UF da ficha (${estado.uf}) e chama ${principal.metodo} ${principal.url}, desde 2015, uma vez para a raiz do CNPJ e outra para o nome da empresa.`,
+        principal.nota || "Sem chave nem login.",
+      ],
+    associacao: [
+      "O Radar só guarda o ato que traz os dígitos da raiz do CNPJ ou todas as palavras do nome. Os do município da ficha vêm primeiro, depois licença, decreto e atos parecidos, e por último compras públicas.",
+    ],
+    alcance: estado.limitacoes,
+  };
+  DEEP_PROFILES[estado.codigo] = {
+    modo: indice
+      ? "Raiz do CNPJ e nome da empresa contra o texto das páginas dos PDFs indexados do diário da UF da ficha"
+      : "Raiz do CNPJ com máscara e nome da empresa contra o texto do diário oficial da UF da ficha",
+    status: "Licença, incentivo, desapropriação, outorga ou contrato citando a empresa pode marcar etapa da obra; a fase só se confirma lendo o ato.",
+    acesso: indice
+      ? `Na coleta, a ficha lê as tabelas doe_pdf_edicao e doe_pdf_pagina. O portal (${estado.modo.toLowerCase()}) só é chamado pelo sincronizador.`
+      : `Na coleta ao vivo, a busca do diário (${estado.modo}) é chamada sem token, cache ou tabela.`,
+    secundario: "A UF da ficha escolhe o diário; o município da ficha ordena os atos, e a correlação lê o contexto de cada um antes de virar evidência.",
+    limite: estado.limitacoes.join(" "),
+    fetch: indice ? `Baixar os PDFs do ${estado.nome} e extrair o texto de cada página` : `Chamar a busca pública do ${estado.nome}`,
+    store: indice ? "Gravar o texto, o texto compacto e as raízes de CNPJ de cada página" : "Consultar ao vivo sem persistir atos localmente",
+    query: indice ? "Buscar a raiz do CNPJ e o nome colado no índice da UF" : "Buscar a raiz do CNPJ e o nome da empresa desde 2015",
+    match: "Exigir o CNPJ ou todas as palavras e ordenar pelo município",
+    evidence: `Expor ${estado.linhas.map((key) => DOE_LINHAS[key][0].toLowerCase()).join(", ")}`,
+    implication: "Inferir ato estadual ligado à obra, sujeito à leitura do contexto",
+  };
+  OBTENCAO[estado.codigo] = {
+    identificar: `O conector escolhe o ${estado.nome} pela UF da ficha (${estado.uf}). Sem ficha nesse estado, a fonte não roda.`,
+    acessar: indice
+      ? `Consulta doe_pdf_pagina da UF ${estado.uf} pela raiz do CNPJ (raizes) e pelo nome colado (compacto). As páginas vêm de ${principal.metodo} ${principal.url} e do download de cada PDF, feitos pelo sincronizador.`
+      : `Faz ${principal.metodo} em ${principal.url} com a raiz do CNPJ e depois com o nome, sem chave e sem arquivo local.`,
+    extrair: `Lê cada ${estado.unidade} da resposta e devolve ${estado.linhas.map((key) => DOE_LINHAS[key][0].toLowerCase()).join(", ")}, tipo do ato e se cita o município da ficha.`,
+  };
+  DESCRICOES[estado.codigo] = resumo;
+}
 
 for (const [codigo, guide] of Object.entries(GUIDES)) {
   const profile = { ...DEEP_PROFILES[codigo], ...OBTENCAO[codigo] };
@@ -953,9 +1363,12 @@ for (const [codigo, guide] of Object.entries(GUIDES)) {
   const originalInforma = guide.informa.join(" ");
   const originalAcesso = guide.acesso.join(" ");
   const originalAlcance = guide.alcance.join(" ");
-  const frequencia = guide.cargas.length
-    ? "A cópia local só muda quando a carga das bases roda de novo (`npm run db:load-bases` ou a carga dessa fonte). No enriquecimento da ficha o Radar lê a tabela já gravada e não baixa o arquivo outra vez."
-    : "Não há dump completo em tabela local para esta fonte. Cada enriquecimento da ficha consulta a origem ao vivo, com timeout e limite de páginas ou registros definidos no conector.";
+  const indicePdf = doeEstado(codigo)?.motor === "indice_pdf";
+  const frequencia = indicePdf
+    ? "O agendador lê todo dia as edições dos últimos 7 dias; a carga inicial e reposições usam `npm run doe:pdf-sync -- --dias N --uf UF`. No enriquecimento da ficha o Radar lê o índice já gravado e não baixa PDF."
+    : guide.cargas.length
+      ? "A cópia local só muda quando a carga das bases roda de novo (`npm run db:load-bases` ou a carga dessa fonte). No enriquecimento da ficha o Radar lê a tabela já gravada e não baixa o arquivo outra vez."
+      : "Não há dump completo em tabela local para esta fonte. Cada enriquecimento da ficha consulta a origem ao vivo, com timeout e limite de páginas ou registros definidos no conector.";
   guide.modo = profile.modo;
   guide.resumo = DESCRICOES[codigo] || guide.resumo;
   guide.informa = [
@@ -976,7 +1389,7 @@ for (const [codigo, guide] of Object.entries(GUIDES)) {
     `Publicação original: ${guide.url}. Cópia usada na coleta: ${guide.copia}.${guide.arquivo ? ` Arquivo ou pasta de apoio: ${guide.arquivo}.` : ""}`,
   ];
   guide.associacao = [
-    `Modo principal: ${profile.modo}. É a chave que a consulta usa primeiro; filtros como UF, município, janela de 18 meses e limite de linhas só desambiguam ou ordenam o resultado.`,
+    `Modo principal: ${profile.modo}. É a chave que a consulta usa primeiro para achar a empresa. Achar a empresa não basta: registro de outra UF sai, e o contexto de cada registro decide se ele é deste projeto (veja a regra de correlação direta abaixo).`,
     `${guide.associacao.join(" ")} ${profile.secundario}`,
   ];
   guide.alcance = [
@@ -1291,6 +1704,86 @@ const EXTRAIDO = {
       ["municipio", "texto", "Nome do município da edição."],
       ["trecho", "texto", "Pedaço do texto encontrado, no máximo 240 caracteres, sem marcação HTML."],
       ["url", "texto", "Link do PDF da edição."],
+    ],
+  },
+  "CAPTURA-SIGPUB": {
+    linhas: [
+      ["titulo", "texto", "Título da matéria, como decreto, lei ou extrato."],
+      ["entidade", "texto", "Prefeitura, câmara ou consórcio que publicou."],
+      ["orgao", "texto", "Secretaria ou setor que assinou a matéria."],
+      ["trecho", "texto", "Pedaço do texto com o termo, no máximo 300 caracteres."],
+      ["data", "data AAAA-MM-DD", "Dia de circulação da edição."],
+      ["edicao", "texto", "Número da edição do diário da associação."],
+      ["url", "texto", "Link da matéria em diariomunicipal.com.br."],
+      ["tipo_ato", "texto", "ato_relevante, compra_publica ou outro, pelo título, órgão e trecho."],
+      ["no_municipio", "sim ou não", "Diz se a entidade que publicou é do município da ficha."],
+    ],
+  },
+  "CAPTURA-DOM-METAWAY": {
+    linhas: [
+      ["data", "data AAAA-MM-DD", "Dia de publicação da edição."],
+      ["edicao", "número", "Número da edição do diário municipal."],
+      ["trecho", "texto", "Texto do PDF em volta da marca, cerca de 320 caracteres."],
+      ["tipo_ato", "texto", "ato_relevante, compra_publica ou outro, pelo trecho."],
+      ["url", "texto", "Link do PDF da edição."],
+      ["texto_lido", "sim ou não", "Diz se o PDF foi baixado e lido."],
+    ],
+  },
+  "CAPTURA-DOE-BA": {
+    linhas: [
+      ["data", "data AAAA-MM-DD", "Dia da edição do Diário Oficial da Bahia."],
+      ["pagina", "texto", "Número da página na edição."],
+      ["trecho", "texto", "Destaque da busca com o termo, no máximo 400 caracteres."],
+      ["url", "texto", "Visualizador da edição aberto na página."],
+      ["tipo_ato", "texto", "ato_relevante, compra_publica ou outro, pelo trecho."],
+      ["no_municipio", "sim ou não", "Diz se o trecho cita o município da ficha."],
+    ],
+  },
+  "CAPTURA-DOE-PR": {
+    linhas: [
+      ["data", "data AAAA-MM-DD", "Dia da edição do Diário Oficial do Paraná."],
+      ["pagina", "texto", "Número da página na edição."],
+      ["trecho", "texto", "Destaque da busca com o termo, no máximo 400 caracteres."],
+      ["url", "texto", "Link do PDF da página."],
+      ["tipo_ato", "texto", "ato_relevante, compra_publica ou outro, pelo trecho."],
+      ["no_municipio", "sim ou não", "Diz se o trecho cita o município da ficha."],
+    ],
+  },
+  "CAPTURA-DOE-SP": {
+    linhas: [
+      ["data", "data AAAA-MM-DD", "Dia da publicação do ato."],
+      ["titulo", "texto", "Título do ato no DOE-SP."],
+      ["orgao", "texto", "Hierarquia do órgão que publicou."],
+      ["trecho", "texto", "Título e texto em volta do termo, no máximo 400 caracteres."],
+      ["url", "texto", "Página do ato no portal do DOE-SP."],
+      ["tipo_ato", "texto", "ato_relevante, compra_publica ou outro, pelo trecho."],
+      ["no_municipio", "sim ou não", "Diz se o trecho cita o município da ficha."],
+    ],
+  },
+  "CAPTURA-DOE-MG": {
+    linhas: [
+      ["data", "data AAAA-MM-DD", "Dia da edição do Jornal Minas Gerais."],
+      ["caderno", "texto", "Diário do Executivo, dos Municípios ou de Terceiros."],
+      ["pagina", "número", "Número da página no caderno."],
+      ["trecho", "texto", "Texto em volta do termo, como a API devolve."],
+      ["url", "texto", "Visualizador da edição aberto na página."],
+      ["tipo_ato", "texto", "ato_relevante, compra_publica ou outro, pelo trecho."],
+      ["no_municipio", "sim ou não", "Diz se o trecho cita o município da ficha."],
+    ],
+  },
+  "SEC-SEMAD": {
+    linhas: [
+      ["processo", "texto", "Número do processo no SLA."],
+      ["municipio", "texto", "Município da solicitação."],
+      ["titular", "texto", "Nome do titular da licença."],
+      ["atividade", "texto", "Código e descrição da atividade principal."],
+      ["modalidade", "texto", "LAC1, LAC2, LAS ou outra modalidade."],
+      ["fase", "texto", "LP, LI, LO ou combinação."],
+      ["status", "texto", "Situação do processo, como Concluído Deferido."],
+      ["emissao", "data AAAA-MM-DD", "Data de emissão da licença."],
+      ["validade", "data AAAA-MM-DD", "Data de validade da licença."],
+      ["url", "texto", "Link de visitante do processo no SLA."],
+      ["no_municipio", "sim ou não", "Diz se a licença é do município da ficha."],
     ],
   },
   "CAPTURA-DOU": {

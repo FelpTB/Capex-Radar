@@ -1,3 +1,4 @@
+const { DOE_ESTADOS } = require("./doe-registry");
 // Origem e links de acesso das fontes secundárias conectadas.
 // fixa: true significa que o endereço do arquivo ou da API está escrito no código.
 // fixa: false significa que o código só sabe onde perguntar; o endereço do arquivo sai dessa consulta.
@@ -349,15 +350,154 @@ const SOURCE_ORIGINS = {
       },
       {
         papel: "API de trechos",
-        url: "https://queridodiario.ok.org.br/api/gazettes",
+        url: "https://api.queridodiario.org.br/gazettes",
         fixa: true,
-        nota: "URL fixa em src/enrichment/atos.js.",
+        nota: "URL fixa em src/enrichment/atos.js. O endereço antigo queridodiario.ok.org.br/api redireciona para este.",
       },
       {
         papel: "API do IBGE, para o código do município",
         url: "https://servicodados.ibge.gov.br/api/v1/localidades/estados/",
         fixa: true,
         nota: "Prefixo fixo em src/enrichment/atos.js. O caminho continua com a UF da ficha e /municipios.",
+      },
+    ],
+  },
+  "CAPTURA-SIGPUB": {
+    orgao: "Associações estaduais de municípios, na plataforma SIGPub",
+    publicacao: "Diários oficiais eletrônicos das associações, com prefeituras, câmaras e consórcios associados.",
+    acesso: "Na coleta, o Radar escolhe as associações da UF da ficha e abre a busca pública de cada uma com o CNPJ, a raiz do CNPJ e o nome da empresa, de 2015 até a data da coleta. Não há chave nem login.",
+    links: [
+      {
+        papel: "Portal da plataforma",
+        url: "https://www.diariomunicipal.com.br/",
+        fixa: true,
+        nota: "Domínio fixo em src/enrichment/diarios.js. A lista de associações por UF fica em SIGPUB_UF.",
+      },
+      {
+        papel: "Busca de uma associação (exemplo: AMM-MG)",
+        url: "https://www.diariomunicipal.com.br/amm-mg/pesquisar",
+        fixa: false,
+        nota: "O caminho troca amm-mg pela associação da UF e recebe busca_avancada[texto], dataInicio, dataFim e pagina.",
+      },
+    ],
+  },
+  "CAPTURA-DOM-METAWAY": {
+    orgao: "Prefeituras na plataforma Mentor (Metaway)",
+    publicacao: "Diário oficial eletrônico de cada prefeitura, com busca por texto e PDF da edição.",
+    acesso: "Na coleta, o Radar acha a prefeitura da ficha no mapa do conector, lista as edições com a marca da empresa e lê o PDF das seis mais recentes. Não há chave nem login.",
+    links: [
+      {
+        papel: "Diário de Lençóis Paulista",
+        url: "https://lencois.mentor.metaway.com.br/diario/",
+        fixa: false,
+        nota: "Página pública do diário. A coleta não abre essa página.",
+      },
+      {
+        papel: "Lista de edições usada na coleta",
+        url: "https://lencois.mentor.metaway.com.br/recurso/diario/lista",
+        fixa: true,
+        nota: "Domínio fixo em METAWAY_MUNICIPIOS, em src/enrichment/diarios.js. Recebe texto, dataInicial e dataFinal.",
+      },
+    ],
+  },
+  "CAPTURA-DOE-BA": {
+    orgao: "Empresa Gráfica da Bahia (EGBA)",
+    publicacao: "Diário Oficial do Estado da Bahia, com busca de texto integral por página desde 2007.",
+    acesso: "Na coleta, o Radar chama a busca JSON do DOOL com a raiz do CNPJ e o nome entre aspas, desde 2015. O servidor omite o certificado intermediário, que vai embutido no conector. Não há chave.",
+    links: [
+      {
+        papel: "Portal do diário",
+        url: "https://dool.egba.ba.gov.br/",
+        fixa: false,
+        nota: "Página pública. O visualizador ver-flip é o link de cada evidência.",
+      },
+      {
+        papel: "Busca usada na coleta",
+        url: "https://dool.egba.ba.gov.br/busca/busca/buscar/query",
+        fixa: true,
+        nota: "URL fixa em src/enrichment/estaduais.js. O caminho continua com a página, di, df e o parâmetro q.",
+      },
+    ],
+  },
+  "CAPTURA-DOE-PR": {
+    orgao: "Departamento de Imprensa Oficial do Estado do Paraná (DIOE)",
+    publicacao: "Diário Oficial do Estado do Paraná, com busca de texto integral por página.",
+    acesso: "Na coleta, o Radar chama a busca JSON do DIOE com a raiz do CNPJ e o nome entre aspas, desde 2015. Não há chave.",
+    links: [
+      {
+        papel: "Portal do diário",
+        url: "https://www.dioe.pr.gov.br/",
+        fixa: false,
+        nota: "Página pública. O PDF da página é o link de cada evidência.",
+      },
+      {
+        papel: "Busca usada na coleta",
+        url: "https://www.dioe.pr.gov.br/busca/busca/buscar/query",
+        fixa: true,
+        nota: "URL fixa em src/enrichment/estaduais.js. Mesmo motor do DOE-BA.",
+      },
+    ],
+  },
+  "CAPTURA-DOE-SP": {
+    orgao: "Imprensa Oficial do Estado de São Paulo",
+    publicacao: "Novo portal do Diário Oficial de SP, com busca avançada de atos desde maio de 2023.",
+    acesso: "Na coleta, o Radar chama a API JSON de busca avançada com a raiz do CNPJ e depois com o nome, desde 2015, e lê até 100 atos por termo. Não há chave.",
+    links: [
+      {
+        papel: "Portal do diário",
+        url: "https://www.doe.sp.gov.br/",
+        fixa: true,
+        nota: "Domínio fixo em src/enrichment/estaduais.js. Cada ato fica nesse domínio seguido do slug.",
+      },
+      {
+        papel: "API de busca usada na coleta",
+        url: "https://do-api-web-search.doe.sp.gov.br/v2/advanced-search/publications",
+        fixa: true,
+        nota: "URL fixa em src/enrichment/estaduais.js. Recebe Terms[0], FromDate, ToDate, PageNumber, PageSize e SortField.",
+      },
+    ],
+  },
+  "CAPTURA-DOE-MG": {
+    orgao: "Imprensa Oficial de Minas Gerais",
+    publicacao: "Jornal Minas Gerais, diário oficial do estado, com texto pesquisável desde 2011.",
+    acesso: "Na coleta, o Radar pede um token anônimo (POST /api/v1/Autenticacao/Autenticar com corpo {}, válido por 2 horas) e chama a pesquisa paginada com o cabeçalho Authorization: Bearer {token}, com a raiz do CNPJ e depois com o nome, desde 2015. Sem o token a pesquisa responde 401, inclusive aberta no navegador. O servidor omite o certificado intermediário, que vai embutido no conector.",
+    links: [
+      {
+        papel: "Portal do jornal",
+        url: "https://www.jornalminasgerais.mg.gov.br/",
+        fixa: true,
+        nota: "O visualizador edicao-do-dia, com os dados da página, é o link de cada evidência.",
+      },
+      {
+        papel: "API usada na coleta",
+        url: "https://www.jornalminasgerais.mg.gov.br/api/v1/Pesquisa/PesquisarJornaisPaginados",
+        fixa: true,
+        nota: "URL fixa em src/enrichment/estaduais.js. Exige Authorization: Bearer {token}; sem ele responde 401.",
+      },
+      {
+        papel: "Token anônimo usado na coleta",
+        url: "https://www.jornalminasgerais.mg.gov.br/api/v1/Autenticacao/Autenticar",
+        fixa: true,
+        nota: "POST com corpo {} e content-type application/json. Devolve o JWT em dados, válido por 2 horas. GET responde 405.",
+      },
+    ],
+  },
+  "SEC-SEMAD": {
+    orgao: "Secretaria de Estado de Meio Ambiente e Desenvolvimento Sustentável de Minas Gerais",
+    publicacao: "Camada pública de empreendimentos licenciados no SLA, na IDE-Sisema.",
+    acesso: "Na coleta, o Radar chama o WFS do GeoServer da SEMAD com filtro CQL pelo nome do titular e lê até 500 licenças em GeoJSON. Não há chave.",
+    links: [
+      {
+        papel: "WFS usado na coleta",
+        url: "https://geoserver.meioambiente.mg.gov.br/ows",
+        fixa: true,
+        nota: "URL fixa em src/enrichment/estaduais.js, com a camada ide_2101_mg_empreendimentos_licenciados_pto.",
+      },
+      {
+        papel: "Processo no SLA",
+        url: "https://ecosistemas.meioambiente.mg.gov.br/sla/",
+        fixa: false,
+        nota: "Cada licença traz o link de visitante do próprio processo.",
       },
     ],
   },
@@ -400,6 +540,35 @@ const SOURCE_ORIGINS = {
     ],
   },
 };
+
+// Diários estaduais do registro: portal público e endereço exato que a coleta chama.
+for (const estado of DOE_ESTADOS) {
+  const indice = estado.motor === "indice_pdf";
+  const arquivo = estado.motor === "ionews"
+    ? "src/enrichment/estaduais.js (mapa DOOL)"
+    : indice ? "src/enrichment/doe-pdf.js" : "src/enrichment/doe-estados.js";
+  SOURCE_ORIGINS[estado.codigo] = {
+    orgao: estado.orgao,
+    publicacao: `${estado.nome}. ${estado.acervo}`,
+    acesso: indice
+      ? "O portal não tem busca de texto. O sincronizador do Radar lista as edições, baixa cada PDF e grava o texto de cada página em doe_pdf_pagina; na coleta, a ficha consulta esse índice com a raiz do CNPJ e o nome da empresa. Não há chave nem login."
+      : `Na coleta, o Radar consulta ao vivo a busca do diário (${estado.modo}) com a raiz do CNPJ e o nome da empresa, desde 2015. Não há chave nem login.`,
+    links: [
+      {
+        papel: "Portal do diário",
+        url: estado.portal,
+        fixa: false,
+        nota: `Página pública do diário oficial do estado.${estado.aviso ? ` ${estado.aviso}` : ""}`,
+      },
+      {
+        papel: indice ? "Listagem de edições lida pelo sincronizador" : "Busca usada na coleta",
+        url: estado.busca,
+        fixa: true,
+        nota: `URL fixa em ${arquivo}.${estado.aviso ? ` ${estado.aviso}` : ""}`,
+      },
+    ],
+  };
+}
 
 function sourceOrigin(codigo) {
   return SOURCE_ORIGINS[codigo] || null;

@@ -1,0 +1,11 @@
+Fonte: CAPTURA-DOE-BA
+Formato: JSON do Elasticsearch atrás da busca do DOOL (EGBA), UTF-8
+Campos: hits.total + hits.hits[] com _id, _score, _source (10 chaves) e highlight.conteudo
+Data da extracao: 26/10/2026
+Fonte da extracao: https://dool.egba.ba.gov.br/busca/busca/buscar/query/0/di:2015-01-01/df:2026-10-26/?1=1&q="50.351.104"
+
+Arquivo: busca-cnpj-byd.json, com 3 dos 9 resultados (páginas do diário que citam a raiz de CNPJ da BYD Auto do Brasil).
+Cada resultado é uma página inteira do diário. O texto de _source.conteudo foi cortado em 1.500 caracteres; o original tem a página toda.
+Paginação começa em 0, com 10 resultados por página. Aspas fazem busca por frase.
+O servidor manda o certificado sem a cadeia intermediária (GeoTrust TLS RSA CA G1). A cadeia fica em src/enrichment/certs/.
+Ficou de fora: os outros 6 resultados e o PDF da edição, que pede login. Nao ha token.

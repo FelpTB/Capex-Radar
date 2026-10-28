@@ -1,0 +1,10 @@
+Fonte: IDX-ABEMA
+Formato: HTML da página de associados da ABEMA, UTF-8
+Campos: nome do órgão, endereço, município/UF, CEP e e-mail institucional (ofuscado pelo Cloudflare)
+Data da extracao: 26/10/2026
+Fonte da extracao: https://www.abema.org.br/associados
+
+Arquivo: associados.html, com os primeiros blocos da lista (órgãos do Acre e de Alagoas).
+É um diretório: diz qual é o órgão ambiental de cada estado, não traz licença nem processo.
+A página completa tinha 53.006 bytes. Ficaram de fora o menu, os scripts e os demais estados.
+Nao ha token nem login.

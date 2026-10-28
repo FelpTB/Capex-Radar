@@ -1,0 +1,261 @@
+{
+  "took": 675,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": 25,
+    "max_score": 12.894548,
+    "hits": [
+      {
+        "_index": "mt",
+        "_type": "diario",
+        "_id": "18726_129",
+        "_score": 5.0193133,
+        "_source": {
+          "conteudo": "17 de outubro de 2025 Diário Oficial PADRONIZADOS, CNPJ/CPF 35.689.601/0001-38, R$ 8.243.615,40; 3 ASIA FOMENTO MERCANTIL SA, CNPJ/CPF 07.667.672/0001-02, R$ 2.198.344,02; 4 - ASSOCIACAO DAS DISTRIBUIDORAS DE COMBUSTIVEIS BRASILCOM, CNPJ/CPF 00.963.294/0001-57, R$ 39.176,88; 5 - ATEM S DISTRIBUIDORA DE PETROLEO SA, CNPJ/CPF 03.987.364/0012-58, R$ 3.027.520,71; 6 - AUDAX CAPITAL SECURITIZADORA S.A, CNPJ/CPF 37.750.457/0001-23, R$ 1.230.794,55; 7 - BANCO BOCOM BBM SA, CNPJ/CPF 15.114.366/0003-20, R$ 1.413.376,24; 8 - BANCO DO BRASIL S.A, CNPJ/CPF 00.000.000/0001-91, R$ 12,50; 9 - BANCO FIBRA SA, CNPJ/CPF 58.616.418/0001-08, R$ 653.245,58; 10 - BANCO RNX S A, CNPJ/CPF 80.271.455/0001-80, R$ 323.643,75; 11 - BANCO SANTANDER BRASIL S A, CNPJ/CPF 90.400.888/0001-42, R$ 4.265.050,72; 12 - BANCO SEMEAR SA, CNPJ/ CPF 00.795.423/0001-45, R$ 1.673.818,63; 13 - BANCO SOFISA SA, CNPJ/CPF 60.889.128/0001-80, R$ 3.379,49; 14 - BASE COMPARTILHADA DE DISTRIBUIDORAS RIBEIRAO PRETO, CNPJ/CPF 14.839.299/0001-87, R$ 221,45; 15 - BLOOMBERG L P, CNPJ/CPF 05.559.552/0001-58, U$ 15.990,00; 16 - CAMARA DE DIRIGENTES LOJISTAS DE LUCAS DO RIO VERDE MT, CNPJ/CPF 09.112.390/0001-66, R$ 3.816,26; 17 - CARAMURU ALIMENTOS SA, CNPJ/CPF 00.080.671/0026-68, R$ 3.623.564,10; 18 CIAPETRO DISTRIBUIDORA DE COMBUSTIVEIS LTDA, CNPJ/CPF 01.466.091/0021-61, R$ 5.080.859,56; 19 - COFCO INTERNATIONAL BRASIL SA, CNPJ/CPF 06.315.338/0228-64, R$ 1.123.159,52; 20 COPERCANA DISTRIBUIDORA DE COMBUSTIVEIS LTDA, CNPJ/CPF 10.204.",
+          "data": "2025-10-17",
+          "paginas": 136,
+          "pagina": 129,
+          "pdf_id": 1125899,
+          "year": "2025",
+          "month": "10",
+          "day": "17",
+          "diario_id": 18726,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            "., CNPJ/CPF 49.436.626/0001-34, R$ 901,66; 47 - OLEOPLAN MATO GROSSO INDUSTRIA DE BIOCOMBUSTIVEL LTDA, CNPJ/CPF 31.090.078/0001-78, R$ 9.231.080,50; 48 - PERPETUO SOCORRO LOGISTICA E CARGA LTDA, CNPJ/CPF 45.201.929/0002-06, R$ 11.033,55; 49 - PETROLEO BRASILEIRO SA PETROBRAS, CNPJ/CPF <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/0001-01, R$ 301.175,39; 50 - PETROSERRA DISTRIBUIDORA DE PETROLEO LTDA, CNPJ/CPF 01.557.353/0012-02, R$ 1.273.746,50; 51 - PETROSUL DISTRIBUIDORA TRANSPORTADORA E COMERCIO DE COMBUSTIVEIS, CNPJ/CPF 00.175.884"
+          ]
+        },
+        "sort": [
+          1760659200000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Edição 29098"
+      },
+      {
+        "_index": "mt",
+        "_type": "diario",
+        "_id": "18616_404",
+        "_score": 5.5110493,
+        "_source": {
+          "conteudo": "Diário Oficial 14 de agosto de 2025 EDITAIS PODER JUDICIÁRIO DO ESTADO DE MATO GROSSO COMARCA DE RONDONÓPOLIS VARA REGIONALIZADA DA RECUPERAÇÃO JUDICIAL E FALÊNCIA EDITAL DE DEFERIMENTO DO PROCESSAMENTO DA RECUPERAÇÃO JUDICIAL AUTOS 1010945-66.2025.8.11.0003 PJE ESPÉCIE Recuperação Judicial PARTE AUTORA: POSTO DE SERVICOS DOM PEDRO LTDA - CNPJ: 01.325.356/0001-68, FIBRA LOGISTICA TRANSPORTES LTDA - EPP ADVOGADOS DOS REQUERENTES: AFFONSO FLORES SCHENDROSKI - OAB: MT21669/0 ADMINISTRADOR JUDICIAL: JOICE WOLF SCHOLL, brasileira, advogada inscrita na OAB-MT 8.386-B, inscrita no CPF sob no 787.120.170-00, telefone (66) 99997-2367, e-mail: gomes.scholl.adv@gmail.com., com endereço profissional no escritório GOMES E SCHOLL ADVOGADOS E ADMINISTRAÇÃO JUDICIAL, na Rua Edgar Garcia de Siqueira, 640, Centro sul, CEP 78.896-076 - Sorriso/MT. VALOR DA CAUSA R$ 4.408.748,04 FINALIDADE: Realizar a intimação dos credores e interessados acerca do deferimento do processamento da recuperação judicial. RESUMO DA INICIAL APRESENTADO PELA PARTE AUTORA: POSTO DE SERVIÇOS DOM PEDRO LTDA (CNPJ/MF no 01.325.356/0001-68) e FIBRA LOGÍSTICA TRANSPORTES LTDA (CNPJ/MF no 11.430.706/0001-00), ambas com sede em Rondonópolis, Mato Grosso, comunicam que foi protocolado o pedido de Recuperação Judicial perante o Juízo da 4a Vara Cível da Comarca de Rondonópolis-MT, nos termos da Lei no 11.101/2005. As empresas, que atuam no setor de serviços (posto de combustíveis) e transporte rodoviário de cargas (carnes e der",
+          "data": "2025-08-14",
+          "paginas": 408,
+          "pagina": 404,
+          "pdf_id": 1114797,
+          "year": "2025",
+          "month": "08",
+          "day": "14",
+          "diario_id": 18616,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            ". - 15.483.161/0001-50 R$ 20.560,00; PETROLEO BRASILEIRO SA PETROBRAS - <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/0001-01 - R$ 511.000,00; BANCO SANTANDER (BRASIL) S.A. - 90.400.888/0001-42 - R$ 1 16.891.88• CAIXA ECONOMICA FEDERAL - 00.360.305/0001-04 MATRIZ - R$ 1.300.000,00; CAIXA ECONOMICA FEDERAL 00.360.305/0001-04 MATRIZ - R$ 500.000,00; A ALSOL ENERGIAS RENOVÁVEIS S.A. CNPJ: 15.483.161/0001-50 Valor: R$ 15.493,64; TICKET SOLUÇÕES HDFGT CNPJ 03.506.307/0001-57 Valor: R$ 161.508,65; ITAÚ UNIBANCO S.A."
+          ]
+        },
+        "sort": [
+          1755129600000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Edição 29052"
+      },
+      {
+        "_index": "mt",
+        "_type": "diario",
+        "_id": "18101_8",
+        "_score": 12.023398,
+        "_source": {
+          "conteudo": "30 de setembro de 2024 CONTRIBUINTE INSC. ESTADUAL PETROLEO BRASILEIRO S A PETROBRAS PETROLEO BRASILEIRO S A PETROBRAS PETROLEO BRASILEIRO S A PETROBRAS REFINARIA DE MATARIPE S.A. ASTER 132201283 PETROLEO LTDA. SIM DISTRIBUIDORA DE COMBUSTIVEIS LTDA CNPJ/CPF Diário Oficial NOTIFICAÇÃO 33.000.167/0744- 509395/1908/68/2024 90 33.000.167/1090- 509392/1908/68/2024 30 33.000.167/1090- 509855/1908/68/2024 30 41.777.706/0006- 509389/1908/68/2024 56 02.377.759/0016- 509391/1908/68/2024 08 07.857.168/0013- 509864/1908/68/2024 09 Protocolo 1625588 COORD. DE FISCALIZAÇÃO DE INDÚSTRIA E AGRONEGÓCIOS - CFIA INTIMAÇÃO FISCAL EDITAL DE INTIMAÇÃO FISCAL A partir da publicação deste Edital, fica(m) INTIMADA(S) a(s) pessoa(s) abaixo relacionada(s) a tomar(em) conhecimento de pendência(s) junto à SECRETARIA DE ESTADO DE FAZENDA DE MATO GROSSO - SEFAZ-MT. O detalhamento da(s) INTIMAÇÃO pode ser verificado por meio de acesso ao Portal da Secretaria de Estado de Fazenda, disponível em www.sefaz. mt.gov.br. No caso de contribuintes que possuam inscrição estadual: Acessar o Portal em www.sefaz.mt.gov.br e acessar o menu “ACESSO RESTRITO”, selecionar CONTABILISTAS/EMPRESAS, informando Tipo de Usuário, Login, Senha e Texto Captcha para acessar a página ACESSO WEB SEFAZ-MT, no Menu, acessar: Sistema de Notificação Eletrônica > Pesquisar Notificação > Pesquisar Notificação por Número: Inserir o número completo da respectiva notificação abaixo relacionada e clicar em “Pesquisar”. Na página seguinte, clic",
+          "data": "2024-09-30",
+          "paginas": 148,
+          "pagina": 8,
+          "pdf_id": 1058242,
+          "year": "2024",
+          "month": "09",
+          "day": "30",
+          "diario_id": 18101,
+          "tipo_edicao": 1
+        },
+        "highlight": {
+          "conteudo": [
+            "SIM DISTRIBUIDORA DE COMBUSTIVEIS LTDA CNPJ/CPF Diário Oficial NOTIFICAÇÃO <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/0744- 509395/1908/68/2024 90 <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/1090- 509392/1908/68/2024 30 <strong>33</strong>.<strong>000</strong>.<strong>167</strong>/1090- 509855/1908/68/2024 30 41.777.706/0006- 509389/1908/68/2024 56 02.377.759/0016- 509391/1908/68/2024 08 07.857.168/0013- 509864/1908/68/2024 09 Protocolo 1625588 COORD."
+          ]
+        },
+        "sort": [
+          1727654400000
+        ],
+        "diario": "D.O.",
+        "suplemento": "Edição 28839"
+      }
+    ]
+  },
+  "aggregations": {
+    "TipoEdicao": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 1,
+          "doc_count": 25
+        }
+      ]
+    },
+    "Edicoes": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 14069,
+          "doc_count": 1
+        },
+        {
+          "key": 14084,
+          "doc_count": 1
+        },
+        {
+          "key": 14090,
+          "doc_count": 1
+        },
+        {
+          "key": 14159,
+          "doc_count": 1
+        },
+        {
+          "key": 14344,
+          "doc_count": 1
+        },
+        {
+          "key": 14384,
+          "doc_count": 1
+        },
+        {
+          "key": 14675,
+          "doc_count": 1
+        },
+        {
+          "key": 14701,
+          "doc_count": 1
+        },
+        {
+          "key": 14817,
+          "doc_count": 1
+        },
+        {
+          "key": 14936,
+          "doc_count": 1
+        },
+        {
+          "key": 15153,
+          "doc_count": 1
+        },
+        {
+          "key": 15313,
+          "doc_count": 1
+        },
+        {
+          "key": 15318,
+          "doc_count": 1
+        },
+        {
+          "key": 16025,
+          "doc_count": 1
+        },
+        {
+          "key": 16072,
+          "doc_count": 1
+        },
+        {
+          "key": 16124,
+          "doc_count": 1
+        },
+        {
+          "key": 16716,
+          "doc_count": 1
+        },
+        {
+          "key": 16933,
+          "doc_count": 1
+        },
+        {
+          "key": 17009,
+          "doc_count": 1
+        },
+        {
+          "key": 17013,
+          "doc_count": 1
+        },
+        {
+          "key": 17224,
+          "doc_count": 1
+        },
+        {
+          "key": 18056,
+          "doc_count": 1
+        },
+        {
+          "key": 18101,
+          "doc_count": 1
+        },
+        {
+          "key": 18616,
+          "doc_count": 1
+        },
+        {
+          "key": 18726,
+          "doc_count": 1
+        }
+      ]
+    },
+    "FileYear": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": 2015,
+          "doc_count": 4
+        },
+        {
+          "key": 2016,
+          "doc_count": 4
+        },
+        {
+          "key": 2022,
+          "doc_count": 4
+        },
+        {
+          "key": 2018,
+          "doc_count": 3
+        },
+        {
+          "key": 2020,
+          "doc_count": 3
+        },
+        {
+          "key": 2017,
+          "doc_count": 2
+        },
+        {
+          "key": 2024,
+          "doc_count": 2
+        },
+        {
+          "key": 2025,
+          "doc_count": 2
+        },
+        {
+          "key": 2023,
+          "doc_count": 1
+        }
+      ]
+    }
+  },
+  "loggedCredit": true
+}

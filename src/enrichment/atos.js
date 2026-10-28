@@ -3,7 +3,7 @@ const { fold } = require("./resolve");
 
 const USER_AGENT = "RadarCapEx-MVP/0.1 (research; contact via project owner)";
 const DOU_SEARCH = "https://www.in.gov.br/consulta/-/buscar/dou";
-const DIARIO_API = "https://queridodiario.ok.org.br/api/gazettes";
+const DIARIO_API = "https://api.queridodiario.org.br/gazettes";
 
 function stripHtml(value) {
   return String(value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
