@@ -184,11 +184,14 @@ app.get("/health", async (_req, res) => {
   }
 });
 
-app.get("/projetos", async (_req, res) => {
+app.get("/projetos", async (req, res) => {
   const [projects, stats] = await Promise.all([
     db.listProjects(),
     db.dashboardStats(),
   ]);
+  const notice = req.query.message
+    ? `<div class="notice">${esc(req.query.message)}</div>`
+    : "";
   const cards = projects.length
     ? projects.map((project) => `
       <article class="project-card">
@@ -215,6 +218,7 @@ app.get("/projetos", async (_req, res) => {
     title: "Projetos",
     active: "projetos",
     body: `
+      ${notice}
       <section class="page-heading">
         <div><p class="eyebrow">MVP · meta de 5</p><h1>Projetos prospectados</h1><p>Notícia abre a ficha; fontes secundárias confirmam o projeto.</p></div>
         <a class="button" href="/prospeccao">Explorar fontes</a>
@@ -958,6 +962,9 @@ app.get("/projetos/:id", async (req, res) => {
       <p>${esc(item.trecho || "")}</p>
       ${proof}
       <p class="evidence-links">${item.fonte_codigo && hasSourcePage(item.fonte_codigo) ? `<a href="/fontes/${esc(item.fonte_codigo)}">${esc(item.fonte_nome || "Fonte")}</a>` : ""}${item.url ? `<a href="${esc(item.url)}" target="_blank" rel="noopener">Abrir a publicação ↗</a>` : ""}</p>
+      <form class="evidence-delete" method="post" action="/projetos/${project.id}/evidencias/${item.id}/excluir" onsubmit="return confirm('Excluir esta evidência? A ação não pode ser desfeita.')">
+        <button class="button button--small button--danger" type="submit">Excluir evidência</button>
+      </form>
     </article>`;
   }).join("");
   const usedSourceIds = new Set(evidence.map((item) => item.id_fonte).filter(Boolean));
@@ -1024,6 +1031,11 @@ app.get("/projetos/:id", async (req, res) => {
             <label>Novo status (opcional)</label><select name="status"><option value="">Manter ${esc(project.status)}</option>${statuses.map((s) => `<option value="${s}">${s}</option>`).join("")}</select>
             <button class="button" type="submit">Salvar evidência</button>
           </form>
+          <form class="form-card compact" method="post" action="/projetos/${project.id}/excluir" onsubmit="return confirm('Excluir este projeto e as ${evidence.length} evidência(s) dele? A ação não pode ser desfeita.')">
+            <h2>Excluir projeto</h2>
+            <p class="muted">Apaga o projeto e todas as evidências dele. A notícia continua no histórico de treino.</p>
+            <button class="button button--danger" type="submit">Excluir projeto</button>
+          </form>
         </aside>
       </div>
       <section class="secondary-sources">
@@ -1078,6 +1090,22 @@ app.post("/projetos/:id/evidencias", async (req, res) => {
   await db.addEvidence(req.params.id, { ...input, papel: "secundaria" });
   if (input.status) await db.updateProjectStatus(req.params.id, input.status);
   res.redirect(`/projetos/${req.params.id}`);
+});
+
+app.post("/projetos/:id/excluir", async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const deleted = await db.deleteProject(id);
+  if (!deleted) return res.status(404).send("Projeto não encontrado");
+  const message = `Projeto "${deleted.nome}" excluído com ${deleted.evidencias} evidência(s).`;
+  res.redirect(`/projetos?message=${encodeURIComponent(message)}`);
+});
+
+app.post("/projetos/:id/evidencias/:evidenciaId/excluir", async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  const evidenceId = z.string().uuid().parse(req.params.evidenciaId);
+  const deleted = await db.deleteEvidence(id, evidenceId);
+  if (!deleted) return res.status(404).send("Evidência não encontrada");
+  res.redirect(`/projetos/${id}?message=${encodeURIComponent("Evidência excluída.")}`);
 });
 
 app.use((error, _req, res, _next) => {

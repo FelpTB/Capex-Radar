@@ -57,6 +57,7 @@ h2 { letter-spacing: -.5px; }
 .button:hover { text-decoration: none; filter: brightness(.96); }
 .button--secondary { background: var(--surface); color: var(--green); }
 .button--small { padding: 8px 12px; }
+.button--danger { background: var(--surface); border-color: var(--red); color: var(--red); }
 .stats {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); background: var(--surface);
   border: 1px solid var(--line); border-radius: 12px; margin-bottom: 28px;
@@ -299,6 +300,7 @@ textarea { resize: vertical; }
 .evidence-list { display: flex; flex-direction: column; gap: 12px; }
 .evidence { padding: 18px; }
 .evidence h3 { margin: 10px 0 6px; }
+.evidence-delete { margin: 12px 0 0; }
 .empty { text-align: center; background: var(--surface); border: 1px dashed #bac5bc; border-radius: 12px; padding: 64px 24px; grid-column: 1 / -1; }
 
 @media (max-width: 760px) {

@@ -263,6 +263,41 @@ async function addEvidence(projectId, input) {
   return rows[0];
 }
 
+// Apaga o projeto e todas as evidências dele na mesma transação. A notícia
+// em candidato_projeto fica: é rótulo de treino e não pertence ao projeto.
+async function deleteProject(projectId) {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const evidenceResult = await client.query(
+      "delete from evidencia where id_projeto = $1",
+      [projectId],
+    );
+    const projectResult = await client.query(
+      "delete from projeto where id = $1 returning id, nome",
+      [projectId],
+    );
+    await client.query("commit");
+    const project = projectResult.rows[0];
+    if (!project) return null;
+    return { ...project, evidencias: evidenceResult.rowCount };
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function deleteEvidence(projectId, evidenceId) {
+  const { rows } = await pool.query(
+    `delete from evidencia where id = $2 and id_projeto = $1
+     returning id, titulo_ou_resumo`,
+    [projectId, evidenceId],
+  );
+  return rows[0] || null;
+}
+
 async function updateProjectStatus(projectId, status) {
   await pool.query(
     "update projeto set status = $2, updated_at = now() where id = $1",
@@ -708,6 +743,8 @@ module.exports = {
   createProjectsSharingNews,
   projectsSharingNews,
   addEvidence,
+  deleteProject,
+  deleteEvidence,
   updateProjectStatus,
   updateProjectReading,
   dashboardStats,
