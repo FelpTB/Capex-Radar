@@ -1,0 +1,54 @@
+{
+  "versao": "fase2-2026-11-04",
+  "descricao": "Termos de busca das empresas do teste de monitoramento. A consulta junta os termos de marca, razão social e variação com OR, exige uma palavra de contexto do nicho e exclui os termos de exclusão. Marca ambígua entra na forma composta (\"Minerva Foods\", não \"Minerva\").",
+  "janela_inicio": "2023-01-01",
+  "contexto_por_nicho": {
+    "papel_celulose": ["fábrica", "planta", "unidade", "investimento", "expansão", "obra", "linha", "projeto", "terminal"],
+    "alimentos_bebidas": ["fábrica", "planta", "unidade", "investimento", "expansão", "obra", "linha", "frigorífico", "centro de distribuição"],
+    "ecommerce": ["centro de distribuição", "CD", "galpão", "hub", "investimento", "expansão", "obra", "inaugura", "centro logístico"],
+    "datacenter": ["data center", "datacenter", "campus", "investimento", "expansão", "obra", "MW", "inaugura"]
+  },
+  "grupos": {
+    "Suzano": {"marca": ["Suzano"], "exclusao": ["Suzano (SP)", "Prefeitura de Suzano", "Câmara de Suzano"], "notas": "Suzano também é município paulista."},
+    "Klabin": {"marca": ["Klabin"]},
+    "Eldorado Brasil": {"marca": ["Eldorado Brasil", "Eldorado Celulose"], "notas": "\"Eldorado\" sozinho pega município e shopping."},
+    "Sylvamo": {"marca": ["Sylvamo"], "variacao": ["International Paper Brasil"], "notas": "Sylvamo nasceu do spin-off de papel da International Paper em 2021."},
+    "Cenibra": {"marca": ["Cenibra"], "razao_social": ["Celulose Nipo-Brasileira"]},
+    "Bracell": {"marca": ["Bracell"]},
+    "CMPC": {"marca": ["CMPC"], "variacao": ["CMPC Celulose Riograndense", "CMPC Guaíba", "Projeto Natureza"], "notas": "Projeto Natureza é a fábrica nova de Barra do Ribeiro (RS)."},
+
+    "JBS": {"marca": ["JBS", "Seara", "Friboi"], "notas": "Seara é a operacional de aves e suínos; Friboi, de bovinos."},
+    "MBRF (Marfrig + BRF)": {"marca": ["MBRF", "Marfrig", "BRF"], "variacao": ["Sadia", "Perdigão"], "notas": "BRF sozinho também é sigla de outras coisas; o contexto industrial filtra."},
+    "Ambev": {"marca": ["Ambev"], "variacao": ["Cervejaria Ambev"]},
+    "Minerva": {"marca": ["Minerva Foods"], "variacao": ["frigorífico Minerva"], "notas": "\"Minerva\" sozinho pega editora, deusa e escolas."},
+    "Aurora Coop": {"marca": ["Aurora Coop", "Aurora Alimentos"], "razao_social": ["Cooperativa Central Aurora"]},
+    "C.Vale": {"marca": ["C.Vale"], "variacao": ["C. Vale", "Cooperativa C.Vale"]},
+    "Camil": {"marca": ["Camil Alimentos"], "variacao": ["Camil"]},
+    "Copacol": {"marca": ["Copacol"]},
+    "Três Corações": {"marca": ["Três Corações", "3corações"], "variacao": ["Grupo 3corações", "3 Corações"], "exclusao": ["Três Corações (MG)", "Prefeitura de Três Corações"], "notas": "Três Corações também é município mineiro."},
+    "M. Dias Branco": {"marca": ["M. Dias Branco", "M.Dias Branco"], "variacao": ["MDias Branco"]},
+    "Piracanjuba": {"marca": ["Piracanjuba"], "razao_social": ["Laticínios Bela Vista"], "exclusao": ["Prefeitura de Piracanjuba"], "notas": "Piracanjuba também é município goiano."},
+    "Solar Coca-Cola": {"marca": ["Solar Coca-Cola", "Solar Bebidas"], "razao_social": ["Norsa Refrigerantes", "Refrescos Guararapes"], "notas": "\"Solar\" sozinho pega energia solar."},
+    "Caramuru": {"marca": ["Caramuru Alimentos"], "variacao": ["Caramuru"], "exclusao": ["Diogo Álvares", "Ilha do Caramuru"]},
+    "Nestlé": {"marca": ["Nestlé", "Nestle"], "variacao": ["Chocolates Garoto", "Purina"], "notas": "Garoto e Purina são marcas com fábrica própria; a Chocolates Garoto tem CNPJ fora das relacionadas."},
+    "Heineken": {"marca": ["Heineken", "Grupo Heineken"], "razao_social": ["HNK BR"], "variacao": ["Cervejaria Heineken"]},
+    "Coca-Cola FEMSA": {"marca": ["Coca-Cola FEMSA", "FEMSA Brasil"], "razao_social": ["Spal Indústria Brasileira de Bebidas"]},
+    "PepsiCo": {"marca": ["PepsiCo"], "variacao": ["Elma Chips", "Quaker Brasil"]},
+    "Mondelez": {"marca": ["Mondelez"], "variacao": ["Lacta"]},
+    "Lactalis": {"marca": ["Lactalis"], "variacao": ["Itambé", "Parmalat Brasil", "Président Brasil"], "notas": "Itambé e Parmalat são da Lactalis no Brasil."},
+    "Danone": {"marca": ["Danone"]},
+
+    "Mercado Livre": {"marca": ["Mercado Livre", "Mercado Libre"], "razao_social": ["Ebazar"], "variacao": ["Mercado Envios"]},
+    "Magalu": {"marca": ["Magalu", "Magazine Luiza"]},
+    "Shopee": {"marca": ["Shopee"]},
+    "Amazon": {"marca": ["Amazon Brasil"], "variacao": ["Amazon centro de distribuição"], "exclusao": ["Amazônia", "Prime Video", "AWS"], "notas": "\"Amazon\" sozinho mistura AWS, Prime Video e floresta; AWS é outra raiz de CNPJ."},
+    "Casas Bahia": {"marca": ["Casas Bahia", "Grupo Casas Bahia"], "variacao": ["Via Varejo"]},
+    "Shein": {"marca": ["Shein"]},
+
+    "Ascenty": {"marca": ["Ascenty"]},
+    "ODATA": {"marca": ["ODATA"], "variacao": ["Aligned ODATA"]},
+    "Scala Data Centers": {"marca": ["Scala Data Centers"], "variacao": ["Scala AI City", "Scala data center"], "notas": "\"Scala\" sozinho pega a linguagem de programação."},
+    "Elea Data Centers": {"marca": ["Elea Data Centers", "Elea Digital"], "variacao": ["Elea data center"]},
+    "Equinix": {"marca": ["Equinix"]}
+  }
+}
