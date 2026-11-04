@@ -56,3 +56,20 @@ São 356 no total:
 | `radar2.fontes` | 2 | Só as que ainda não existiam no MVP |
 
 Cada linha guarda a original em `legado`, sob a chave do esquema de origem. Projetos e evidências antigos não foram migrados.
+
+## Carga das empresas
+
+Feita em 04/11/2026 com `npm run capex:carga-empresas` ([`scripts/capex-carga-empresas.js`](../../scripts/capex-carga-empresas.js)), que lê o seed da Fase 0 e grava tudo numa transação com o ator `sistema:carga-fase0`. Rodar de novo atualiza os campos e insere o que faltar.
+
+| Nicho | Grupos | Raízes (matrizes) | Estabelecimentos ativos (filiais) |
+|---|---|---|---|
+| Alimentos e Bebidas | 20 | 26 | 2.394 |
+| Datacenters | 5 | 18 | 94 |
+| E-commerce | 6 | 7 | 3.280 |
+| Papel e Celulose | 7 | 13 | 1.241 |
+| **Total** | **38** | **64** | **7.009** |
+
+- **Matrizes:** a do seed entra como `principal`. As 27 relacionadas têm só a raiz no seed; o CNPJ completo vem do estabelecimento matriz no `cnpj_db`. O papel é deduzido da razão social: `holding` (HOLDING, PARTICIPACOES), `spe` (campus de datacenter: ODATA SP/SAMPA/RJ, Equinix Hyperscale, Elea SP1) ou `operacional`.
+- **Filiais:** todos os estabelecimentos com situação 02 de cada raiz, inclusive a sede, porque a planta pode ser o próprio estabelecimento matriz (Cenibra em Belo Oriente, Bracell em Lençóis Paulista).
+- **Shein:** grupo criado sem matriz, até o CNPJ ser localizado.
+- **Código IBGE:** fica vazio. O `cnpj_db` só tem o código de município da Receita, sem tabela de equivalência com o IBGE.
