@@ -1,0 +1,261 @@
+// Tela de Monitoramento: ações no card sem recarregar, barra de progresso da
+// triagem e navegação entre as páginas do monitoramento trocando só o conteúdo.
+// Sem este script, os formulários e links continuam funcionando normalmente.
+(() => {
+  if (window.__monitoramento) return;
+  window.__monitoramento = true;
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+
+  // -------------------------------------------------------------------------
+  // Avisos curtos no canto da tela
+  // -------------------------------------------------------------------------
+  const toasts = document.createElement("div");
+  toasts.className = "toasts";
+  toasts.setAttribute("aria-live", "polite");
+  document.body.appendChild(toasts);
+
+  function avisar(texto, tipo = "ok") {
+    const el = document.createElement("div");
+    el.className = `toast toast--${tipo}`;
+    el.textContent = texto;
+    toasts.appendChild(el);
+    setTimeout(() => el.classList.add("is-leaving"), 3800);
+    setTimeout(() => el.remove(), 4300);
+  }
+
+  function atualizarNumeros(contagens) {
+    if (!contagens) return;
+    for (const [chave, valor] of Object.entries(contagens)) {
+      document.querySelectorAll(`[data-stat="${chave}"]`).forEach((el) => { el.textContent = valor; });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Navegação: troca só o <main>, mantém a posição quando faz sentido
+  // -------------------------------------------------------------------------
+  const main = () => document.querySelector("main.container");
+
+  // Troca o <main> com transição suave. O navegador só roda a transição quando
+  // pinta um quadro; se ela não rodar logo (aba em segundo plano), troca direto.
+  function trocarConteudo(html, depois) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const novo = doc.querySelector("main.container");
+    if (!novo) return false;
+    let feito = false;
+    const aplicar = () => {
+      if (feito) return;
+      feito = true;
+      main().replaceWith(novo);
+      document.title = doc.title;
+      depois();
+    };
+    if (document.startViewTransition && !document.hidden) {
+      document.startViewTransition(aplicar);
+      setTimeout(aplicar, 400);
+    } else {
+      aplicar();
+    }
+    return true;
+  }
+
+  async function navegar(url, { empilhar = true, scroll = 0 } = {}) {
+    const alvo = new URL(url, location.href);
+    document.body.classList.add("is-loading");
+    try {
+      const resposta = await fetch(alvo, { headers: { "X-Requested-With": "fetch" } });
+      if (empilhar) history.replaceState({ ...(history.state || {}), scroll: window.scrollY }, "");
+      let concluir;
+      const trocado = new Promise((resolve) => { concluir = resolve; });
+      const trocou = resposta.ok && trocarConteudo(await resposta.text(), () => {
+        window.scrollTo(0, scroll);
+        iniciar();
+        concluir();
+      });
+      if (!trocou) {
+        location.href = alvo.href;
+        return;
+      }
+      if (empilhar) history.pushState({ scroll }, "", alvo.pathname + alvo.search + alvo.hash);
+      await trocado;
+    } catch {
+      location.href = alvo.href;
+    } finally {
+      document.body.classList.remove("is-loading");
+    }
+  }
+
+  // Recarrega a página atual sem sair do lugar (depois da triagem, por exemplo).
+  function recarregarConteudo() {
+    return navegar(location.href, { empilhar: false, scroll: window.scrollY });
+  }
+
+  window.addEventListener("popstate", (event) => {
+    navegar(location.href, { empilhar: false, scroll: event.state?.scroll || 0 });
+  });
+
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href]");
+    if (!link || event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (link.target === "_blank" || link.hasAttribute("download")) return;
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin || !url.pathname.startsWith("/monitoramento")) return;
+    if (url.pathname === location.pathname && url.search === location.search && url.hash) return;
+    event.preventDefault();
+    navegar(url.href);
+  });
+
+  // Filtros: trocar o select já filtra, sem botão e sem voltar ao topo.
+  document.addEventListener("change", (event) => {
+    const form = event.target.closest("form.js-filtros");
+    if (!form) return;
+    const url = new URL(form.action, location.href);
+    for (const [chave, valor] of new FormData(form)) if (valor) url.searchParams.set(chave, valor);
+    navegar(url.href, { scroll: window.scrollY });
+  });
+
+  // -------------------------------------------------------------------------
+  // Ações do card: aprovar, descartar e desfazer
+  // -------------------------------------------------------------------------
+  document.addEventListener("submit", async (event) => {
+    const form = event.target;
+    if (form.matches("form.js-acao")) {
+      event.preventDefault();
+      const card = form.closest(".news-card");
+      // Lê o formulário antes de desabilitar: campo desabilitado não é enviado.
+      const corpo = new URLSearchParams(new FormData(form));
+      const botoes = card ? card.querySelectorAll("button, select, input") : form.querySelectorAll("button");
+      botoes.forEach((el) => { el.disabled = true; });
+      card?.classList.add("is-busy");
+      try {
+        const resposta = await fetch(form.action, {
+          method: "POST",
+          headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
+          body: corpo,
+        });
+        const dados = await resposta.json();
+        if (!resposta.ok || !dados.ok) throw new Error(dados.mensagem || "Não foi possível concluir");
+        if (card && dados.card) {
+          const tmp = document.createElement("div");
+          tmp.innerHTML = dados.card.trim();
+          const novo = tmp.firstElementChild;
+          novo.classList.add("is-updated");
+          card.replaceWith(novo);
+        }
+        atualizarNumeros(dados.contagens);
+        avisar(dados.mensagem);
+      } catch (error) {
+        avisar(error.message, "erro");
+        botoes.forEach((el) => { el.disabled = false; });
+        card?.classList.remove("is-busy");
+      }
+      return;
+    }
+    if (form.matches("form.js-testar")) {
+      event.preventDefault();
+      const saida = form.querySelector(".js-testar-resultado");
+      const botao = form.querySelector("button[type=submit]");
+      botao.disabled = true;
+      saida.innerHTML = '<p class="muted">Consultando o Google News…</p>';
+      try {
+        const url = new URL(form.action, location.href);
+        for (const [chave, valor] of new FormData(form)) url.searchParams.set(chave, valor);
+        saida.innerHTML = await (await fetch(url)).text();
+      } catch {
+        saida.innerHTML = '<p class="error-text">Falha ao testar a busca.</p>';
+      } finally {
+        botao.disabled = false;
+      }
+    }
+  });
+
+  // Histórico de buscas: as notícias da janela carregam ao abrir.
+  document.addEventListener("toggle", async (event) => {
+    const det = event.target;
+    if (!det.matches?.("details.js-janela") || !det.open || det.dataset.carregado) return;
+    det.dataset.carregado = "1";
+    const alvo = det.querySelector(".js-janela-noticias");
+    const url = `/monitoramento/buscas/noticias?${new URLSearchParams({ grupo: det.dataset.grupo, desde: det.dataset.desde, ate: det.dataset.ate })}`;
+    try {
+      alvo.innerHTML = await (await fetch(url)).text();
+      alvo.classList.remove("muted");
+    } catch {
+      alvo.textContent = "Falha ao carregar as notícias.";
+    }
+  }, true);
+
+  // -------------------------------------------------------------------------
+  // Triagem da IA com barra de progresso
+  // -------------------------------------------------------------------------
+  let acompanhando = null;
+
+  function mostrarProgresso(job) {
+    const box = document.getElementById("triagem-progresso");
+    if (!box) return;
+    box.classList.remove("is-hidden");
+    box.dataset.job = job.status === "rodando" ? job.id : "";
+    box.querySelector(".js-triagem-barra").style.width = `${job.percentual}%`;
+    const texto = job.status === "rodando"
+      ? `${job.feitas} de ${job.total} notícias · ${job.grupo_atual || job.escopo}`
+      : job.status === "erro"
+        ? `Parou com erro: ${job.erro}`
+        : `Concluída: ${job.resumo.lidas} lidas · ${job.resumo.capex} de CapEx · ${job.resumo.regras + job.resumo.ia_descartadas} descartadas${job.resumo.erros_ia ? ` · ${job.resumo.erros_ia} lote(s) com erro` : ""}`;
+    box.querySelector(".js-triagem-texto").textContent = texto;
+    box.classList.toggle("is-done", job.status !== "rodando");
+    document.querySelectorAll(".js-triar").forEach((b) => { b.disabled = job.status === "rodando"; });
+  }
+
+  async function acompanhar(id) {
+    if (acompanhando === id) return;
+    acompanhando = id;
+    while (acompanhando === id) {
+      let dados;
+      try {
+        dados = await (await fetch(`/monitoramento/triagem/${id}`, { headers: { Accept: "application/json" } })).json();
+      } catch {
+        await new Promise((r) => setTimeout(r, 3000));
+        continue;
+      }
+      if (!dados.ok) { avisar(dados.mensagem, "erro"); acompanhando = null; return; }
+      mostrarProgresso(dados.job);
+      if (dados.job.status !== "rodando") {
+        acompanhando = null;
+        avisar(dados.job.status === "erro" ? "A triagem parou com erro." : "Triagem concluída.", dados.job.status === "erro" ? "erro" : "ok");
+        await recarregarConteudo();
+        const box = document.getElementById("triagem-progresso");
+        if (box) mostrarProgresso(dados.job);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+  }
+
+  document.addEventListener("click", async (event) => {
+    const botao = event.target.closest(".js-triar");
+    if (!botao) return;
+    botao.disabled = true;
+    try {
+      const resposta = await fetch("/monitoramento/triagem", {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ grupo_id: botao.dataset.grupo || "" }),
+      });
+      const dados = await resposta.json();
+      if (!dados.ok) throw new Error(dados.mensagem);
+      mostrarProgresso(dados.job);
+      if (dados.job.status === "rodando") acompanhar(dados.job.id);
+      else avisar("Nada para triar.");
+    } catch (error) {
+      avisar(error.message || "Falha ao iniciar a triagem.", "erro");
+      botao.disabled = false;
+    }
+  });
+
+  // Ao abrir ou trocar de página, retoma a barra de uma triagem em andamento.
+  function iniciar() {
+    const box = document.getElementById("triagem-progresso");
+    if (box?.dataset.job) acompanhar(box.dataset.job);
+  }
+
+  iniciar();
+})();

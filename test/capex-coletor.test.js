@@ -180,6 +180,15 @@ test("triagem: regras, IA, filial sugerida e vínculo com projeto existente", as
   assert.deepEqual(client.estado.vinculos, [["e4", "p1", 80, "mesmo ativo", "teste"]]);
 });
 
+test("triagem informa o progresso depois das regras e de cada lote", async () => {
+  const pendentes = Array.from({ length: 25 }, (_v, i) => ({ id: `e${i}`, titulo: i === 0 ? "Prefeitura de Bracell" : `Bracell notícia ${i}` }));
+  const client = clienteFalso({ pendentes });
+  const ia = { modelo: "teste", triar: async (_g, lote) => new Map(lote.map((n) => [n.id, { capex: false, motivo: "não" }])) };
+  const passos = [];
+  await triarGrupo({ client, grupo: GRUPO, ia, onProgresso: (feitas, total) => passos.push([feitas, total]) });
+  assert.deepEqual(passos, [[1, 25], [21, 25], [25, 25]]);
+});
+
 test("sem IA só as regras rodam", async () => {
   const client = clienteFalso({ pendentes: [{ id: "e1", titulo: "Bracell amplia fábrica" }, { id: "e2", titulo: "Prefeitura de Bracell" }] });
   const resumo = await triarGrupo({ client, grupo: GRUPO, ia: null });

@@ -174,7 +174,7 @@ function companyIdentificationHtml(identification) {
     </details>`;
 }
 
-app.get("/", (_req, res) => res.redirect("/projetos"));
+app.get("/", (_req, res) => res.redirect("/monitoramento"));
 
 app.get("/health", async (_req, res) => {
   try {

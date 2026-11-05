@@ -1,10 +1,19 @@
-// Tela de Monitoramento (capex_radar, Fase 4): notícias das 38 empresas,
-// revisão das sugestões da IA e carteira de projetos.
+// Tela de Monitoramento (capex_radar, Fases 4 e 5): notícias das 38 empresas,
+// revisão direto no card, triagem da IA com progresso, transparência das
+// buscas e carteira de projetos.
+//
+// As ações de revisão respondem JSON quando o pedido vem do script da tela
+// (public/monitoramento.js): o card é redesenhado no lugar, sem recarregar a
+// página nem perder a posição. Sem script, os formulários funcionam com
+// redirecionamento comum.
 const { z } = require("zod");
 const painel = require("./capex-painel-db");
 const { pool } = require("./db");
-const { carregarGrupos, triarGrupo } = require("./capex-coletor");
+const { lerRss, noticiasDoRss, chaveDedupe, carregarGrupos } = require("./capex-coletor");
+const { buscaDoGrupo } = require("./capex-busca");
+const { googleNewsUrl } = require("./news-queries");
 const { ESTAGIOS, iaPadrao } = require("./capex-ia");
+const triagem = require("./capex-triagem-jobs");
 const { esc, money, badge, selectOptions, layout } = require("./html");
 
 const NICHOS = {
@@ -25,11 +34,25 @@ const ESTAGIO_ROTULO = {
   cancelado: "Cancelado",
 };
 
-const LIMITE_TRIAGEM = 100;
+const MOTIVOS_DESCARTE = [
+  "não é CapEx",
+  "outra empresa ou homônimo",
+  "resultado financeiro ou mercado",
+  "notícia repetida",
+  "fora do Brasil",
+  "ativo já em operação, sem obra",
+];
+
+const SCRIPT = '<script src="/monitoramento.js" defer></script>';
 
 function dia(valor) {
   if (!valor) return "—";
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(new Date(valor));
+}
+
+function diaHora(valor) {
+  if (!valor) return "—";
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(valor));
 }
 
 // Situação da notícia na revisão, a partir da triagem e da leitura da IA.
@@ -63,17 +86,82 @@ function aviso(req) {
 }
 
 function abas(ativa, totalProjetos) {
+  const aba = (chave, href, rotulo) => `<a class="${ativa === chave ? "active" : ""}" href="${href}">${rotulo}</a>`;
   return `<nav class="view-tabs">
-    <a class="${ativa === "noticias" ? "active" : ""}" href="/monitoramento">Notícias</a>
-    <a class="${ativa === "carteira" ? "active" : ""}" href="/monitoramento/carteira">Carteira (${totalProjetos})</a>
+    ${aba("noticias", "/monitoramento", "Notícias")}
+    ${aba("buscas", "/monitoramento/buscas", "Buscas")}
+    ${aba("carteira", "/monitoramento/carteira", `Carteira (${totalProjetos})`)}
   </nav>`;
+}
+
+// Ações do card: aprovar e descartar com motivo, ou desfazer o descarte.
+function acoesCard(noticia) {
+  const base = `/monitoramento/noticias/${noticia.id}`;
+  if (noticia.triagem === "vinculada") {
+    return `<div class="news-card__done">${badge("aprovada", "success")} <a href="${base}">ver vínculos →</a></div>`;
+  }
+  if (noticia.triagem === "descartada") {
+    return `<div class="news-card__done">
+      <span class="muted">${esc(noticia.triagem_motivo || "Descartada")}</span>
+      <form class="js-acao" method="post" action="${base}/restaurar">
+        <button class="link-button link-button--neutral" type="submit">Desfazer</button>
+      </form>
+    </div>`;
+  }
+  const aprovar = noticia.sugerido_projeto_id ? "Aceitar vínculo" : "Aprovar como projeto";
+  return `<div class="news-card__actions">
+    <form class="js-acao" method="post" action="${base}/aprovar">
+      <button class="button button--small" type="submit">${aprovar}</button>
+    </form>
+    <form class="js-acao news-card__discard" method="post" action="${base}/descartar">
+      <select name="motivo" aria-label="Motivo do descarte">${selectOptions(MOTIVOS_DESCARTE.map((m) => [m, m]))}</select>
+      <input name="detalhe" placeholder="observação (opcional)" maxlength="160" aria-label="Observação do descarte">
+      <button class="button button--small button--danger" type="submit">Descartar</button>
+    </form>
+  </div>`;
+}
+
+function cardNoticia(noticia) {
+  const situacao = situacaoNoticia(noticia);
+  const ex = noticia.extracao;
+  const leitura = ex?.capex ? resumoExtracao(ex) : "";
+  const motivoIa = ex?.motivo && noticia.triagem !== "descartada" ? ex.motivo : "";
+  const sugestao = noticia.sugerido_projeto
+    ? `<p class="news-card__hint">Mesmo projeto que <strong>${esc(noticia.sugerido_projeto)}</strong>${noticia.sugerido_confianca != null ? ` (${noticia.sugerido_confianca}%)` : ""}</p>`
+    : "";
+  const titulo = noticia.url
+    ? `<a href="${esc(noticia.url)}" target="_blank" rel="noopener">${esc(noticia.titulo)}</a>`
+    : esc(noticia.titulo);
+  return `<article class="news-card news-card--${esc(noticia.triagem)}" id="noticia-${noticia.id}" data-id="${noticia.id}">
+    <div class="news-card__meta">
+      ${badge(situacao.rotulo, situacao.tipo)}
+      <span>${esc(dia(noticia.data_original))}</span>
+      <span>${esc(noticia.veiculo || "")}</span>
+      <a href="/monitoramento?${esc(new URLSearchParams({ grupo: noticia.grupo_id }).toString())}">${esc(noticia.grupo)}</a>
+      <a class="news-card__more" href="/monitoramento/noticias/${noticia.id}">detalhes</a>
+    </div>
+    <h3 class="news-card__title">${titulo}</h3>
+    ${leitura ? `<p class="news-card__reading">${esc(leitura)}</p>` : ""}
+    ${motivoIa ? `<p class="news-card__why">IA: ${esc(motivoIa)}</p>` : ""}
+    ${sugestao}
+    ${acoesCard(noticia)}
+  </article>`;
+}
+
+function barraTriagem(job) {
+  const ativo = job && job.status === "rodando";
+  return `<section class="triage-progress${ativo ? "" : " is-hidden"}" id="triagem-progresso" data-job="${ativo ? job.id : ""}" aria-live="polite">
+    <div class="triage-progress__head">
+      <strong>Triagem da IA</strong>
+      <span class="js-triagem-texto">${ativo ? `${job.feitas} de ${job.total} · ${esc(job.grupo_atual || job.escopo)}` : ""}</span>
+    </div>
+    <div class="progress"><div class="progress__bar js-triagem-barra" style="width:${ativo ? job.percentual : 0}%"></div></div>
+  </section>`;
 }
 
 function linhaGrupo(grupo) {
   const triar = grupo.nao_triadas
-    ? `<form method="post" action="/monitoramento/grupos/${grupo.id}/triar">
-         <button class="button button--small button--secondary" type="submit">Triar com IA</button>
-       </form>`
+    ? `<button class="button button--small button--secondary js-triar" type="button" data-grupo="${grupo.id}">Triar ${grupo.nao_triadas}</button>`
     : "";
   return `<tr>
     <td><strong><a href="/monitoramento?${esc(new URLSearchParams({ grupo: grupo.id }).toString())}">${esc(grupo.nome)}</a></strong></td>
@@ -82,68 +170,58 @@ function linhaGrupo(grupo) {
     <td>${grupo.nao_triadas}</td>
     <td>${grupo.revisar ? `<strong>${grupo.revisar}</strong>` : 0}</td>
     <td>${grupo.projetos}</td>
-    <td>${esc(dia(grupo.ultima_coleta))}</td>
+    <td><a href="/monitoramento/buscas?${esc(new URLSearchParams({ grupo: grupo.id }).toString())}">${esc(dia(grupo.ultima_coleta))}</a></td>
     <td>${triar}</td>
   </tr>`;
 }
 
-function linhaNoticia(noticia) {
-  const situacao = situacaoNoticia(noticia);
-  const leitura = resumoExtracao(noticia.extracao);
-  const sugestao = noticia.sugerido_projeto
-    ? `<br><span class="muted">Sugerido: ${esc(noticia.sugerido_projeto)}${noticia.sugerido_confianca != null ? ` (${noticia.sugerido_confianca}%)` : ""}</span>`
-    : "";
-  return `<tr>
-    <td>${esc(dia(noticia.data_original))}</td>
-    <td>${esc(noticia.grupo)}</td>
-    <td>
-      <strong><a href="/monitoramento/noticias/${noticia.id}">${esc(noticia.titulo)}</a></strong>
-      <br><span class="muted">${esc(noticia.veiculo || "")}${leitura ? ` · ${esc(leitura)}` : ""}</span>${sugestao}
-    </td>
-    <td>${badge(situacao.rotulo, situacao.tipo)}</td>
-    <td><a href="/monitoramento/noticias/${noticia.id}">Revisar →</a></td>
-  </tr>`;
+function contagens(grupos) {
+  const soma = (campo) => grupos.reduce((total, g) => total + g[campo], 0);
+  return { total: soma("total"), revisar: soma("revisar"), nao_triadas: soma("nao_triadas") };
 }
 
-function paginaMonitoramento({ grupos, noticias, filtros, totalProjetos, notice }) {
-  const soma = (campo) => grupos.reduce((total, g) => total + g[campo], 0);
+function paginaMonitoramento({ grupos, noticias, filtros, totalProjetos, notice, job = null }) {
+  const c = contagens(grupos);
   const grupoOpcoes = [["", "Todas as empresas"], ...grupos.map((g) => [g.id, g.nome])];
   const situacaoOpcoes = Object.entries(painel.SITUACOES);
   const listagem = noticias.length
-    ? `<div class="table-wrap"><table class="table-compact">
-         <thead><tr><th>Data</th><th>Empresa</th><th>Notícia</th><th>Situação</th><th></th></tr></thead>
-         <tbody>${noticias.map(linhaNoticia).join("")}</tbody>
-       </table></div>`
+    ? noticias.map(cardNoticia).join("")
     : `<div class="empty"><h2>Nenhuma notícia neste filtro</h2><p>Troque a empresa ou a situação acima.</p></div>`;
+  const triarTodas = c.nao_triadas
+    ? `<button class="button js-triar" type="button" data-grupo="">Triar ${c.nao_triadas} sem triagem</button>`
+    : "";
   return layout({
     title: "Monitoramento",
     active: "monitoramento",
+    scripts: SCRIPT,
     body: `
       ${notice}
       <section class="page-heading">
         <div>
           <p class="eyebrow">Teste de monitoramento · ${grupos.length} empresas</p>
           <h1>Monitoramento</h1>
-          <p>Notícias coletadas por empresa. A IA sugere; aqui você cria o projeto, vincula ou descarta.</p>
+          <p>Aprove ou descarte direto no card. A IA sugere; a decisão é sua.</p>
         </div>
+        ${triarTodas}
       </section>
       ${abas("noticias", totalProjetos)}
+      ${barraTriagem(job)}
       <section class="stats">
-        <div><strong>${soma("total")}</strong><span>Notícias coletadas</span></div>
-        <div><strong>${soma("revisar")}</strong><span>A revisar</span></div>
-        <div><strong>${soma("nao_triadas")}</strong><span>Sem triagem da IA</span></div>
-        <div><strong>${totalProjetos}</strong><span>Projetos na carteira</span></div>
+        <div><strong data-stat="total">${c.total}</strong><span>Notícias coletadas</span></div>
+        <div><strong data-stat="revisar">${c.revisar}</strong><span>A revisar</span></div>
+        <div><strong data-stat="nao_triadas">${c.nao_triadas}</strong><span>Sem triagem da IA</span></div>
+        <div><strong data-stat="projetos">${totalProjetos}</strong><span>Projetos na carteira</span></div>
       </section>
-      <form class="source-filters" method="get" action="/monitoramento">
+      <form class="source-filters js-filtros" method="get" action="/monitoramento">
         <div><label>Empresa</label><select name="grupo">${selectOptions(grupoOpcoes, filtros.grupo || "")}</select></div>
         <div><label>Situação</label><select name="situacao">${selectOptions(situacaoOpcoes, filtros.situacao)}</select></div>
-        <div class="source-filters__actions"><button class="button button--small" type="submit">Filtrar</button></div>
-        <p class="source-filters__count muted">${noticias.length} notícia(s) neste filtro${noticias.length >= 150 ? " (mostrando as 150 mais recentes)" : ""}.</p>
+        <div class="source-filters__actions"><noscript><button class="button button--small" type="submit">Filtrar</button></noscript></div>
+        <p class="source-filters__count muted">${noticias.length} notícia(s) neste filtro${noticias.length >= 150 ? " (as 150 mais recentes)" : ""}.</p>
       </form>
-      <section>${listagem}</section>
+      <section class="news-list" id="noticias">${listagem}</section>
       <section class="capture-group monitor-groups">
         <h2>Empresas</h2>
-        <p>"Triar com IA" lê até ${LIMITE_TRIAGEM} notícias sem triagem da empresa com o Claude.</p>
+        <p>A data da última coleta leva ao histórico de buscas da empresa.</p>
         <div class="table-wrap"><table class="table-compact">
           <thead><tr><th>Empresa</th><th>Nicho</th><th>Notícias</th><th>Sem triagem</th><th>A revisar</th><th>Projetos</th><th>Última coleta</th><th></th></tr></thead>
           <tbody>${grupos.map(linhaGrupo).join("")}</tbody>
@@ -155,7 +233,7 @@ function paginaMonitoramento({ grupos, noticias, filtros, totalProjetos, notice 
 function blocoLeitura(noticia) {
   const ex = noticia.extracao;
   if (!ex) {
-    return `<section class="form-card compact"><h2>Leitura da IA</h2><p class="muted">Ainda sem triagem. Use "Triar com IA" na lista de empresas.</p></section>`;
+    return `<section class="form-card compact"><h2>Leitura da IA</h2><p class="muted">Ainda sem triagem. Use "Triar" na lista de empresas.</p></section>`;
   }
   const filial = ex.filial_sugerida
     ? `${esc(local(ex.filial_sugerida.uf, ex.filial_sugerida.municipio))} · ${esc(ex.filial_sugerida.cnpj)} (${esc(ex.filial_sugerida.prioridade || "")}, por ${ex.filial_sugerida.criterio === "municipio" ? "município" : "única na UF"})`
@@ -240,12 +318,14 @@ function paginaNoticia({ noticia, vinculos, projetos, matrizes, filiais, notice 
     ? ""
     : `<form class="form-card compact" method="post" action="/monitoramento/noticias/${noticia.id}/descartar">
          <h2>Descartar</h2>
-         <label>Motivo</label><input name="motivo" placeholder="não é projeto, outra empresa, repetida…">
+         <label>Motivo</label><select name="motivo">${selectOptions(MOTIVOS_DESCARTE.map((m) => [m, m]))}</select>
+         <label>Observação</label><input name="detalhe" maxlength="160">
          <button class="button button--danger" type="submit">Descartar notícia</button>
        </form>`;
   return layout({
     title: noticia.titulo,
     active: "monitoramento",
+    scripts: SCRIPT,
     body: `
       ${notice}
       <p><a href="/monitoramento?${esc(new URLSearchParams({ grupo: noticia.grupo_id || "" }).toString())}">← ${esc(noticia.grupo || "Monitoramento")}</a></p>
@@ -272,6 +352,129 @@ function paginaNoticia({ noticia, vinculos, projetos, matrizes, filiais, notice 
   });
 }
 
+// ---------------------------------------------------------------------------
+// Buscas: o que foi consultado, o que voltou e por quê
+// ---------------------------------------------------------------------------
+
+function explicarJanela(j) {
+  if (j.status === "erro") {
+    return /503|429/.test(j.erro || "")
+      ? "O Google recusou o servidor (bloqueio temporário). A janela volta para a fila."
+      : `Erro na leitura: ${j.erro || "sem detalhe"}.`;
+  }
+  if (j.status === "subdividida") return "Chegou ao teto do RSS (~100 itens) e foi refeita mês a mês.";
+  if (!j.itens) return "O Google não devolveu nenhuma matéria com os termos e o contexto nesse período.";
+  if (!j.novos) return "Todas as matérias já estavam guardadas por uma busca anterior.";
+  return `${j.novos} matéria(s) nova(s) guardada(s).`;
+}
+
+function badgeJanela(status) {
+  if (status === "ok") return badge("ok", "success");
+  if (status === "subdividida") return badge("subdividida", "info");
+  return badge(status, "danger");
+}
+
+function paginaBuscas({ grupos, historico, consultaAtual, totalProjetos }) {
+  const grupoOpcoes = grupos.map((g) => [g.id, g.nome]);
+  if (!historico) {
+    return layout({ title: "Buscas", active: "monitoramento", scripts: SCRIPT, body: `<div class="empty"><h2>Empresa não encontrada</h2></div>` });
+  }
+  const { grupo, termos, janelas } = historico;
+  const tipoBadge = { marca: "success", razao_social: "info", variacao: "neutral", exclusao: "danger" };
+  const termosHtml = termos.length
+    ? termos.map((t) => `${badge(`${t.tipo.replace("_", " ")}: ${t.termo}`, t.ativo ? tipoBadge[t.tipo] : "neutral")}`).join(" ")
+    : `<span class="muted">Sem termos ativos: o grupo não entra na coleta.</span>`;
+  const linhas = janelas.map((j) => `
+    <tr>
+      <td>${esc(dia(j.desde))} a ${esc(dia(j.ate))}</td>
+      <td>${badgeJanela(j.status)}</td>
+      <td>${j.itens}</td>
+      <td>${j.novos}</td>
+      <td>${j.guardadas}</td>
+      <td>${esc(explicarJanela(j))}</td>
+      <td>${esc(diaHora(j.coletado_em))}</td>
+      <td>
+        <details class="js-janela" data-grupo="${grupo.id}" data-desde="${j.desde}" data-ate="${j.ate}">
+          <summary>ver</summary>
+          <p class="mono">${esc(j.consulta)}</p>
+          <div class="js-janela-noticias muted">Carregando…</div>
+        </details>
+      </td>
+    </tr>`).join("");
+  const resumo = janelas.reduce((r, j) => {
+    r.itens += j.itens; r.novos += j.novos; r[j.status] = (r[j.status] || 0) + 1; return r;
+  }, { itens: 0, novos: 0 });
+  return layout({
+    title: `Buscas · ${grupo.nome}`,
+    active: "monitoramento",
+    scripts: SCRIPT,
+    body: `
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">Transparência da coleta</p>
+          <h1>Buscas de ${esc(grupo.nome)}</h1>
+          <p>O que foi perguntado ao Google News, o que voltou e por que uma janela veio vazia.</p>
+        </div>
+      </section>
+      ${abas("buscas", totalProjetos)}
+      <form class="source-filters js-filtros" method="get" action="/monitoramento/buscas">
+        <div><label>Empresa</label><select name="grupo">${selectOptions(grupoOpcoes, grupo.id)}</select></div>
+        <div class="source-filters__actions"><noscript><button class="button button--small" type="submit">Ver</button></noscript></div>
+      </form>
+      <section class="stats">
+        <div><strong>${janelas.length}</strong><span>Janelas consultadas</span></div>
+        <div><strong>${resumo.itens}</strong><span>Matérias devolvidas</span></div>
+        <div><strong>${resumo.novos}</strong><span>Guardadas como novas</span></div>
+        <div><strong>${resumo.erro || 0}</strong><span>Janelas com erro</span></div>
+      </section>
+      <section class="form-card compact search-recipe">
+        <h2>Como a consulta é montada</h2>
+        <p class="muted">(termos da empresa com OR) + (pelo menos uma palavra de contexto do ${esc(NICHOS[grupo.nicho] || grupo.nicho)}) − exclusões + período</p>
+        <p>${termosHtml}</p>
+        <p class="muted">Contexto: ${esc(consultaAtual.contexto.join(", "))}</p>
+        <p class="mono">${esc(consultaAtual.consulta)}</p>
+        <p class="inline-actions">
+          <a class="button button--small button--secondary" href="${esc(googleNewsUrl(consultaAtual.consulta))}" target="_blank" rel="noopener">Abrir no Google News ↗</a>
+        </p>
+      </section>
+      <form class="form-card compact js-testar" method="get" action="/monitoramento/buscas/testar">
+        <h2>Testar a busca agora</h2>
+        <p class="muted">Lê o RSS ao vivo, sem gravar nada, e mostra o que voltou e o que já estava guardado.</p>
+        <input type="hidden" name="grupo" value="${grupo.id}">
+        <div class="inline-fields">
+          <div><label>De</label><input type="date" name="desde" value="${esc(consultaAtual.desde)}"></div>
+          <div><label>Até</label><input type="date" name="ate" value="${esc(consultaAtual.ate)}"></div>
+          <div class="inline-fields__action"><button class="button button--small" type="submit">Testar</button></div>
+        </div>
+        <div class="js-testar-resultado"></div>
+      </form>
+      <section class="capture-group">
+        <h2>Histórico de janelas</h2>
+        ${janelas.length
+          ? `<div class="table-wrap"><table class="table-compact">
+              <thead><tr><th>Período</th><th>Status</th><th>Devolvidas</th><th>Novas</th><th>Guardadas no período</th><th>Leitura</th><th>Quando</th><th>Consulta</th></tr></thead>
+              <tbody>${linhas}</tbody>
+            </table></div>`
+          : `<div class="empty"><h2>Nenhuma busca ainda</h2><p>A coleta semanal ou a carga histórica ainda não passou por esta empresa.</p></div>`}
+      </section>`,
+  });
+}
+
+function listaCurtaNoticias(noticias, guardadas = new Set()) {
+  if (!noticias.length) return `<p class="muted">Nenhuma matéria.</p>`;
+  return `<ul class="mini-list">${noticias.map((n) => {
+    const marca = n.triagem
+      ? badge(situacaoNoticia(n).rotulo, situacaoNoticia(n).tipo)
+      : guardadas.has(n.chave) ? badge("já guardada", "neutral") : badge("nova", "info");
+    const titulo = n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.titulo)}</a>` : esc(n.titulo);
+    return `<li>${marca} <span class="muted">${esc(dia(n.data_original || n.publicado_em))} · ${esc(n.veiculo || "")}</span><br>${titulo}</li>`;
+  }).join("")}</ul>`;
+}
+
+// ---------------------------------------------------------------------------
+// Carteira e projeto
+// ---------------------------------------------------------------------------
+
 function paginaCarteira({ projetos, notice }) {
   const cards = projetos.length
     ? projetos.map((p) => `
@@ -292,14 +495,15 @@ function paginaCarteira({ projetos, notice }) {
           <a href="/monitoramento/projetos/${p.id}">Linha do tempo →</a>
         </div>
       </article>`).join("")
-    : `<div class="empty"><h2>Nenhum projeto ainda</h2><p>Abra uma notícia "a revisar" e use "Criar projeto".</p><a class="button" href="/monitoramento">Ver notícias</a></div>`;
+    : `<div class="empty"><h2>Nenhum projeto ainda</h2><p>Aprove uma notícia na lista para criar o primeiro.</p><a class="button" href="/monitoramento">Ver notícias</a></div>`;
   return layout({
     title: "Carteira",
     active: "monitoramento",
+    scripts: SCRIPT,
     body: `
       ${notice}
       <section class="page-heading">
-        <div><p class="eyebrow">Teste de monitoramento</p><h1>Carteira de projetos</h1><p>Projetos criados na revisão das notícias, com a linha do tempo das evidências aceitas.</p></div>
+        <div><p class="eyebrow">Teste de monitoramento</p><h1>Carteira de projetos</h1><p>Projetos aprovados na revisão das notícias, com a linha do tempo das evidências aceitas.</p></div>
       </section>
       ${abas("carteira", projetos.length)}
       <section class="project-grid">${cards}</section>`,
@@ -316,6 +520,7 @@ function paginaProjeto({ projeto, timeline, notice }) {
   return layout({
     title: projeto.titulo,
     active: "monitoramento",
+    scripts: SCRIPT,
     body: `
       ${notice}
       <p><a href="/monitoramento/carteira">← Carteira</a></p>
@@ -346,7 +551,12 @@ function paginaProjeto({ projeto, timeline, notice }) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Rotas
+// ---------------------------------------------------------------------------
+
 const uuid = z.string().uuid();
+const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const vazioParaNull = (valor) => (valor === "" ? null : valor);
 
 const projetoSchema = z.object({
@@ -364,8 +574,32 @@ const projetoSchema = z.object({
   data_anuncio: z.preprocess(vazioParaNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable()),
 });
 
-function voltar(res, caminho, mensagem) {
-  res.redirect(`${caminho}?message=${encodeURIComponent(mensagem)}`);
+function querJson(req) {
+  return (req.get("accept") || "").includes("application/json");
+}
+
+function motivoDescarte(body) {
+  const motivo = String(body.motivo || "").trim().slice(0, 80) || "não é projeto";
+  const detalhe = String(body.detalhe || "").trim().slice(0, 160);
+  return detalhe ? `${motivo} — ${detalhe}` : motivo;
+}
+
+// Responde à ação do card: JSON com o card novo e os números, ou redirecionamento.
+async function responderAcao(req, res, id, mensagem, destino) {
+  if (!querJson(req)) {
+    return res.redirect(`${destino}?message=${encodeURIComponent(mensagem)}`);
+  }
+  const [noticia, grupos, projetos] = await Promise.all([
+    painel.noticiaDoCard(id),
+    painel.resumoGrupos(),
+    painel.carteira(),
+  ]);
+  res.json({
+    ok: true,
+    mensagem,
+    card: noticia ? cardNoticia(noticia) : "",
+    contagens: { ...contagens(grupos), projetos: projetos.length },
+  });
 }
 
 function registrarMonitoramento(app) {
@@ -382,7 +616,9 @@ function registrarMonitoramento(app) {
       painel.listarNoticias({ grupoId: filtros.grupo, situacao: filtros.situacao }),
       painel.carteira(),
     ]);
-    res.send(paginaMonitoramento({ grupos, noticias, filtros, totalProjetos: projetos.length, notice: aviso(req) }));
+    res.send(paginaMonitoramento({
+      grupos, noticias, filtros, totalProjetos: projetos.length, notice: aviso(req), job: triagem.triagemAtiva(),
+    }));
   });
 
   app.get("/monitoramento/carteira", async (req, res) => {
@@ -395,28 +631,48 @@ function registrarMonitoramento(app) {
     res.send(paginaNoticia({ ...dados, notice: aviso(req) }));
   });
 
+  app.post("/monitoramento/noticias/:id/aprovar", async (req, res) => {
+    const id = uuid.parse(req.params.id);
+    try {
+      const r = await painel.aprovarNoticia(id);
+      const mensagem = r.acao === "projeto_criado"
+        ? `Projeto "${r.projeto_titulo}" criado.`
+        : "Notícia vinculada ao projeto sugerido.";
+      await responderAcao(req, res, id, mensagem, "/monitoramento");
+    } catch (error) {
+      if (!querJson(req)) throw error;
+      res.status(422).json({ ok: false, mensagem: error.message });
+    }
+  });
+
   app.post("/monitoramento/noticias/:id/projeto", async (req, res) => {
     const id = uuid.parse(req.params.id);
     const projeto = await painel.criarProjetoDaNoticia(id, projetoSchema.parse(req.body));
-    voltar(res, `/monitoramento/projetos/${projeto.id}`, `Projeto "${projeto.titulo}" criado com a notícia como evidência primária.`);
+    res.redirect(`/monitoramento/projetos/${projeto.id}?message=${encodeURIComponent(`Projeto "${projeto.titulo}" criado com a notícia como evidência primária.`)}`);
   });
 
   app.post("/monitoramento/noticias/:id/vincular", async (req, res) => {
     const id = uuid.parse(req.params.id);
     await painel.vincularNoticia(id, uuid.parse(req.body.projeto_id));
-    voltar(res, `/monitoramento/noticias/${id}`, "Notícia vinculada ao projeto.");
+    await responderAcao(req, res, id, "Notícia vinculada ao projeto.", `/monitoramento/noticias/${id}`);
   });
 
   app.post("/monitoramento/noticias/:id/rejeitar", async (req, res) => {
     const id = uuid.parse(req.params.id);
     await painel.rejeitarSugestao(id, uuid.parse(req.body.projeto_id));
-    voltar(res, `/monitoramento/noticias/${id}`, "Sugestão rejeitada.");
+    await responderAcao(req, res, id, "Sugestão rejeitada.", `/monitoramento/noticias/${id}`);
   });
 
   app.post("/monitoramento/noticias/:id/descartar", async (req, res) => {
     const id = uuid.parse(req.params.id);
-    await painel.descartarNoticia(id, String(req.body.motivo || "").trim().slice(0, 200));
-    voltar(res, "/monitoramento", "Notícia descartada.");
+    await painel.descartarNoticia(id, motivoDescarte(req.body));
+    await responderAcao(req, res, id, "Notícia descartada.", "/monitoramento");
+  });
+
+  app.post("/monitoramento/noticias/:id/restaurar", async (req, res) => {
+    const id = uuid.parse(req.params.id);
+    await painel.restaurarNoticia(id);
+    await responderAcao(req, res, id, "Descarte desfeito.", "/monitoramento");
   });
 
   app.get("/monitoramento/projetos/:id", async (req, res) => {
@@ -428,25 +684,90 @@ function registrarMonitoramento(app) {
   app.post("/monitoramento/projetos/:id/excluir", async (req, res) => {
     const excluido = await painel.excluirProjeto(uuid.parse(req.params.id));
     if (!excluido) return res.status(404).send("Projeto não encontrado");
-    voltar(res, "/monitoramento/carteira", `Projeto "${excluido.titulo}" excluído com ${excluido.evidencias} notícia(s).`);
+    res.redirect(`/monitoramento/carteira?message=${encodeURIComponent(`Projeto "${excluido.titulo}" excluído com ${excluido.evidencias} notícia(s).`)}`);
   });
 
-  app.post("/monitoramento/grupos/:id/triar", async (req, res) => {
-    const id = uuid.parse(req.params.id);
+  // Triagem em segundo plano: inicia e consulta o andamento.
+  app.post("/monitoramento/triagem", async (req, res) => {
+    const grupoId = uuid.safeParse(req.body.grupo_id).success ? req.body.grupo_id : null;
     const ia = iaPadrao();
-    if (!ia) return voltar(res, "/monitoramento", "CLAUDE_API_KEY não configurada: a triagem precisa da IA.");
+    if (!ia) return res.status(422).json({ ok: false, mensagem: "CLAUDE_API_KEY não configurada: a triagem precisa da IA." });
+    res.json({ ok: true, job: await triagem.iniciarTriagem({ grupoId, ia }) });
+  });
+
+  app.get("/monitoramento/triagem/:id", (req, res) => {
+    const job = triagem.obterTriagem(req.params.id);
+    if (!job) return res.status(404).json({ ok: false, mensagem: "Triagem não encontrada (o app pode ter reiniciado)." });
+    res.json({ ok: true, job });
+  });
+
+  // Buscas: histórico por empresa, notícias de uma janela e teste ao vivo.
+  app.get("/monitoramento/buscas", async (req, res) => {
+    const [grupos, projetos] = await Promise.all([painel.resumoGrupos(), painel.carteira()]);
+    const grupoId = uuid.safeParse(req.query.grupo).success ? req.query.grupo : grupos[0]?.id;
+    const historico = grupoId ? await painel.historicoBuscas(grupoId) : null;
+    let consultaAtual = { consulta: "", contexto: [], desde: "", ate: "" };
+    if (historico) {
+      const client = await pool.connect();
+      try {
+        const grupo = (await carregarGrupos(client)).find((g) => g.id === grupoId);
+        const hoje = new Date();
+        const ate = new Date(hoje.getTime() + 86400000).toISOString().slice(0, 10);
+        const desde = new Date(hoje.getTime() - 90 * 86400000).toISOString().slice(0, 10);
+        if (grupo) {
+          consultaAtual = { ...buscaDoGrupo({ linhas: grupo.linhas, contexto: grupo.contexto, desde, ate }), contexto: grupo.contexto, desde, ate };
+        }
+      } finally {
+        client.release();
+      }
+    }
+    res.send(paginaBuscas({ grupos, historico, consultaAtual, totalProjetos: projetos.length }));
+  });
+
+  app.get("/monitoramento/buscas/noticias", async (req, res) => {
+    const noticias = await painel.noticiasDaJanela(uuid.parse(req.query.grupo), data.parse(req.query.desde), data.parse(req.query.ate));
+    res.send(listaCurtaNoticias(noticias));
+  });
+
+  app.get("/monitoramento/buscas/testar", async (req, res) => {
+    const grupoId = uuid.parse(req.query.grupo);
+    const desde = data.parse(req.query.desde);
+    const ate = data.parse(req.query.ate);
     const client = await pool.connect();
-    let mensagem;
+    let grupo;
     try {
-      const grupo = (await carregarGrupos(client)).find((g) => g.id === id);
-      if (!grupo) return res.status(404).send("Empresa não encontrada");
-      const r = await triarGrupo({ client, grupo, ia, limite: LIMITE_TRIAGEM });
-      mensagem = `${grupo.nome}: ${r.lidas} notícias lidas · ${r.capex} de CapEx · ${r.ia_descartadas + r.regras} descartadas`
-        + `${r.erros_ia ? ` · ${r.erros_ia} lote(s) com erro da IA` : ""}.`;
+      grupo = (await carregarGrupos(client)).find((g) => g.id === grupoId);
     } finally {
       client.release();
     }
-    res.redirect(`/monitoramento?${new URLSearchParams({ grupo: id, message: mensagem })}`);
+    if (!grupo) return res.status(404).send(`<p class="error-text">Empresa sem termos de busca ativos.</p>`);
+    const { consulta, url } = buscaDoGrupo({ linhas: grupo.linhas, contexto: grupo.contexto, desde, ate });
+    let noticias;
+    try {
+      noticias = noticiasDoRss(await lerRss(url));
+    } catch (error) {
+      return res.send(`<div class="test-result">
+        <p class="error-text">O Google não respondeu: ${esc(error.message)}. ${/503|429/.test(error.message) ? "É um bloqueio temporário do servidor; tente de novo mais tarde." : ""}</p>
+        <p class="mono">${esc(consulta)}</p></div>`);
+    }
+    const chaves = noticias.map(chaveDedupe);
+    const { rows } = await pool.query(
+      "select chave_dedupe from capex_radar.evidencias where chave_dedupe = any($1::text[])",
+      [chaves],
+    );
+    const guardadas = new Set(rows.map((r) => r.chave_dedupe));
+    const itens = noticias.map((n) => ({ ...n, chave: chaveDedupe(n) }));
+    const novas = itens.filter((n) => !guardadas.has(n.chave)).length;
+    const explicacao = !itens.length
+      ? "Nenhuma matéria: o Google não achou nada com os termos da empresa e pelo menos uma palavra de contexto nesse período. Tente um período maior ou revise os termos."
+      : itens.length >= 90
+        ? "Chegou perto do teto do RSS (~100): a coleta fatiaria este período em meses."
+        : `${itens.length} matéria(s), ${novas} ainda não guardada(s).`;
+    res.send(`<div class="test-result">
+      <p><strong>${esc(explicacao)}</strong></p>
+      <p class="mono">${esc(consulta)}</p>
+      ${listaCurtaNoticias(itens, guardadas)}
+    </div>`);
   });
 }
 
@@ -454,9 +775,12 @@ module.exports = {
   registrarMonitoramento,
   situacaoNoticia,
   resumoExtracao,
+  cardNoticia,
+  explicarJanela,
   projetoSchema,
   paginaMonitoramento,
   paginaNoticia,
+  paginaBuscas,
   paginaCarteira,
   paginaProjeto,
 };

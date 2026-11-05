@@ -6,6 +6,8 @@ process.env.SUPABASE_STRING ||= "postgres://teste:teste@localhost:5432/teste";
 const {
   situacaoNoticia,
   resumoExtracao,
+  cardNoticia,
+  explicarJanela,
   projetoSchema,
   paginaMonitoramento,
   paginaNoticia,
@@ -41,18 +43,40 @@ test("formulário do projeto: valor com ponto, campos vazios viram null, UF mai�
   assert.throws(() => projetoSchema.parse({ ...dados, matriz_cnpj: "123", estagio: "anuncio" }));
 });
 
-test("página de monitoramento escapa o título e mostra o botão de triagem", () => {
+test("página de monitoramento: card com título, ações e botões de triagem", () => {
   const html = paginaMonitoramento({
     grupos: [{ ...GRUPO, total: 3, nao_triadas: 2, revisar: 1, vinculadas: 0, descartadas: 0, projetos: 0, ultima_coleta: null }],
-    noticias: [{ id: "n1", titulo: "<b>Bracell</b> investe", veiculo: "Valor", data_original: "2025-02-21T08:00:00Z", triagem: "novo_projeto", grupo: "Bracell", extracao: { capex: true, objeto: "fábrica" } }],
+    noticias: [{ id: "n1", titulo: "<b>Bracell</b> investe", veiculo: "Valor", data_original: "2025-02-21T08:00:00Z", triagem: "novo_projeto", grupo: "Bracell", grupo_id: GRUPO.id, extracao: { capex: true, objeto: "fábrica" } }],
     filtros: { grupo: null, situacao: "revisar" },
     totalProjetos: 0,
     notice: "",
   });
   assert.match(html, /&lt;b&gt;Bracell&lt;\/b&gt; investe/);
-  assert.match(html, /Triar com IA/);
+  assert.match(html, /class="button js-triar" type="button" data-grupo="">Triar 2 sem triagem/);
+  assert.match(html, /data-grupo="2b1c3d4e-0000-4000-8000-000000000001">Triar 2</);
   assert.match(html, /possível projeto/);
-  assert.match(html, /href="\/monitoramento" class|class="active" href="\/monitoramento"/);
+  assert.match(html, /action="\/monitoramento\/noticias\/n1\/aprovar"/);
+  assert.match(html, /action="\/monitoramento\/noticias\/n1\/descartar"/);
+  assert.match(html, /<select name="motivo"/);
+  assert.match(html, /id="triagem-progresso"/);
+  assert.match(html, /src="\/monitoramento.js"/);
+});
+
+test("card descartado mostra o motivo e o desfazer; vínculo sugerido muda o botão", () => {
+  const descartado = cardNoticia({ id: "n2", titulo: "x", triagem: "descartada", triagem_motivo: "Revisão: não é CapEx", grupo: "Bracell", grupo_id: GRUPO.id });
+  assert.match(descartado, /Revisão: não é CapEx/);
+  assert.match(descartado, /\/restaurar"/);
+  assert.doesNotMatch(descartado, /\/aprovar"/);
+  const sugerido = cardNoticia({ id: "n3", titulo: "y", triagem: "pendente", extracao: { capex: true }, sugerido_projeto_id: "p1", sugerido_projeto: "Fábrica MS", sugerido_confianca: 80, grupo: "Bracell", grupo_id: GRUPO.id });
+  assert.match(sugerido, /Aceitar vínculo/);
+  assert.match(sugerido, /Mesmo projeto que <strong>Fábrica MS<\/strong> \(80%\)/);
+});
+
+test("explica por que uma janela de busca veio vazia ou com erro", () => {
+  assert.match(explicarJanela({ status: "erro", erro: "HTTP 503" }), /recusou o servidor/);
+  assert.match(explicarJanela({ status: "ok", itens: 0, novos: 0 }), /não devolveu nenhuma matéria/);
+  assert.match(explicarJanela({ status: "ok", itens: 12, novos: 0 }), /já estavam guardadas/);
+  assert.match(explicarJanela({ status: "subdividida", itens: 98 }), /teto do RSS/);
 });
 
 test("notícia sem matriz não oferece criar projeto", () => {

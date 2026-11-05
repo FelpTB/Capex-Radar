@@ -290,8 +290,9 @@ async function projetosDoGrupo(client, grupoId) {
 /**
  * Tria as notícias ainda sem triagem de um grupo: regras e depois a IA.
  * Sem IA (chave ausente ou --sem-ia), só as regras rodam e o resto espera.
+ * onProgresso(feitas, total) é chamado depois das regras e de cada lote da IA.
  */
-async function triarGrupo({ client, grupo, ia, limite = 400 }) {
+async function triarGrupo({ client, grupo, ia, limite = 400, onProgresso = () => {} }) {
   const { rows: pendentes } = await client.query(
     `select id, titulo, veiculo, data_original
        from capex_radar.evidencias
@@ -317,6 +318,7 @@ async function triarGrupo({ client, grupo, ia, limite = 400 }) {
       resumo.regras += 1;
     }
   });
+  onProgresso(resumo.regras, pendentes.length);
   if (!ia || !restantes.length) return resumo;
 
   const projetos = await projetosDoGrupo(client, grupo.id);
@@ -327,6 +329,7 @@ async function triarGrupo({ client, grupo, ia, limite = 400 }) {
       decisoes = await ia.triar(grupo, lote);
     } catch {
       resumo.erros_ia += 1; // o lote continua pendente e volta na próxima rodada
+      onProgresso(resumo.regras + i + lote.length, pendentes.length);
       continue;
     }
     for (const noticia of lote) {
@@ -375,6 +378,7 @@ async function triarGrupo({ client, grupo, ia, limite = 400 }) {
       if (vinculo?.projeto_id) resumo.sugeridos += 1;
       else resumo.novos_projetos += 1;
     }
+    onProgresso(resumo.regras + i + lote.length, pendentes.length);
   }
   return resumo;
 }

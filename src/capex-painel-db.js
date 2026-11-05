@@ -61,8 +61,8 @@ async function resumoGrupos() {
   return rows;
 }
 
-async function listarNoticias({ grupoId = null, situacao = "revisar", limite = 150 } = {}) {
-  const filtro = FILTRO_SITUACAO[situacao] || FILTRO_SITUACAO.revisar;
+async function listarNoticias({ grupoId = null, situacao = "revisar", limite = 150, id = null } = {}) {
+  const filtro = id ? "e.id = $3" : FILTRO_SITUACAO[situacao] || FILTRO_SITUACAO.revisar;
   const { rows } = await pool.query(
     `select e.id, e.titulo, e.url, e.veiculo, e.data_original, e.triagem, e.triagem_motivo,
             e.extracao, g.id as grupo_id, g.nome as grupo, g.nicho,
@@ -81,7 +81,107 @@ async function listarNoticias({ grupoId = null, situacao = "revisar", limite = 1
       where ($1::uuid is null or e.grupo_id = $1) and ${filtro}
       order by e.data_original desc nulls last
       limit $2`,
-    [grupoId, limite],
+    id ? [grupoId, limite, id] : [grupoId, limite],
+  );
+  return rows;
+}
+
+/** Uma notícia no formato do card, para redesenhar só ele depois de uma ação. */
+async function noticiaDoCard(id) {
+  return (await listarNoticias({ id, limite: 1 }))[0] || null;
+}
+
+function diaIso(valor) {
+  return valor ? new Date(valor).toISOString().slice(0, 10) : null;
+}
+
+/**
+ * Aprovação com um clique a partir do card: aceita a sugestão de vínculo da
+ * IA ou cria o projeto com a leitura da IA (matriz principal, filial sugerida).
+ */
+async function aprovarNoticia(evidenciaId) {
+  const { rows: [noticia] } = await pool.query(
+    `select e.id, e.titulo, e.extracao, e.data_original, g.nome as grupo,
+            (select ep.projeto_id from capex_radar.evidencia_projeto ep
+              where ep.evidencia_id = e.id and ep.situacao = 'sugerido'
+              order by ep.confianca desc nulls last limit 1) as sugerido,
+            (select m.cnpj from capex_radar.matrizes m where m.grupo_id = e.grupo_id
+              order by (m.papel = 'principal') desc, m.razao_social limit 1) as matriz
+       from capex_radar.evidencias e
+       join capex_radar.grupos g on g.id = e.grupo_id
+      where e.id = $1`,
+    [evidenciaId],
+  );
+  if (!noticia) throw new Error("Notícia não encontrada");
+  if (noticia.sugerido) {
+    await vincularNoticia(evidenciaId, noticia.sugerido);
+    return { acao: "vinculada", projeto_id: noticia.sugerido };
+  }
+  if (!noticia.matriz) throw new Error(`${noticia.grupo} ainda não tem CNPJ cadastrado; o projeto não pode nascer.`);
+  const ex = noticia.extracao || {};
+  const dataFato = /^\d{4}-\d{2}-\d{2}$/.test(ex.data_fato || "") ? ex.data_fato : null;
+  const projeto = await criarProjetoDaNoticia(evidenciaId, {
+    titulo: `${noticia.grupo} — ${ex.objeto || noticia.titulo}`.slice(0, 200),
+    matriz_cnpj: noticia.matriz,
+    filial_cnpj: ex.filial_sugerida?.cnpj || null,
+    uf: ex.uf || null,
+    municipio: ex.municipio || null,
+    objeto: ex.objeto || null,
+    valor_estimado_brl: ex.valor_brl ?? null,
+    estagio: ex.estagio || "anuncio",
+    data_anuncio: dataFato || diaIso(noticia.data_original),
+  });
+  return { acao: "projeto_criado", projeto_id: projeto.id, projeto_titulo: projeto.titulo };
+}
+
+/** Desfaz um descarte: a notícia volta para a revisão (ou para a fila da IA). */
+async function restaurarNoticia(evidenciaId) {
+  return emTransacao(async (client) => {
+    await client.query(
+      `update capex_radar.evidencias
+          set triagem = case when (extracao->>'capex')::boolean then 'novo_projeto' else 'pendente' end,
+              triagem_motivo = null,
+              extracao = case when extracao->>'etapa' = 'regras' then null else extracao end
+        where id = $1 and triagem = 'descartada'`,
+      [evidenciaId],
+    );
+  });
+}
+
+/** Janelas de busca de um grupo, com a consulta usada e o resultado. */
+async function historicoBuscas(grupoId) {
+  const [grupo, termos, janelas] = await Promise.all([
+    pool.query("select id, nome, nicho from capex_radar.grupos where id = $1", [grupoId]),
+    pool.query(
+      `select termo, tipo, ativo from capex_radar.grupo_termos
+        where grupo_id = $1 order by ativo desc, tipo, termo`,
+      [grupoId],
+    ),
+    pool.query(
+      `select to_char(j.desde, 'YYYY-MM-DD') as desde, to_char(j.ate, 'YYYY-MM-DD') as ate,
+              j.consulta, j.itens, j.novos, j.status, j.erro, j.coletado_em,
+              (select count(*)::int from capex_radar.evidencias e
+                where e.grupo_id = j.grupo_id and e.data_original >= j.desde and e.data_original < j.ate) as guardadas
+         from capex_radar.coleta_janela j
+        where j.grupo_id = $1
+        order by j.coletado_em desc, j.desde desc
+        limit 200`,
+      [grupoId],
+    ),
+  ]);
+  if (!grupo.rows[0]) return null;
+  return { grupo: grupo.rows[0], termos: termos.rows, janelas: janelas.rows };
+}
+
+/** Notícias guardadas de um grupo numa janela [desde, ate). */
+async function noticiasDaJanela(grupoId, desde, ate) {
+  const { rows } = await pool.query(
+    `select id, titulo, veiculo, data_original, triagem, url
+       from capex_radar.evidencias
+      where grupo_id = $1 and data_original >= $2 and data_original < $3
+      order by data_original desc
+      limit 120`,
+    [grupoId, desde, ate],
   );
   return rows;
 }
@@ -284,6 +384,11 @@ module.exports = {
   SITUACOES,
   resumoGrupos,
   listarNoticias,
+  noticiaDoCard,
+  aprovarNoticia,
+  restaurarNoticia,
+  historicoBuscas,
+  noticiasDaJanela,
   obterNoticia,
   criarProjetoDaNoticia,
   vincularNoticia,
