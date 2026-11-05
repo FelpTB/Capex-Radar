@@ -3,6 +3,8 @@ const { scanPrimarySources } = require("./scanner");
 const { discoverPublishers } = require("./publisher-radar");
 const { applyYieldDecisions, retireStaleSources } = require("./source-lifecycle");
 const { DIARIOS_PDF, syncDoePdf } = require("./enrichment/doe-pdf");
+const capexColetor = require("./capex-coletor");
+const { iaPadrao } = require("./capex-ia");
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const SCAN_MS = WEEK_MS;
@@ -59,6 +61,32 @@ async function runDoePdfSync() {
   return resultados;
 }
 
+// Teste de monitoramento (capex_radar): notícias dos últimos 14 dias das 38
+// empresas, uma vez por semana. A carga histórica roda à parte (npm run capex:coletar).
+async function capexDue(now = Date.now()) {
+  const client = await db.pool.connect();
+  try {
+    return isDue(await capexColetor.ultimaColetaSemanal(client), WEEK_MS, now);
+  } finally {
+    client.release();
+  }
+}
+
+async function runCapexWeekly() {
+  const client = await db.pool.connect();
+  try {
+    const grupos = await capexColetor.carregarGrupos(client);
+    return await capexColetor.coletarGrupos({
+      client,
+      grupos,
+      ...capexColetor.janelaSemanal(),
+      ia: iaPadrao(),
+    });
+  } finally {
+    client.release();
+  }
+}
+
 function summarize(summary) {
   const parts = [];
   if (summary.descoberta) {
@@ -84,6 +112,7 @@ function summarize(summary) {
     const paginas = summary.doePdf.reduce((total, item) => total + item.paginas, 0);
     parts.push(`diários em PDF: ${lidas} edições, ${paginas} páginas`);
   }
+  if (summary.capex) parts.push(`monitoramento: ${capexColetor.resumoTexto(summary.capex)}`);
   return parts.join(" · ") || "ciclo em dia";
 }
 
@@ -105,6 +134,9 @@ async function tick() {
     }
     if (await doePdfDue()) {
       summary.doePdf = await runDoePdfSync();
+    }
+    if (await capexDue()) {
+      summary.capex = await runCapexWeekly();
     }
     if (Object.keys(summary).length) {
       const text = summarize(summary);
@@ -140,6 +172,7 @@ module.exports = {
   RETIRE_MS,
   DOE_PDF_MS,
   doePdfDue,
+  capexDue,
   isDue,
   runScheduledScan,
   summarize,

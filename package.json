@@ -14,7 +14,8 @@
     "docs:fontes": "node scripts/docs-fontes.js",
     "doe:pdf-sync": "node scripts/doe-pdf-sync.js",
     "docs:doe": "node scripts/docs-doe.js",
-    "capex:carga-empresas": "node scripts/capex-carga-empresas.js"
+    "capex:carga-empresas": "node scripts/capex-carga-empresas.js",
+    "capex:coletar": "node scripts/capex-coletar.js"
   },
   "keywords": [],
   "author": "",
