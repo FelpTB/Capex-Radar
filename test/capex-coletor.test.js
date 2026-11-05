@@ -10,6 +10,7 @@ const {
   citaEmpresa,
   coletarGrupo,
   triarGrupo,
+  gruposVencidos,
 } = require("../src/capex-coletor");
 const { lerTriagem, lerVinculo } = require("../src/capex-ia");
 
@@ -191,6 +192,12 @@ test("lote com erro da IA fica pendente", async () => {
   const resumo = await triarGrupo({ client, grupo: GRUPO, ia });
   assert.equal(resumo.erros_ia, 1);
   assert.equal(client.estado.updates.length, 0);
+});
+
+test("rodada semanal interrompida continua só com os grupos que faltaram", async () => {
+  const client = { query: async () => ({ rows: [{ grupo_id: "g1" }] }) };
+  const grupos = [{ id: "g1", nome: "Bracell" }, { id: "g2", nome: "Klabin" }];
+  assert.deepEqual((await gruposVencidos(client, grupos)).map((g) => g.nome), ["Klabin"]);
 });
 
 test("lê a resposta da triagem pelo índice do lote", () => {

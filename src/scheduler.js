@@ -63,19 +63,13 @@ async function runDoePdfSync() {
 
 // Teste de monitoramento (capex_radar): notícias dos últimos 14 dias das 38
 // empresas, uma vez por semana. A carga histórica roda à parte (npm run capex:coletar).
-async function capexDue(now = Date.now()) {
-  const client = await db.pool.connect();
-  try {
-    return isDue(await capexColetor.ultimaColetaSemanal(client), WEEK_MS, now);
-  } finally {
-    client.release();
-  }
-}
-
+// A semana vence por grupo: se o app reiniciar no meio da rodada, o próximo
+// ciclo coleta só os grupos que faltaram.
 async function runCapexWeekly() {
   const client = await db.pool.connect();
   try {
-    const grupos = await capexColetor.carregarGrupos(client);
+    const grupos = await capexColetor.gruposVencidos(client, await capexColetor.carregarGrupos(client));
+    if (!grupos.length) return null;
     return await capexColetor.coletarGrupos({
       client,
       grupos,
@@ -137,7 +131,8 @@ async function tick() {
     }
     // Falha no monitoramento (ex.: migração 020 ausente) não derruba o resto do ciclo.
     try {
-      if (await capexDue()) summary.capex = await runCapexWeekly();
+      const capex = await runCapexWeekly();
+      if (capex) summary.capex = capex;
     } catch (error) {
       console.error(`Monitoramento capex_radar: ${error.message}`);
     }
@@ -175,7 +170,6 @@ module.exports = {
   RETIRE_MS,
   DOE_PDF_MS,
   doePdfDue,
-  capexDue,
   isDue,
   runScheduledScan,
   summarize,

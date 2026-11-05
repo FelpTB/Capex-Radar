@@ -413,13 +413,16 @@ function janelaSemanal(hoje = new Date()) {
   return { desde: somarDias(hoje, -DIAS_SEMANA), ate: somarDias(hoje, 1) };
 }
 
-async function ultimaColetaSemanal(client) {
+// Grupos sem janela semanal nos últimos 7 dias. A conta é por grupo para a
+// rodada interrompida (deploy, reinício) continuar de onde parou.
+async function gruposVencidos(client, grupos) {
   const { rows } = await client.query(
-    `select max(coletado_em) as em from capex_radar.coleta_janela
-      where fonte_codigo = $1 and ate - desde <= $2`,
+    `select distinct grupo_id from capex_radar.coleta_janela
+      where fonte_codigo = $1 and ate - desde <= $2 and coletado_em > now() - interval '7 days'`,
     [FONTE, DIAS_SEMANA + 1],
   );
-  return rows[0]?.em || null;
+  const recentes = new Set(rows.map((row) => row.grupo_id));
+  return grupos.filter((grupo) => !recentes.has(grupo.id));
 }
 
 function resumoTexto({ coleta, triagem }) {
@@ -450,6 +453,6 @@ module.exports = {
   triarGrupo,
   sugerirFilial,
   coletarGrupos,
-  ultimaColetaSemanal,
+  gruposVencidos,
   resumoTexto,
 };
