@@ -59,7 +59,7 @@ Cada linha guarda a original em `legado`, sob a chave do esquema de origem. Proj
 
 ## Carga das empresas
 
-Feita em 04/11/2026 com `npm run capex:carga-empresas` ([`scripts/capex-carga-empresas.js`](../../scripts/capex-carga-empresas.js)), que lê o seed da Fase 0 e grava tudo numa transação com o ator `sistema:carga-fase0`. Rodar de novo atualiza os campos e insere o que faltar.
+Feita em 04/11/2026 com `npm run capex:carga-empresas` ([`scripts/capex-carga-empresas.js`](../../scripts/capex-carga-empresas.js)), que lê o seed da Fase 0 e grava tudo numa transação com o ator `sistema:carga-empresas`. Rodar de novo atualiza os campos e insere o que faltar.
 
 | Nicho | Grupos | Raízes (matrizes) | Estabelecimentos ativos (filiais) |
 |---|---|---|---|

@@ -6,7 +6,12 @@
 //      CNPJ completo da matriz de cada raiz no cnpj_db;
 //   3. copia do cnpj_db todos os estabelecimentos ativos (situação 02) de
 //      cada raiz para capex_radar.filiais, inclusive a sede, porque a planta
-//      pode ser o próprio estabelecimento matriz (Cenibra, Bracell).
+//      pode ser o próprio estabelecimento matriz (Cenibra, Bracell);
+//   4. grava os termos de busca de cada grupo (seeds/capex_radar/termos-busca.json)
+//      em capex_radar.grupo_termos. Termos criados à mão no banco não são apagados.
+//
+// A prioridade de cada filial pelo CNAE fica na view capex_radar.vw_filiais
+// (tabela capex_radar.nicho_cnae, migração 019).
 //
 // É idempotente: rodar de novo atualiza os campos e insere o que faltar.
 // Uso: npm run capex:carga-empresas
@@ -15,8 +20,28 @@ const path = require("node:path");
 const { Client } = require("pg");
 const { getConfig } = require("../src/config");
 
+const { linhasDoSeed } = require("../src/capex-busca");
+
 const SEED = path.join(__dirname, "..", "seeds", "capex_radar", "empresas-teste.json");
-const ATOR = "sistema:carga-fase0";
+const SEED_TERMOS = path.join(__dirname, "..", "seeds", "capex_radar", "termos-busca.json");
+const ATOR = "sistema:carga-empresas";
+
+async function gravarTermos(client, grupoId, entrada) {
+  let gravados = 0;
+  for (const linha of linhasDoSeed(entrada)) {
+    const notas = linha.tipo === "marca" ? entrada.notas || null : null;
+    const r = await client.query(
+      `insert into capex_radar.grupo_termos (grupo_id, termo, tipo, notas)
+       values ($1, $2, $3, $4)
+       on conflict (grupo_id, termo) do update set tipo = excluded.tipo, notas = excluded.notas
+       where (capex_radar.grupo_termos.tipo, capex_radar.grupo_termos.notas)
+             is distinct from (excluded.tipo, excluded.notas)`,
+      [grupoId, linha.termo, linha.tipo, notas],
+    );
+    gravados += r.rowCount;
+  }
+  return gravados;
+}
 
 // Papel das raízes relacionadas. A matriz do seed é sempre "principal".
 function papelRelacionada(empresa, razaoSocial) {
@@ -58,6 +83,8 @@ async function upsertMatriz(client, grupoId, papel, dados) {
 
 async function main() {
   const seed = JSON.parse(await fs.readFile(SEED, "utf8"));
+  const seedTermos = JSON.parse(await fs.readFile(SEED_TERMOS, "utf8"));
+  let termosGravados = 0;
   const { databaseUrl } = getConfig();
   const client = new Client({
     connectionString: databaseUrl,
@@ -81,6 +108,10 @@ async function main() {
          empresa.subsetor || null, [empresa.notas, empresa.pendencia].filter(Boolean).join(" ") || null],
       );
       const grupoId = rows[0].id;
+
+      const entradaTermos = seedTermos.grupos[empresa.grupo];
+      if (entradaTermos) termosGravados += await gravarTermos(client, grupoId, entradaTermos);
+      else avisos.push(`${empresa.grupo}: sem termos de busca no seed.`);
 
       if (!empresa.matriz) {
         avisos.push(`${empresa.grupo}: sem matriz no seed (${empresa.pendencia || "pendente"}).`);
@@ -142,14 +173,18 @@ async function main() {
     await client.query("commit");
 
     const resumo = await client.query(`
-      select g.nicho, count(distinct g.id)::int as grupos, count(distinct m.cnpj)::int as matrizes,
-             count(f.cnpj)::int as filiais
+      select g.nicho, count(distinct g.id)::int as grupos,
+             (select count(*)::int from capex_radar.matrizes m join capex_radar.grupos g2 on g2.id = m.grupo_id
+               where g2.nicho = g.nicho) as matrizes,
+             (select count(*)::int from capex_radar.vw_filiais f where f.nicho = g.nicho) as filiais,
+             (select count(*)::int from capex_radar.vw_filiais f where f.nicho = g.nicho and f.prioritaria) as prioritarias,
+             (select count(*)::int from capex_radar.grupo_termos t join capex_radar.grupos g2 on g2.id = t.grupo_id
+               where g2.nicho = g.nicho and t.ativo) as termos
         from capex_radar.grupos g
-        left join capex_radar.matrizes m on m.grupo_id = g.id
-        left join capex_radar.filiais f on f.matriz_cnpj = m.cnpj
        group by g.nicho order by g.nicho`);
     console.table(resumo.rows);
     console.log(`Filiais inseridas ou atualizadas nesta execução: ${filiais.rowCount}`);
+    console.log(`Termos de busca inseridos ou atualizados nesta execução: ${termosGravados}`);
     for (const aviso of avisos) console.warn(`Aviso: ${aviso}`);
   } catch (error) {
     await client.query("rollback").catch(() => {});
