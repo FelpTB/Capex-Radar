@@ -827,13 +827,13 @@ app.get("/projetos/novo", async (_req, res) => {
     active: "projetos",
     scripts: `<script src="/project-form.js" defer></script>`,
     body: `
-      <section class="page-heading"><div><p class="eyebrow">Prospecção assistida</p><h1>Novo projeto</h1><p>Cole a notícia, revise a extração da OpenAI e confirme.</p></div></section>
+      <section class="page-heading"><div><p class="eyebrow">Prospecção assistida</p><h1>Novo projeto</h1><p>Cole a notícia, revise a extração do Claude e confirme.</p></div></section>
       <div class="form-layout">
         <aside class="extract-panel">
           <label for="article_text">Título + lead da notícia</label>
           <textarea id="article_text" rows="12" placeholder="Cole aqui o texto que descreve o investimento..."></textarea>
-          <button id="extract-button" class="button button--secondary" type="button">Extrair com OpenAI</button>
-          <p id="extract-status" class="muted">A OpenAI não define CNPJ nem confirma valor oficial.</p>
+          <button id="extract-button" class="button button--secondary" type="button">Extrair com Claude</button>
+          <p id="extract-status" class="muted">O Claude não define CNPJ nem confirma valor oficial.</p>
           <div id="project-split"></div>
           <div id="company-identification"></div>
         </aside>

@@ -1,6 +1,6 @@
-const OpenAI = require("openai");
 const { z } = require("zod");
 const { getConfig } = require("./config");
+const { criarCliente, pedirJson } = require("./claude");
 const {
   extractCompanyCandidates,
   normalizeName,
@@ -8,9 +8,8 @@ const {
 const { chooseStatusDate } = require("./status-date");
 
 const config = getConfig();
-const client = config.openAiApiKey
-  ? new OpenAI({ apiKey: config.openAiApiKey })
-  : null;
+const client = criarCliente(config.claudeApiKey);
+const SEM_CHAVE = "CLAUDE_API_KEY não configurada";
 
 const extractionSchema = z.object({
   nome: z.string().min(1),
@@ -119,7 +118,7 @@ function evidenceFromSource(value, sourceText) {
 
 async function identifyProjectCompany(text, project = null) {
   if (!client) {
-    throw new Error("OPENAI_API_KEY não configurada");
+    throw new Error(SEM_CHAVE);
   }
   const candidates = extractCompanyCandidates(text);
   const emptyDecision = {
@@ -130,18 +129,13 @@ async function identifyProjectCompany(text, project = null) {
     motivo: candidates.length
       ? "Nenhuma empresa pôde ser vinculada ao projeto com segurança."
       : "Nenhum termo próprio candidato foi encontrado no texto.",
-    modelo: config.openAiDecisionModel,
+    modelo: config.claudeDecisionModel,
   };
   if (!candidates.length) return emptyDecision;
 
-  const completion = await client.chat.completions.create({
-    model: config.openAiDecisionModel,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
+  const raw = await pedirJson(client, {
+    model: config.claudeDecisionModel,
+    system:
           "Você decide qual opção é a empresa diretamente ligada ao projeto CapEx. " +
           "Escolha somente uma string exata da lista de opções ou null. Priorize dona, " +
           "investidora, concessionária, contratante ou operadora do ativo. Não escolha " +
@@ -151,24 +145,18 @@ async function identifyProjectCompany(text, project = null) {
             : "Se houver mais de uma empresa sem uma responsável principal clara, retorne null. ") +
           "O trecho deve ser uma cópia literal curta do contexto que sustenta a decisão. " +
           "Retorne somente JSON com empresa_nome, confianca (alta, media ou baixa), trecho e motivo.",
-      },
-      {
-        role: "user",
-        content: JSON.stringify({
-          projeto: project ? {
-            nome: project.nome,
-            nicho: project.nicho,
-            uf: project.uf,
-            municipio: project.municipio,
-          } : undefined,
-          opcoes: candidates,
-          noticia: text.slice(0, 14_000),
-        }),
-      },
-    ],
+    user: JSON.stringify({
+      projeto: project ? {
+        nome: project.nome,
+        nicho: project.nicho,
+        uf: project.uf,
+        municipio: project.municipio,
+      } : undefined,
+      opcoes: candidates,
+      noticia: text.slice(0, 14_000),
+    }),
   });
 
-  const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("O modelo de decisão não retornou conteúdo");
   const decision = companyDecisionSchema.parse(JSON.parse(raw));
   if (!decision.empresa_nome) {
@@ -197,7 +185,7 @@ async function identifyProjectCompany(text, project = null) {
     confianca: decision.confianca,
     trecho: evidenceFromSource(decision.trecho, text),
     motivo: decision.motivo,
-    modelo: config.openAiDecisionModel,
+    modelo: config.claudeDecisionModel,
   };
 }
 
@@ -211,40 +199,29 @@ async function chooseListedCnpj(text, project, groups) {
       motivo: "Um único CNPJ apareceu nas bases para a empresa indicada na notícia.",
     };
   }
-  if (!client) throw new Error("OPENAI_API_KEY não configurada");
+  if (!client) throw new Error(SEM_CHAVE);
 
-  const completion = await client.chat.completions.create({
-    model: config.openAiDecisionModel,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          "Escolha o CNPJ da empresa deste projeto. Use a notícia inteira: atividade, local, " +
-          "quem investe e o que está sendo construído. Somente um número da lista ou null. " +
-          "Não invente CNPJ. Retorne somente JSON com cnpj e motivo.",
+  const raw = await pedirJson(client, {
+    model: config.claudeDecisionModel,
+    system:
+      "Escolha o CNPJ da empresa deste projeto. Use a notícia inteira: atividade, local, " +
+      "quem investe e o que está sendo construído. Somente um número da lista ou null. " +
+      "Não invente CNPJ. Retorne somente JSON com cnpj e motivo.",
+    user: JSON.stringify({
+      projeto: {
+        nome: project.nome,
+        nicho: project.nicho,
+        uf: project.uf,
+        municipio: project.municipio,
       },
-      {
-        role: "user",
-        content: JSON.stringify({
-          projeto: {
-            nome: project.nome,
-            nicho: project.nicho,
-            uf: project.uf,
-            municipio: project.municipio,
-          },
-          opcoes: groups.map((group) => ({
-            cnpj: group.cnpj,
-            nomes: group.nomes,
-            bases: group.bases,
-          })),
-          noticia: String(text || "").slice(0, 14_000),
-        }),
-      },
-    ],
+      opcoes: groups.map((group) => ({
+        cnpj: group.cnpj,
+        nomes: group.nomes,
+        bases: group.bases,
+      })),
+      noticia: String(text || "").slice(0, 14_000),
+    }),
   });
-  const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("O modelo de decisão não retornou conteúdo");
   const decision = z.object({
     cnpj: z.string().nullable(),
@@ -282,20 +259,15 @@ function dedupeProjects(projects) {
 
 async function extractProjects(text, options = {}) {
   if (!client) {
-    throw new Error("OPENAI_API_KEY não configurada");
+    throw new Error(SEM_CHAVE);
   }
   if (!text || text.trim().length < 40) {
     throw new Error("Cole ao menos o título e o lead da notícia");
   }
 
-  const completion = await client.chat.completions.create({
-    model: config.openAiModel,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
+  const raw = await pedirJson(client, {
+    model: config.claudeModel,
+    system:
           "Uma notícia pode descrever mais de um projeto CapEx. " +
           "Retorne um item para cada ativo físico distinto, inclusive concessão, aeroporto, pátio, " +
           "fábrica, planta, mina, terminal, usina, data center ou centro logístico. " +
@@ -317,13 +289,10 @@ async function extractProjects(text, options = {}) {
           "UF com 2 letras e só para ativo no Brasil. " +
           "Retorne somente JSON { projetos: [ { nome, nicho, uf, municipio, valor_capex, moeda, status, " +
           "esfera, pais, envolve_orgao_publico, resumo, trecho } ] }.",
-      },
-      { role: "user", content: text.slice(0, 14_000) },
-    ],
+    user: text.slice(0, 14_000),
   });
 
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) throw new Error("A OpenAI não retornou conteúdo");
+  if (!raw) throw new Error("O Claude não retornou conteúdo");
   const parsed = z.object({
     projetos: z.array(z.record(z.string(), z.unknown())).min(1).max(6),
   }).parse(JSON.parse(raw));
@@ -371,15 +340,10 @@ const statusReadingSchema = z.object({
 });
 
 async function interpretProjectStatus(project, evidencias) {
-  if (!client) throw new Error("OPENAI_API_KEY não configurada");
-  const completion = await client.chat.completions.create({
-    model: config.openAiDecisionModel,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
+  if (!client) throw new Error(SEM_CHAVE);
+  const raw = await pedirJson(client, {
+    model: config.claudeDecisionModel,
+    system:
           "Você atualiza o status de um projeto CapEx somente com as evidências já anotadas. " +
           "Não invente obra, data, valor ou quantidade. Use só os números que estão nas anotações. " +
           "Status permitidos: rumor, anunciado, leilao, outorga, lp, li, construcao, operacao, cancelado. " +
@@ -390,36 +354,30 @@ async function interpretProjectStatus(project, evidencias) {
           "Se a evidência não basta, repita o status atual. " +
           "descricao é um parágrafo curto sobre o que se sabe agora. " +
           "Retorne somente JSON com status e descricao.",
+    user: JSON.stringify({
+      projeto: {
+        nome: project.nome,
+        status_atual: project.status,
+        status_em: project.status_em,
+        uf: project.uf,
+        municipio: project.municipio,
+        empresa_nome: project.empresa_nome,
+        nicho: project.nicho,
       },
-      {
-        role: "user",
-        content: JSON.stringify({
-          projeto: {
-            nome: project.nome,
-            status_atual: project.status,
-            status_em: project.status_em,
-            uf: project.uf,
-            municipio: project.municipio,
-            empresa_nome: project.empresa_nome,
-            nicho: project.nicho,
-          },
-          evidencias: evidencias.map((item) => ({
-            fonte: item.codigo,
-            anotacao: item.trecho,
-            linhas: item.campos_extraidos?.linhas || item.campos_extraidos?.amostra || null,
-          })),
-        }),
-      },
-    ],
+      evidencias: evidencias.map((item) => ({
+        fonte: item.codigo,
+        anotacao: item.trecho,
+        linhas: item.campos_extraidos?.linhas || item.campos_extraidos?.amostra || null,
+      })),
+    }),
   });
-  const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("O modelo de status não retornou conteúdo");
   const decision = statusReadingSchema.parse(JSON.parse(raw));
   const status = PROJECT_STATUSES.includes(decision.status) ? decision.status : project.status;
   return {
     status,
     descricao: decision.descricao.trim(),
-    modelo: config.openAiDecisionModel,
+    modelo: config.claudeDecisionModel,
   };
 }
 
@@ -427,26 +385,16 @@ const summarySchema = z.object({ resumo: z.string().min(1) });
 
 async function summarizeOfficialAct({ titulo, orgao, data, texto, empresa }) {
   if (!client) return null;
-  const completion = await client.chat.completions.create({
-    model: config.openAiDecisionModel,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          "Resuma um ato do Diário Oficial da União em uma ou duas frases curtas, em português. " +
-          "Diga o que o ato faz com a empresa indicada e, quando houver, o valor, o prazo, o objeto ou o número do processo que envolve essa empresa. " +
-          "Quando o ato lista muitas partes, descreva só a parte que cita a empresa e diga em uma palavra o tipo do ato. " +
-          "Use só o que está no texto. Não invente. Retorne somente JSON com resumo.",
-      },
-      {
-        role: "user",
-        content: JSON.stringify({ empresa, titulo, orgao, data, texto: String(texto || "").slice(0, 12000) }),
-      },
-    ],
+  const raw = await pedirJson(client, {
+    model: config.claudeDecisionModel,
+    maxTokens: 1000,
+    system:
+      "Resuma um ato do Diário Oficial da União em uma ou duas frases curtas, em português. " +
+      "Diga o que o ato faz com a empresa indicada e, quando houver, o valor, o prazo, o objeto ou o número do processo que envolve essa empresa. " +
+      "Quando o ato lista muitas partes, descreva só a parte que cita a empresa e diga em uma palavra o tipo do ato. " +
+      "Use só o que está no texto. Não invente. Retorne somente JSON com resumo.",
+    user: JSON.stringify({ empresa, titulo, orgao, data, texto: String(texto || "").slice(0, 12000) }),
   });
-  const raw = completion.choices[0]?.message?.content;
   if (!raw) return null;
   const parsed = summarySchema.parse(JSON.parse(raw));
   return parsed.resumo.replace(/\s+/g, " ").trim().slice(0, 400);
@@ -463,15 +411,10 @@ const contextJudgmentSchema = z.object({
 // Lê o contexto de cada registro achado pela empresa e diz se ele é deste projeto.
 // Só "direta" vira evidência; registro de outra planta, mina ou estado da mesma empresa fica fora.
 async function judgeEvidenceContext(project, fonte, registros) {
-  if (!client) throw new Error("OPENAI_API_KEY não configurada");
-  const completion = await client.chat.completions.create({
-    model: config.openAiDecisionModel,
-    temperature: 0,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
+  if (!client) throw new Error(SEM_CHAVE);
+  const raw = await pedirJson(client, {
+    model: config.claudeDecisionModel,
+    system:
           "Você decide se cada registro de uma fonte oficial tem correlação direta com um projeto CapEx específico. " +
           "Os registros foram achados pelo CNPJ ou pelo nome da empresa, então muitos são de outros projetos da mesma empresa. " +
           "direta: o registro trata desta obra, planta, mina, terreno ou empreendimento, no mesmo local do projeto, ou de licença, incentivo, terreno, outorga ou contrato que só faz sentido para ele. " +
@@ -480,26 +423,20 @@ async function judgeEvidenceContext(project, fonte, registros) {
           "Município ou estado diferente do projeto é outro_projeto, salvo quando o texto diz que a obra abrange esse local. " +
           "Na dúvida, use incerta. Use só o que está no registro. " +
           "Retorne somente JSON {\"avaliacoes\":[{\"i\":número,\"correlacao\":\"direta|outro_projeto|incerta\",\"motivo\":\"frase curta\"}]}, um item por registro.",
+    user: JSON.stringify({
+      projeto: {
+        nome: project.nome,
+        nicho: project.nicho,
+        uf: project.uf,
+        municipio: project.municipio,
+        empresa: project.empresa_nome,
+        status: project.status,
+        leitura: project.leitura || null,
       },
-      {
-        role: "user",
-        content: JSON.stringify({
-          projeto: {
-            nome: project.nome,
-            nicho: project.nicho,
-            uf: project.uf,
-            municipio: project.municipio,
-            empresa: project.empresa_nome,
-            status: project.status,
-            leitura: project.leitura || null,
-          },
-          fonte,
-          registros,
-        }),
-      },
-    ],
+      fonte,
+      registros,
+    }),
   });
-  const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error("O modelo de correlação não retornou conteúdo");
   return contextJudgmentSchema.parse(JSON.parse(raw)).avaliacoes;
 }

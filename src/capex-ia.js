@@ -2,8 +2,9 @@
 //
 // A IA só sugere. A triagem diz se o título fala de ativo físico do grupo e
 // extrai o que der; o vínculo escolhe um projeto numa lista fechada ou null.
-// O cliente OpenAI entra como parâmetro; iaPadrao() monta o do .env.
+// O cliente Claude entra como parâmetro; iaPadrao() monta o do .env.
 const { z } = require("zod");
+const { criarCliente, pedirJson } = require("./claude");
 
 const ESTAGIOS = ["anuncio", "licenciamento", "funding", "contratacao_epc", "mobilizacao", "operacao", "desaceleracao", "cancelado"];
 
@@ -92,17 +93,8 @@ function lerVinculo(raw, projetos) {
 }
 
 function criarIa({ client, modelo }) {
-  async function perguntar(system, user) {
-    const completion = await client.chat.completions.create({
-      model: modelo,
-      temperature: 0,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: JSON.stringify(user) },
-      ],
-    });
-    return completion.choices[0]?.message?.content;
+  function perguntar(system, user) {
+    return pedirJson(client, { model: modelo, system, user: JSON.stringify(user) });
   }
 
   return {
@@ -134,14 +126,13 @@ function criarIa({ client, modelo }) {
   };
 }
 
-// Usa OPENAI_API_KEY e OPENAI_MODEL do ambiente. Sem chave, devolve null e
+// Usa CLAUDE_API_KEY e CLAUDE_MODEL do ambiente. Sem chave, devolve null e
 // o coletor roda só as regras.
 function iaPadrao() {
   const { getConfig } = require("./config");
   const config = getConfig();
-  if (!config.openAiApiKey) return null;
-  const OpenAI = require("openai");
-  return criarIa({ client: new OpenAI({ apiKey: config.openAiApiKey }), modelo: config.openAiModel });
+  const client = criarCliente(config.claudeApiKey);
+  return client ? criarIa({ client, modelo: config.claudeModel }) : null;
 }
 
 module.exports = { ESTAGIOS, lerTriagem, lerVinculo, criarIa, iaPadrao };

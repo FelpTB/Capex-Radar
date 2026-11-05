@@ -261,7 +261,7 @@ async function scanPrimarySources({ codigos = null, perSource = null, limit = 12
       await db.markCandidateAnalyzed(
         candidate.id,
         candidatePayload(projetos),
-        config.openAiModel,
+        config.claudeModel,
       );
       const reason = queueReason(projetos);
       if (reason) {

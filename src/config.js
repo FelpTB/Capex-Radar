@@ -23,12 +23,12 @@ function getConfig() {
 
   return {
     databaseUrl,
-    openAiApiKey: process.env.OPENAI_API_KEY?.trim() || null,
-    openAiModel: process.env.OPENAI_MODEL?.trim() || "gpt-4.1-mini",
-    openAiDecisionModel:
-      process.env.OPENAI_DECISION_MODEL?.trim() ||
-      process.env.OPENAI_MODEL?.trim() ||
-      "gpt-4.1-mini",
+    claudeApiKey: process.env.CLAUDE_API_KEY?.trim() || null,
+    claudeModel: process.env.CLAUDE_MODEL?.trim() || "claude-haiku-5-5",
+    claudeDecisionModel:
+      process.env.CLAUDE_DECISION_MODEL?.trim() ||
+      process.env.CLAUDE_MODEL?.trim() ||
+      "claude-haiku-5-5",
     dadosGovToken: process.env.TOKEN_DADOS_GOV?.trim() || null,
     port: Number(process.env.PORT || 3000),
     nodeEnv,

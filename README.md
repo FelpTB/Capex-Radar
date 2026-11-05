@@ -22,7 +22,7 @@ Regra do projeto para novas fontes: `.cursor/rules/amostra-fonte.mdc`.
 
 - Node.js + Express
 - Supabase/Postgres
-- OpenAI para extração assistida
+- Claude (Anthropic) para extração assistida — Claude Haiku 5.5 por padrão
 - Railway (Nixpacks: Node 20+ e Python 3.12 para algumas cargas)
 
 ## Deploy no Railway
@@ -34,9 +34,9 @@ Regra do projeto para novas fontes: `.cursor/rules/amostra-fonte.mdc`.
    | Variável | Obrigatória | Notas |
    | --- | --- | --- |
    | `SUPABASE_STRING` | sim | URI Postgres; preferir pooler `:6543` |
-   | `OPENAI_API_KEY` | sim | Extração e decisão de empresa |
-   | `OPENAI_MODEL` | não | Default `gpt-4.1-mini` |
-   | `OPENAI_DECISION_MODEL` | não | Opcional |
+   | `CLAUDE_API_KEY` | sim | Chave da API da Anthropic: extração, decisão e triagem |
+   | `CLAUDE_MODEL` | não | Default `claude-haiku-5-5` |
+   | `CLAUDE_DECISION_MODEL` | não | Opcional; default igual a `CLAUDE_MODEL` |
    | `TOKEN_DADOS_GOV` | não | Catálogo dados.gov.br |
    | `NODE_ENV` | recomendado | `production` |
    | `DISABLE_SCHEDULER` | não | `1` para desligar ciclo semanal |
@@ -117,7 +117,7 @@ A notícia passa por duas etapas:
    apenas uma das opções ou `null`.
 
 A decisão registra opções, confiança, justificativa, trecho literal e modelo.
-Use `OPENAI_DECISION_MODEL` para configurar um modelo diferente do extrator.
+Use `CLAUDE_DECISION_MODEL` para configurar um modelo diferente do extrator.
 A escolha continua sujeita à revisão humana e ainda não confirma CNPJ.
 
 O modelo não confirma CNPJ nem valor oficial. Esses dados só ganham confiança
@@ -130,7 +130,7 @@ exportado como JSONL em `/api/treino/candidatos.jsonl`.
 ## Segurança
 
 - `.env` não entra no git.
-- `SUPABASE_STRING` e `OPENAI_API_KEY` ficam somente no backend.
+- `SUPABASE_STRING` e `CLAUDE_API_KEY` ficam somente no backend.
 - As tabelas têm RLS e não possuem policies para acesso direto de
   `anon`/`authenticated`.
 - Não exponha a URI do banco no frontend ou em logs.

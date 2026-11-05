@@ -65,7 +65,7 @@ A busca acha registros da empresa, pelo CNPJ ou pelo nome. Isso não basta: a me
 
 5. Rastro. A evidência guarda em campos_extraidos.correlacao quantos registros foram avaliados e quantos saíram por motivo, e cada linha mantida traz em correlacao a frase que justifica o vínculo.
 
-6. Sem modelo. Se a chave da OpenAI faltar ou a chamada falhar, o filtro cai para o município da ficha: só passa registro com município igual ao do projeto. O método usado fica gravado em correlacao.metodo (contexto ou municipio).
+6. Sem modelo. Se a chave do Claude faltar ou a chamada falhar, o filtro cai para o município da ficha: só passa registro com município igual ao do projeto. O método usado fica gravado em correlacao.metodo (contexto ou municipio).
 
 7. Limpeza. Se uma fonte consultada com sucesso não tiver nenhum registro direto, a evidência secundária antiga dessa fonte na ficha é apagada. Erro de rede não apaga nada.
 
