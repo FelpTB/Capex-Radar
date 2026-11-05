@@ -135,8 +135,11 @@ async function tick() {
     if (await doePdfDue()) {
       summary.doePdf = await runDoePdfSync();
     }
-    if (await capexDue()) {
-      summary.capex = await runCapexWeekly();
+    // Falha no monitoramento (ex.: migração 020 ausente) não derruba o resto do ciclo.
+    try {
+      if (await capexDue()) summary.capex = await runCapexWeekly();
+    } catch (error) {
+      console.error(`Monitoramento capex_radar: ${error.message}`);
     }
     if (Object.keys(summary).length) {
       const text = summarize(summary);
