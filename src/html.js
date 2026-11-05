@@ -54,6 +54,7 @@ function layout({ title, body, active = "", scripts = "" }) {
     <a class="brand" href="/projetos">Radar <strong>CapEx</strong></a>
     <nav>
       <a class="${active === "projetos" ? "active" : ""}" href="/projetos">Projetos</a>
+      <a class="${active === "monitoramento" ? "active" : ""}" href="/monitoramento">Monitoramento</a>
       <a class="${active === "fontes" ? "active" : ""}" href="/fontes">Fontes</a>
       <a class="${active === "hub" ? "active" : ""}" href="/fontes/hub">Hub de fontes</a>
       <a class="${active === "captura" ? "active" : ""}" href="/captura">Captura</a>

@@ -1,0 +1,295 @@
+// Leituras e decisões da tela de Monitoramento (capex_radar, Fase 4).
+//
+// Toda escrita roda numa transação com o ator usuario:painel, para o
+// log_acao registrar quem decidiu. A IA só sugere; aqui a revisão aceita,
+// rejeita, cria projeto ou descarta a notícia.
+const { pool } = require("./db");
+
+const ATOR = "usuario:painel";
+
+// Situações da notícia na tela, a partir de triagem, extracao e vínculos.
+const SITUACOES = {
+  revisar: "A revisar",
+  nao_triadas: "Sem triagem",
+  vinculadas: "Vinculadas",
+  descartadas: "Descartadas",
+  todas: "Todas",
+};
+
+const FILTRO_SITUACAO = {
+  revisar: `(e.triagem = 'novo_projeto' or (e.triagem = 'pendente' and e.extracao is not null)
+             or exists (select 1 from capex_radar.evidencia_projeto s where s.evidencia_id = e.id and s.situacao = 'sugerido'))`,
+  nao_triadas: "e.triagem = 'pendente' and e.extracao is null",
+  vinculadas: "e.triagem = 'vinculada'",
+  descartadas: "e.triagem = 'descartada'",
+  todas: "true",
+};
+
+async function emTransacao(trabalho) {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query("select set_config('capex_radar.ator', $1, true)", [ATOR]);
+    const resultado = await trabalho(client);
+    await client.query("commit");
+    return resultado;
+  } catch (error) {
+    await client.query("rollback").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function resumoGrupos() {
+  const { rows } = await pool.query(`
+    select g.id, g.nome, g.nicho,
+           count(e.id)::int as total,
+           count(e.id) filter (where e.triagem = 'pendente' and e.extracao is null)::int as nao_triadas,
+           count(e.id) filter (where ${FILTRO_SITUACAO.revisar})::int as revisar,
+           count(e.id) filter (where e.triagem = 'vinculada')::int as vinculadas,
+           count(e.id) filter (where e.triagem = 'descartada')::int as descartadas,
+           (select count(*)::int from capex_radar.projetos p
+             where p.grupo_id = g.id and p.status <> 'descartado') as projetos,
+           (select max(j.coletado_em) from capex_radar.coleta_janela j
+             where j.grupo_id = g.id and j.status = 'ok') as ultima_coleta
+      from capex_radar.grupos g
+      left join capex_radar.evidencias e on e.grupo_id = g.id
+     where g.ativo
+     group by g.id
+     order by g.nicho, g.nome`);
+  return rows;
+}
+
+async function listarNoticias({ grupoId = null, situacao = "revisar", limite = 150 } = {}) {
+  const filtro = FILTRO_SITUACAO[situacao] || FILTRO_SITUACAO.revisar;
+  const { rows } = await pool.query(
+    `select e.id, e.titulo, e.url, e.veiculo, e.data_original, e.triagem, e.triagem_motivo,
+            e.extracao, g.id as grupo_id, g.nome as grupo, g.nicho,
+            sug.projeto_id as sugerido_projeto_id, sug.projeto_titulo as sugerido_projeto,
+            sug.confianca as sugerido_confianca
+       from capex_radar.evidencias e
+       join capex_radar.grupos g on g.id = e.grupo_id
+       left join lateral (
+         select ep.projeto_id, p.titulo as projeto_titulo, ep.confianca
+           from capex_radar.evidencia_projeto ep
+           join capex_radar.projetos p on p.id = ep.projeto_id
+          where ep.evidencia_id = e.id and ep.situacao = 'sugerido'
+          order by ep.confianca desc nulls last
+          limit 1
+       ) sug on true
+      where ($1::uuid is null or e.grupo_id = $1) and ${filtro}
+      order by e.data_original desc nulls last
+      limit $2`,
+    [grupoId, limite],
+  );
+  return rows;
+}
+
+async function obterNoticia(id) {
+  const { rows } = await pool.query(
+    `select e.*, g.nome as grupo, g.nicho
+       from capex_radar.evidencias e
+       left join capex_radar.grupos g on g.id = e.grupo_id
+      where e.id = $1`,
+    [id],
+  );
+  const noticia = rows[0];
+  if (!noticia) return null;
+  const [vinculos, projetos, matrizes, filiais] = await Promise.all([
+    pool.query(
+      `select ep.*, p.titulo as projeto_titulo
+         from capex_radar.evidencia_projeto ep
+         join capex_radar.projetos p on p.id = ep.projeto_id
+        where ep.evidencia_id = $1
+        order by ep.sugerido_em`,
+      [id],
+    ),
+    pool.query(
+      `select id, titulo, uf, municipio, estagio from capex_radar.projetos
+        where grupo_id = $1 and status <> 'descartado' order by atualizado_em desc`,
+      [noticia.grupo_id],
+    ),
+    pool.query(
+      `select cnpj, razao_social, papel, uf, municipio from capex_radar.matrizes
+        where grupo_id = $1 order by (papel = 'principal') desc, razao_social`,
+      [noticia.grupo_id],
+    ),
+    pool.query(
+      `select cnpj, municipio, uf, prioridade, nome_fantasia from capex_radar.vw_filiais
+        where grupo_id = $1 and prioritaria
+          and ($2::text is null or uf = $2)
+        order by uf, municipio, cnpj
+        limit 300`,
+      [noticia.grupo_id, noticia.extracao?.uf || noticia.uf || null],
+    ),
+  ]);
+  return {
+    noticia,
+    vinculos: vinculos.rows,
+    projetos: projetos.rows,
+    matrizes: matrizes.rows,
+    filiais: filiais.rows,
+  };
+}
+
+async function marcarVinculada(client, evidenciaId) {
+  await client.query(
+    "update capex_radar.evidencias set triagem = 'vinculada' where id = $1",
+    [evidenciaId],
+  );
+}
+
+/** Cria o projeto a partir da notícia e aceita o vínculo na mesma transação. */
+async function criarProjetoDaNoticia(evidenciaId, dados) {
+  return emTransacao(async (client) => {
+    const { rows: [noticia] } = await client.query(
+      "select id, grupo_id from capex_radar.evidencias where id = $1 for update",
+      [evidenciaId],
+    );
+    if (!noticia?.grupo_id) throw new Error("Notícia sem empresa: não dá para criar o projeto.");
+    const { rows: [projeto] } = await client.query(
+      `insert into capex_radar.projetos
+         (titulo, grupo_id, matriz_cnpj, filial_cnpj, uf, municipio, objeto,
+          valor_estimado_brl, fonte_valor, estagio, data_anuncio, evidencia_primaria_id)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       returning id, titulo`,
+      [dados.titulo, noticia.grupo_id, dados.matriz_cnpj, dados.filial_cnpj || null,
+        dados.uf || null, dados.municipio || null, dados.objeto || null,
+        dados.valor_estimado_brl ?? null, dados.valor_estimado_brl ? "noticia" : null,
+        dados.estagio, dados.data_anuncio || null, evidenciaId],
+    );
+    await client.query(
+      `insert into capex_radar.evidencia_projeto
+         (evidencia_id, projeto_id, origem, situacao, revisado_por, revisado_em)
+       values ($1, $2, 'manual', 'aceito', $3, now())`,
+      [evidenciaId, projeto.id, ATOR],
+    );
+    await client.query(
+      `update capex_radar.evidencia_projeto set situacao = 'rejeitado', revisado_por = $2, revisado_em = now()
+        where evidencia_id = $1 and situacao = 'sugerido'`,
+      [evidenciaId, ATOR],
+    );
+    await marcarVinculada(client, evidenciaId);
+    return projeto;
+  });
+}
+
+/** Liga a notícia a um projeto do mesmo grupo (aceita a sugestão, se houver). */
+async function vincularNoticia(evidenciaId, projetoId) {
+  return emTransacao(async (client) => {
+    const { rows } = await client.query(
+      `select p.id from capex_radar.projetos p
+         join capex_radar.evidencias e on e.grupo_id = p.grupo_id
+        where p.id = $1 and e.id = $2`,
+      [projetoId, evidenciaId],
+    );
+    if (!rows.length) throw new Error("O projeto não é da mesma empresa da notícia.");
+    await client.query(
+      `insert into capex_radar.evidencia_projeto
+         (evidencia_id, projeto_id, origem, situacao, revisado_por, revisado_em)
+       values ($1, $2, 'manual', 'aceito', $3, now())
+       on conflict (evidencia_id, projeto_id) do update
+         set situacao = 'aceito', revisado_por = excluded.revisado_por, revisado_em = now()`,
+      [evidenciaId, projetoId, ATOR],
+    );
+    await marcarVinculada(client, evidenciaId);
+  });
+}
+
+/** Rejeita a sugestão da IA; a notícia volta como possível projeto novo. */
+async function rejeitarSugestao(evidenciaId, projetoId) {
+  return emTransacao(async (client) => {
+    await client.query(
+      `update capex_radar.evidencia_projeto set situacao = 'rejeitado', revisado_por = $3, revisado_em = now()
+        where evidencia_id = $1 and projeto_id = $2 and situacao = 'sugerido'`,
+      [evidenciaId, projetoId, ATOR],
+    );
+    await client.query(
+      `update capex_radar.evidencias set triagem = 'novo_projeto'
+        where id = $1 and triagem = 'pendente'
+          and not exists (select 1 from capex_radar.evidencia_projeto
+                           where evidencia_id = $1 and situacao in ('sugerido', 'aceito'))`,
+      [evidenciaId],
+    );
+  });
+}
+
+async function descartarNoticia(evidenciaId, motivo) {
+  return emTransacao(async (client) => {
+    await client.query(
+      `update capex_radar.evidencias set triagem = 'descartada', triagem_motivo = $2 where id = $1`,
+      [evidenciaId, `Revisão: ${motivo || "não é projeto"}`],
+    );
+    await client.query(
+      `update capex_radar.evidencia_projeto set situacao = 'rejeitado', revisado_por = $2, revisado_em = now()
+        where evidencia_id = $1 and situacao = 'sugerido'`,
+      [evidenciaId, ATOR],
+    );
+  });
+}
+
+async function carteira() {
+  const { rows } = await pool.query(
+    `select * from capex_radar.vw_carteira where status <> 'descartado'
+      order by coalesce(ultima_evidencia_em, criado_em) desc`,
+  );
+  return rows;
+}
+
+async function obterProjeto(id) {
+  const { rows } = await pool.query("select * from capex_radar.vw_carteira where id = $1", [id]);
+  if (!rows[0]) return null;
+  const [timeline, projeto] = await Promise.all([
+    pool.query(
+      `select evidencia_id, titulo, url, veiculo, data_original, fonte_nome, primaria
+         from capex_radar.vw_projeto_timeline where projeto_id = $1
+        order by data_original nulls last`,
+      [id],
+    ),
+    pool.query("select objeto, fonte_valor from capex_radar.projetos where id = $1", [id]),
+  ]);
+  return { projeto: { ...rows[0], ...projeto.rows[0] }, timeline: timeline.rows };
+}
+
+/**
+ * Exclui o projeto, os vínculos e as notícias que só pertenciam a ele.
+ * Notícia ligada também a outro projeto fica, sem o vínculo com este.
+ */
+async function excluirProjeto(id) {
+  return emTransacao(async (client) => {
+    const { rows: [projeto] } = await client.query(
+      "select id, titulo from capex_radar.projetos where id = $1 for update",
+      [id],
+    );
+    if (!projeto) return null;
+    const { rows: exclusivas } = await client.query(
+      `select ep.evidencia_id from capex_radar.evidencia_projeto ep
+        where ep.projeto_id = $1
+          and not exists (select 1 from capex_radar.evidencia_projeto o
+                           where o.evidencia_id = ep.evidencia_id and o.projeto_id <> $1)`,
+      [id],
+    );
+    await client.query("delete from capex_radar.projetos where id = $1", [id]);
+    const ids = exclusivas.map((row) => row.evidencia_id);
+    const removidas = ids.length
+      ? (await client.query("delete from capex_radar.evidencias where id = any($1::uuid[])", [ids])).rowCount
+      : 0;
+    return { ...projeto, evidencias: removidas };
+  });
+}
+
+module.exports = {
+  ATOR,
+  SITUACOES,
+  resumoGrupos,
+  listarNoticias,
+  obterNoticia,
+  criarProjetoDaNoticia,
+  vincularNoticia,
+  rejeitarSugestao,
+  descartarNoticia,
+  carteira,
+  obterProjeto,
+  excluirProjeto,
+};

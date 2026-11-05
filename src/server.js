@@ -22,6 +22,7 @@ const { SCOPES, sourceScope } = require("./source-scope");
 const { catalogPageBody, hasSourcePage, hubBody, scopeBadge, scopeSection } = require("./source-hub-html");
 const { BRAZIL_UFS } = require("./source-lifecycle");
 const { readRawSample, sampleSectionHtml } = require("./source-sample");
+const { registrarMonitoramento } = require("./capex-painel");
 const {
   CAPTURE_DECISIONS,
   DASHBOARD_PROFILES,
@@ -1107,6 +1108,8 @@ app.post("/projetos/:id/evidencias/:evidenciaId/excluir", async (req, res) => {
   if (!deleted) return res.status(404).send("Evidência não encontrada");
   res.redirect(`/projetos/${id}?message=${encodeURIComponent("Evidência excluída.")}`);
 });
+
+registrarMonitoramento(app);
 
 app.use((error, _req, res, _next) => {
   console.error(error instanceof z.ZodError ? error.issues : error.message);

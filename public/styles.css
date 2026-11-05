@@ -81,6 +81,12 @@ h2 { letter-spacing: -.5px; }
 .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
 .facts dt { color: var(--muted); font-size: 12px; }
 .facts dd { margin: 4px 0 0; font-weight: 650; }
+.facts--stack { grid-template-columns: repeat(2, 1fr); margin: 8px 0 16px; }
+table.table-compact { min-width: 760px; }
+.monitor-groups { margin-top: 36px; }
+.monitor-groups form { margin: 0; }
+.inline-actions { display: flex; gap: 8px; margin-top: 8px; }
+.inline-actions form { margin: 0; }
 .company-decision {
   margin: 0 0 20px; padding: 12px 14px; border: 1px solid var(--line);
   border-radius: 9px; background: var(--bg); font-size: 13px;
