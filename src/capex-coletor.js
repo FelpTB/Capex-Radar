@@ -390,16 +390,26 @@ async function marcarFonte(client, erro = null) {
   );
 }
 
+// Grupos seguidos sem nenhuma janela lida: o RSS está recusando o servidor e
+// insistir só prolonga o bloqueio. Os que sobraram voltam na próxima rodada.
+const LIMITE_FALHAS_SEGUIDAS = 3;
+
 /** Coleta e tria uma lista de grupos na mesma janela. */
 async function coletarGrupos({ client, grupos, desde, ate, fetchFeed, ia, pausaMs, refazer, log = () => {} }) {
   const coleta = [];
   const triagem = [];
+  let falhasSeguidas = 0;
   for (const grupo of grupos) {
     const c = await coletarGrupo({ client, grupo, desde, ate, fetchFeed, pausaMs, refazer });
     coleta.push(c);
     log(`${grupo.nome}: ${c.janelas} janelas, ${c.itens} itens, ${c.novos} novos${c.erros ? `, ${c.erros} erros` : ""}`);
     const t = await triarGrupo({ client, grupo, ia });
     triagem.push(t);
+    falhasSeguidas = c.erros && c.janelas === c.erros ? falhasSeguidas + 1 : 0;
+    if (falhasSeguidas >= LIMITE_FALHAS_SEGUIDAS) {
+      log(`RSS recusou ${falhasSeguidas} grupos seguidos; parando. ${grupos.length - coleta.length} grupos ficam para a próxima rodada.`);
+      break;
+    }
   }
   const erros = coleta.reduce((total, c) => total + c.erros, 0);
   await marcarFonte(client, erros ? `${erros} janelas com erro na última coleta` : null);
@@ -413,12 +423,16 @@ function janelaSemanal(hoje = new Date()) {
   return { desde: somarDias(hoje, -DIAS_SEMANA), ate: somarDias(hoje, 1) };
 }
 
-// Grupos sem janela semanal nos últimos 7 dias. A conta é por grupo para a
-// rodada interrompida (deploy, reinício) continuar de onde parou.
+// Grupos sem janela semanal ok nos últimos 7 dias. A conta é por grupo para a
+// rodada interrompida (deploy, reinício) continuar de onde parou. Janela com
+// erro (o Google devolve 503 quando recusa o servidor) segura o grupo por 6 h
+// e depois ele volta para a fila, em vez de esperar a semana seguinte.
 async function gruposVencidos(client, grupos) {
   const { rows } = await client.query(
     `select distinct grupo_id from capex_radar.coleta_janela
-      where fonte_codigo = $1 and ate - desde <= $2 and coletado_em > now() - interval '7 days'`,
+      where fonte_codigo = $1 and ate - desde <= $2
+        and ((status = 'ok' and coletado_em > now() - interval '7 days')
+          or (status = 'erro' and coletado_em > now() - interval '6 hours'))`,
     [FONTE, DIAS_SEMANA + 1],
   );
   const recentes = new Set(rows.map((row) => row.grupo_id));

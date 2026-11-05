@@ -19,6 +19,12 @@ Migração [`sql/020_capex_radar_coleta.sql`](../../sql/020_capex_radar_coleta.s
 
 Se uma janela der erro, as outras continuam. Se um lote da IA der erro, ele continua pendente e volta na próxima rodada. Sem `OPENAI_API_KEY`, só as regras rodam.
 
+**Quando o Google recusa o servidor.** Na primeira rodada no Railway (05/11/2026), 14 grupos foram lidos e os 24 seguintes receberam HTTP 503. Por isso:
+
+- a semana vence por grupo, e um reinício no meio da rodada retoma só os grupos que faltaram;
+- um grupo com erro fica parado 6 h e depois volta para a fila, em vez de esperar a semana seguinte;
+- depois de 3 grupos seguidos sem nenhuma janela lida, a rodada para. Os grupos que sobraram ficam para a próxima.
+
 ## Como rodar
 
 Carga histórica, uma vez, no Railway:

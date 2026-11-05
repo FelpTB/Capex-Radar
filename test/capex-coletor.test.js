@@ -11,6 +11,7 @@ const {
   coletarGrupo,
   triarGrupo,
   gruposVencidos,
+  coletarGrupos,
 } = require("../src/capex-coletor");
 const { lerTriagem, lerVinculo } = require("../src/capex-ia");
 
@@ -198,6 +199,19 @@ test("rodada semanal interrompida continua só com os grupos que faltaram", asyn
   const client = { query: async () => ({ rows: [{ grupo_id: "g1" }] }) };
   const grupos = [{ id: "g1", nome: "Bracell" }, { id: "g2", nome: "Klabin" }];
   assert.deepEqual((await gruposVencidos(client, grupos)).map((g) => g.nome), ["Klabin"]);
+});
+
+test("rodada para depois de 3 grupos seguidos recusados pelo RSS", async () => {
+  const client = clienteFalso();
+  client.query = ((original) => async (sql, params) => (
+    sql.includes("update capex_radar.fontes") ? { rowCount: 1 } : original(sql, params)
+  ))(client.query);
+  const grupos = ["A", "B", "C", "D", "E"].map((nome) => ({ ...GRUPO, id: nome, nome }));
+  let chamadas = 0;
+  const feed = async () => { chamadas += 1; throw new Error("HTTP 503"); };
+  const { coleta } = await coletarGrupos({ client, grupos, desde: "2025-01-01", ate: "2025-01-15", fetchFeed: feed, ia: null, pausaMs: 0 });
+  assert.equal(coleta.length, 3);
+  assert.equal(chamadas, 3);
 });
 
 test("lê a resposta da triagem pelo índice do lote", () => {
