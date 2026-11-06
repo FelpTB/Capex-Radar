@@ -1,24 +1,27 @@
 // Agente de triagem automática do capex_radar.
 //
-// Lê as notícias que a triagem marcou como CapEx (fila "A revisar") e decide,
-// uma por vez e em ordem cronológica, entre:
+// Lê as notícias que a triagem marcou como CapEx (fila "A revisar") e decide
+// cada uma, em ordem cronológica, entre:
 //   - criar_projeto: investimento com obra, anunciado ou em construção;
 //   - vincular: é um projeto já cadastrado (evita repetir projeto);
-//   - descartar: não gera obra, é compra/aquisição, já está pronto, etc.;
-//   - revisar: na dúvida, deixa para a revisão humana.
+//   - descartar: não gera obra, é compra/aquisição, já está pronto, etc.
 //
-// O modelo decide, mas as travas em código (aplicarTravas) só deixam agir
-// quando a análise é coerente e a confiança passa do limiar. Toda decisão fica
-// em capex_radar.agente_decisao com a entrada e a saída, para ser avaliada na
-// aba Agente e exportada como conjunto de treino.
+// Toda notícia sai decidida (v2). Se a resposta do modelo contradiz a própria
+// análise, ele recebe o problema e responde de novo; se ainda assim não fechar,
+// resolverDecisao aplica a regra da análise. A única exceção é criar projeto
+// para empresa sem CNPJ da matriz, que não tem como ser executada.
+//
+// Toda decisão fica em capex_radar.agente_decisao com a entrada e a decisão
+// final, para ser avaliada na aba Agente e exportada como conjunto de treino.
 const { z } = require("zod");
 const { criarCliente, pedirJson } = require("./claude");
 const painel = require("./capex-painel-db");
 const { ESTAGIOS } = require("./capex-ia");
 
 const ATOR_AGENTE = "ia:agente";
-const VERSAO_PROMPT = "agente-v1";
-const LIMIAR_PADRAO = 75;
+const VERSAO_PROMPT = "agente-v2";
+const JANELA_PROXIMAS_DIAS = 120;
+const LIMITE_PROXIMAS = 20;
 
 // Motivos que o agente pode dar, por decisão. O código fica no banco; o
 // rótulo aparece na tela e no motivo do descarte.
@@ -33,56 +36,57 @@ const MOTIVOS = {
   outra_empresa: { decisao: "descartar", rotulo: "outra empresa ou homônimo" },
   fora_brasil: { decisao: "descartar", rotulo: "fora do Brasil" },
   cancelado: { decisao: "descartar", rotulo: "projeto cancelado ou suspenso sem cadastro" },
-  incerto: { decisao: "revisar", rotulo: "informação insuficiente" },
 };
 
-const DECISOES = ["criar_projeto", "vincular", "descartar", "revisar"];
+const DECISOES = ["criar_projeto", "vincular", "descartar"];
 const SITUACOES_OBRA = ["anunciado", "em_construcao", "concluido", "incerto"];
 
 const PROMPT = `Você é o analista de triagem de um radar de projetos de investimento (CapEx) privados no Brasil.
-O radar acompanha OBRAS: fábricas, plantas, linhas de produção, centros de distribuição, galpões logísticos e campi de data center que ainda vão ser construídos ou estão em construção. Ele serve para encontrar oportunidades de fornecimento para a obra, então só interessa o que ainda vai gerar obra.
+O radar acompanha OBRAS: fábricas, plantas, linhas de produção, centros de distribuição, galpões logísticos e campi de data center que ainda vão ser construídos ou estão em construção. Ele serve para encontrar oportunidades de fornecimento para a obra.
 
-Você recebe UMA notícia de um grupo empresarial, a leitura prévia da IA de triagem (pode ter erros) e a lista dos projetos já cadastrados desse grupo.
+Você recebe UMA notícia de um grupo empresarial (em geral só a manchete), a leitura prévia da IA de triagem (pode ter erros), a lista dos projetos já cadastrados do grupo e as manchetes próximas do mesmo grupo (outras notícias de até ${JANELA_PROXIMAS_DIAS} dias antes ou depois, com o que já foi decidido sobre elas).
+
+Você SEMPRE decide entre criar_projeto, vincular e descartar. Não existe "deixar para revisão": quando a manchete for incompleta, use as regras de presunção abaixo e escolha a decisão mais provável. Um humano vai avaliar a sua decisão final.
 
 Siga os passos na ordem:
 
-1. INVESTIMENTO. A notícia fala de um investimento da PRÓPRIA empresa do grupo em ativo físico no Brasil? Não é investimento: resultado financeiro, ações, dívida sem destino de obra, produto, marketing, executivos, processos judiciais, investimento de outra empresa ou de governo. Se o grupo não aparece ou parece homônimo, é outra_empresa.
+1. INVESTIMENTO. A notícia fala de investimento da PRÓPRIA empresa do grupo em ativo físico no Brasil? Não é investimento: resultado financeiro, ações, dívida sem destino de obra, produto, marketing, executivos, visita de autoridade, processos judiciais, investimento de outra empresa ou de governo. Se a manchete não cita o grupo, use as manchetes próximas: se elas tratam do mesmo anúncio (mesmo valor, local e período) citando o grupo, é o grupo; se não houver nada que ligue ao grupo, é outra_empresa.
 
-2. MESMO PROJETO. Compare com cada projeto cadastrado: mesmo tipo de ativo e mesmo local (município ou UF), ou referência clara ao mesmo empreendimento (nome da unidade, valor e prazo compatíveis). Notícias diferentes sobre o mesmo empreendimento (anúncio, licença, financiamento, início de obra, inauguração) são o MESMO projeto: decisão vincular, com mesmo_projeto_id. Ativo diferente ou local diferente é outro projeto. Na dúvida entre vincular e criar, decida revisar.
+2. MESMO PROJETO. É o mesmo projeto quando a notícia trata do mesmo empreendimento de um projeto cadastrado: mesmo ativo e mesmo local, ou o mesmo anúncio (valor igual ou próximo, mesma UF, mesmo período), ainda que a manchete seja mais genérica (ex.: "investe R$ 400 milhões no RS" e o projeto cadastrado é a ampliação de uma planta no RS anunciada na mesma época com esse valor). Anúncio, licença, financiamento, início de obra e inauguração do mesmo empreendimento são o MESMO projeto: decisão vincular, com mesmo_projeto_id. Ativo diferente ou local diferente é outro projeto.
 
-3. GERA OBRA. Gera obra: construção de fábrica, planta, unidade, CD ou data center; ampliação de área construída ou de capacidade com obra; nova linha de produção com montagem industrial; modernização com obra civil. NÃO gera obra: compra de máquinas, equipamentos, frota ou tecnologia sem obra; aquisição de empresa, marca, fazenda ou ativo já pronto (fusão, compra de participação, arrendamento); P&D, marketing, contratação.
+3. GERA OBRA. Presuma que gera obra quando a empresa investe em fábrica, planta, unidade, CD ou data center para construir, ampliar, expandir capacidade ou produção, ou instalar nova linha. Só conclua que NÃO gera obra quando o texto disser que é compra de máquinas, equipamentos, frota, tecnologia, manutenção ou modernização sem obra; ou aquisição de empresa, marca, fazenda ou ativo já pronto (fusão, compra de participação, arrendamento); ou P&D, marketing, contratação.
 
-4. SITUAÇÃO. anunciado: planejado, anunciado, em licenciamento ou financiamento, obra ainda não começou. em_construcao: obras iniciadas ou em andamento. concluido: inaugurado, concluído, já operando. incerto: a notícia não permite dizer.
+4. SITUAÇÃO. anunciado: planejado, anunciado, "vai investir", "investe até 20XX", em licenciamento ou financiamento. em_construcao: obras iniciadas ou em andamento ("dá largada", "começa obras"). concluido: só quando o texto diz inaugura, inaugurou, concluiu, entra em operação. incerto: o texto não dá pista; trate como anunciado.
 
 5. DECISÃO.
-- criar_projeto: investimento + gera obra + anunciado ou em_construcao + no Brasil + nenhum projeto cadastrado igual. Motivo obra_nova ou expansao.
 - vincular: é um projeto cadastrado (qualquer situação, inclusive inauguração). Motivo mesmo_projeto.
-- descartar: não é investimento, não gera obra, é compra/aquisição, já está concluído e não há projeto cadastrado, é outra empresa, é fora do Brasil, ou foi cancelado sem projeto cadastrado. Use o motivo que melhor explica.
-- revisar: faltam dados para decidir com segurança. Motivo incerto.
+- criar_projeto: investimento + gera obra + não concluído + no Brasil + nenhum projeto cadastrado igual. Motivo obra_nova (unidade nova) ou expansao (ampliação, nova linha, mais capacidade). A falta de município não impede: crie com a UF, ou só com o que houver.
+- descartar: não é investimento, não gera obra, é compra/aquisição, está concluído e não há projeto cadastrado, é outra empresa, é fora do Brasil, ou foi cancelado sem projeto cadastrado. Use o motivo que melhor explica.
 
 Motivos válidos: ${Object.entries(MOTIVOS).map(([codigo, m]) => `${codigo} (${m.decisao})`).join(", ")}.
 
-Confiança (0 a 100): quanto a notícia sozinha sustenta a decisão. Acima de 85 só quando o texto é explícito. Manchete vaga ou só a leitura prévia sustentando: abaixo de 70.
+Confiança (0 a 100): a probabilidade de a decisão estar certa. A falta de município, valor ou detalhe da obra NÃO reduz a confiança quando as regras de presunção resolvem o caso. Abaixo de 60 só quando a decisão ficou perto de outra opção.
 
-Para criar_projeto, preencha projeto com o que a notícia diz: titulo curto do ativo (sem o nome do grupo, ex.: "fábrica de celulose em Inocência"), objeto, uf (sigla), municipio, valor_brl (número em reais, R$ 1,2 bilhão = 1200000000), estagio (um de: ${ESTAGIOS.join(", ")}) e data_fato (AAAA-MM-DD, AAAA-MM ou AAAA). Deixe null o que não está escrito. Nas outras decisões, projeto é null.
+Para criar_projeto, preencha projeto: titulo curto do ativo, sem o nome do grupo (ex.: "fábrica de celulose em Inocência", "ampliação das unidades no RS"), objeto, uf (sigla), municipio, valor_brl (número em reais, R$ 1,2 bilhão = 1200000000), estagio (um de: ${ESTAGIOS.join(", ")}) e data_fato (AAAA-MM-DD, AAAA-MM ou AAAA). Use as manchetes próximas do mesmo anúncio para completar município e valor. Deixe null o que nenhuma fonte diz. Nas outras decisões, projeto é null.
 
 Responda somente com JSON neste formato:
-{"analise":{"investimento":true,"gera_obra":true,"situacao":"anunciado","no_brasil":true,"mesmo_projeto_id":null},"decisao":"criar_projeto","motivo":"obra_nova","confianca":80,"justificativa":"uma ou duas frases citando o trecho da notícia que decide","projeto":{"titulo":"...","objeto":"...","uf":"MS","municipio":"...","valor_brl":null,"estagio":"anuncio","data_fato":null}}`;
+{"analise":{"investimento":true,"gera_obra":true,"situacao":"anunciado","no_brasil":true,"mesmo_projeto_id":null},"decisao":"criar_projeto","motivo":"obra_nova","confianca":80,"justificativa":"uma ou duas frases citando o trecho que decide","projeto":{"titulo":"...","objeto":"...","uf":"MS","municipio":"...","valor_brl":null,"estagio":"anuncio","data_fato":null}}`;
 
 const textoOpcional = z.string().trim().min(1).nullable().optional().catch(null);
 
+// Aceita "revisar"/"incerto" só para poder pedir a correção ao modelo.
 const saidaSchema = z.object({
   analise: z.object({
     investimento: z.boolean(),
     gera_obra: z.boolean(),
-    situacao: z.enum(SITUACOES_OBRA),
+    situacao: z.enum(SITUACOES_OBRA).catch("incerto"),
     no_brasil: z.boolean().optional().default(true),
     mesmo_projeto_id: z.string().nullable().optional().default(null),
   }),
-  decisao: z.enum(DECISOES),
-  motivo: z.enum(Object.keys(MOTIVOS)),
+  decisao: z.enum([...DECISOES, "revisar"]),
+  motivo: z.enum([...Object.keys(MOTIVOS), "incerto"]),
   confianca: z.number().min(0).max(100).transform((n) => Math.round(n)),
-  justificativa: z.string().trim().min(1).max(600),
+  justificativa: z.string().trim().min(1).max(800),
   projeto: z.object({
     titulo: z.string().trim().min(3).max(160),
     objeto: textoOpcional,
@@ -91,15 +95,30 @@ const saidaSchema = z.object({
     valor_brl: z.number().nonnegative().nullable().optional().catch(null),
     estagio: z.enum(ESTAGIOS).nullable().optional().catch(null),
     data_fato: z.string().regex(/^\d{4}(-\d{2}){0,2}$/).nullable().optional().catch(null),
-  }).nullable().optional().default(null),
+  }).nullable().optional().catch(null).default(null),
 });
 
 function dia(valor) {
   return valor ? new Date(valor).toISOString().slice(0, 10) : null;
 }
 
-/** O que o agente vê: a notícia, a leitura prévia e os projetos do grupo. */
-function montarEntrada(grupo, noticia, projetos) {
+/** Manchetes do grupo perto da data da notícia, com o que já se decidiu sobre elas. */
+function noticiasProximas(noticia, todas, { dias = JANELA_PROXIMAS_DIAS, limite = LIMITE_PROXIMAS } = {}) {
+  const base = noticia.data_original ? new Date(noticia.data_original).getTime() : null;
+  if (base == null) return [];
+  const janela = dias * 86400000;
+  return todas
+    .filter((n) => n.id !== noticia.id && n.data_original)
+    .map((n) => ({ n, distancia: Math.abs(new Date(n.data_original).getTime() - base) }))
+    .filter(({ distancia }) => distancia <= janela)
+    .sort((a, b) => a.distancia - b.distancia)
+    .slice(0, limite)
+    .sort((a, b) => new Date(a.n.data_original) - new Date(b.n.data_original))
+    .map(({ n }) => ({ titulo: n.titulo, data: dia(n.data_original), situacao: n.situacao || "na fila" }));
+}
+
+/** O que o agente vê: a notícia, a leitura prévia, os projetos e as manchetes próximas. */
+function montarEntrada(grupo, noticia, projetos, proximas = []) {
   const ex = noticia.extracao || {};
   return {
     grupo: { nome: grupo.nome, nicho: grupo.nicho },
@@ -131,6 +150,7 @@ function montarEntrada(grupo, noticia, projetos) {
       anuncio: dia(p.data_anuncio),
       noticias: p.noticias || [],
     })),
+    noticias_proximas: proximas,
   };
 }
 
@@ -140,39 +160,90 @@ function lerSaida(raw) {
   return saidaSchema.parse(JSON.parse(raw));
 }
 
-/**
- * Travas: decide o que fazer com a resposta. Devolve { acao, motivo } onde
- * acao é projeto_criado | vinculada | descartada | revisao_humana.
- */
-function aplicarTravas(saida, { projetos = [], limiar = LIMIAR_PADRAO, temMatriz = true } = {}) {
-  const revisar = (motivo) => ({ acao: "revisao_humana", motivo });
-  const { analise, decisao, motivo, confianca } = saida;
-  if (decisao === "revisar") return revisar("o agente pediu revisão");
-  if (MOTIVOS[motivo].decisao !== decisao) return revisar(`motivo ${motivo} não combina com ${decisao}`);
-  if (confianca < limiar) return revisar(`confiança ${confianca} abaixo de ${limiar}`);
-
+/** O que impede a resposta de ser executada como está; null quando está coerente. */
+function problemaDaSaida(saida, { projetos = [] } = {}) {
+  const { analise, decisao, motivo } = saida;
+  if (!DECISOES.includes(decisao)) return `a decisão "${decisao}" não existe: escolha criar_projeto, vincular ou descartar`;
+  if (!MOTIVOS[motivo] || MOTIVOS[motivo].decisao !== decisao) return `o motivo "${motivo}" não combina com a decisão ${decisao}`;
   if (decisao === "vincular") {
     const id = analise.mesmo_projeto_id;
-    if (!id || !projetos.some((p) => String(p.id) === String(id))) return revisar("projeto para vincular fora da lista");
-    return { acao: "vinculada", projeto_id: id };
+    if (!id || !projetos.some((p) => String(p.id) === String(id))) return "mesmo_projeto_id precisa ser o id de um projeto da lista recebida";
+    return null;
   }
   if (decisao === "criar_projeto") {
-    if (analise.mesmo_projeto_id) return revisar("apontou projeto igual e pediu para criar");
-    if (!analise.investimento || !analise.gera_obra) return revisar("criar sem investimento com obra");
-    if (!["anunciado", "em_construcao"].includes(analise.situacao)) return revisar(`criar com situação ${analise.situacao}`);
-    if (!analise.no_brasil) return revisar("criar fora do Brasil");
-    if (!saida.projeto) return revisar("criar sem os dados do projeto");
-    if (!temMatriz) return revisar("empresa sem CNPJ da matriz");
-    return { acao: "projeto_criado" };
+    if (analise.mesmo_projeto_id) return "a análise aponta um projeto igual, mas a decisão é criar_projeto";
+    if (!analise.investimento) return "a análise diz que não é investimento, mas a decisão é criar_projeto";
+    if (!analise.gera_obra) return "a análise diz que não gera obra, mas a decisão é criar_projeto";
+    if (analise.situacao === "concluido") return "a análise diz concluído, mas a decisão é criar_projeto";
+    if (analise.no_brasil === false) return "a análise diz fora do Brasil, mas a decisão é criar_projeto";
+    if (!saida.projeto) return "criar_projeto precisa do objeto projeto preenchido";
   }
-  return { acao: "descartada" };
+  return null;
+}
+
+/**
+ * Fecha a decisão quando o modelo não resolveu: segue a análise dele.
+ * Devolve a saída ajustada (sempre executável) e o que foi ajustado.
+ */
+function resolverDecisao(saida, { projetos = [], noticia = {} } = {}) {
+  const problema = problemaDaSaida(saida, { projetos });
+  if (!problema) return { saida, ajuste: null };
+  const a = saida.analise;
+  const ids = new Set(projetos.map((p) => String(p.id)));
+  let decisao;
+  let motivo;
+  if (a.mesmo_projeto_id && ids.has(String(a.mesmo_projeto_id))) {
+    decisao = "vincular"; motivo = "mesmo_projeto";
+  } else if (a.investimento && a.gera_obra && a.no_brasil !== false && a.situacao !== "concluido") {
+    decisao = "criar_projeto";
+    motivo = MOTIVOS[saida.motivo]?.decisao === "criar_projeto" ? saida.motivo : "obra_nova";
+  } else {
+    decisao = "descartar";
+    if (MOTIVOS[saida.motivo]?.decisao === "descartar") motivo = saida.motivo;
+    else if (a.no_brasil === false) motivo = "fora_brasil";
+    else if (!a.investimento) motivo = "nao_investimento";
+    else if (a.situacao === "concluido") motivo = "inauguracao_concluido";
+    else motivo = "sem_obra";
+  }
+  const ex = noticia.extracao || {};
+  const projeto = decisao === "criar_projeto"
+    ? saida.projeto || {
+      titulo: String(ex.objeto || noticia.titulo || "projeto").slice(0, 160),
+      objeto: ex.objeto || null, uf: ex.uf || null, municipio: ex.municipio || null,
+      valor_brl: ex.valor_brl ?? null, estagio: ex.estagio || null, data_fato: ex.data_fato || null,
+    }
+    : null;
+  return {
+    saida: {
+      ...saida,
+      decisao,
+      motivo,
+      projeto,
+      analise: decisao === "vincular" ? a : { ...a, mesmo_projeto_id: null },
+    },
+    ajuste: `regra da análise: ${problema}`,
+  };
+}
+
+/** Ação a executar para a decisão final. */
+function acaoDaDecisao(saida, { temMatriz = true } = {}) {
+  if (saida.decisao === "vincular") return { acao: "vinculada", projeto_id: saida.analise.mesmo_projeto_id };
+  if (saida.decisao === "descartar") return { acao: "descartada" };
+  if (!temMatriz) return { acao: "revisao_humana", motivo: "empresa sem CNPJ da matriz: o projeto não pode ser criado" };
+  return { acao: "projeto_criado" };
+}
+
+function mensagem(entrada, correcao) {
+  const base = JSON.stringify(entrada);
+  if (!correcao) return base;
+  return `${base}\n\nSua resposta anterior foi:\n${JSON.stringify(correcao.saida)}\n\nProblema: ${correcao.problema}.\nResponda de novo com o JSON completo e corrigido.`;
 }
 
 function criarAgente({ client, modelo }) {
   return {
     modelo,
-    async decidir(entrada) {
-      const raw = await pedirJson(client, { model: modelo, system: PROMPT, user: JSON.stringify(entrada), maxTokens: 1500 });
+    async decidir(entrada, correcao = null) {
+      const raw = await pedirJson(client, { model: modelo, system: PROMPT, user: mensagem(entrada, correcao), maxTokens: 1500 });
       return lerSaida(raw);
     },
   };
@@ -186,23 +257,42 @@ function agentePadrao() {
   return client ? criarAgente({ client, modelo: config.claudeDecisionModel }) : null;
 }
 
-function limiarPadrao() {
-  const n = Number(process.env.CAPEX_AGENTE_CONFIANCA);
-  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : LIMIAR_PADRAO;
+/**
+ * Pergunta ao agente e garante uma decisão executável: se a primeira resposta
+ * tem problema, pede uma correção; se ainda tiver, resolverDecisao fecha.
+ */
+async function decisaoFinal(agente, entrada, { projetos, noticia }) {
+  const primeira = await agente.decidir(entrada);
+  const problema = problemaDaSaida(primeira, { projetos });
+  if (!problema) return { saida: primeira, ajuste: null };
+  let segunda = null;
+  try {
+    segunda = await agente.decidir(entrada, { saida: primeira, problema });
+  } catch {
+    segunda = null;
+  }
+  if (segunda && !problemaDaSaida(segunda, { projetos })) {
+    return { saida: { ...segunda, correcao: { problema, saida_anterior: primeira } }, ajuste: `corrigida pelo agente: ${problema}` };
+  }
+  const r = resolverDecisao(segunda || primeira, { projetos, noticia });
+  return { saida: { ...r.saida, correcao: { problema, saida_anterior: primeira, ...(segunda ? { segunda_resposta: segunda } : {}) } }, ajuste: r.ajuste };
 }
 
 // ---------------------------------------------------------------------------
 // Banco
 // ---------------------------------------------------------------------------
 
-/** Notícias da fila "A revisar" que o agente ainda não decidiu. */
+// Fila: notícias "A revisar" sem decisão desta versão do prompt. O que a v1
+// deixou para revisão volta para a v2; o que a v1 já executou não está na fila.
+const SEM_DECISAO = `not exists (select 1 from capex_radar.agente_decisao d
+                         where d.evidencia_id = e.id and d.acao <> 'erro' and d.versao_prompt = '${VERSAO_PROMPT}')`;
+
+/** Notícias da fila "A revisar" que esta versão do agente ainda não decidiu. */
 async function filaDoAgente(db, grupoId, limite = 400) {
   const { rows } = await db.query(
     `select e.id, e.titulo, e.veiculo, e.url, e.data_original, e.extracao
        from capex_radar.evidencias e
-      where e.grupo_id = $1 and ${painel.FILTRO_SITUACAO.revisar}
-        and not exists (select 1 from capex_radar.agente_decisao d
-                         where d.evidencia_id = e.id and d.acao <> 'erro')
+      where e.grupo_id = $1 and ${painel.FILTRO_SITUACAO.revisar} and ${SEM_DECISAO}
       order by e.data_original nulls last
       limit $2`,
     [grupoId, limite],
@@ -214,9 +304,7 @@ async function contarFila(db, grupoIds) {
   const { rows } = await db.query(
     `select e.grupo_id, count(*)::int as n
        from capex_radar.evidencias e
-      where e.grupo_id = any($1::uuid[]) and ${painel.FILTRO_SITUACAO.revisar}
-        and not exists (select 1 from capex_radar.agente_decisao d
-                         where d.evidencia_id = e.id and d.acao <> 'erro')
+      where e.grupo_id = any($1::uuid[]) and ${painel.FILTRO_SITUACAO.revisar} and ${SEM_DECISAO}
       group by e.grupo_id`,
     [grupoIds],
   );
@@ -234,6 +322,28 @@ async function projetosParaComparar(db, grupoId) {
       where p.grupo_id = $1 and p.status <> 'descartado'
       order by p.atualizado_em desc
       limit 80`,
+    [grupoId],
+  );
+  return rows;
+}
+
+/** Manchetes do grupo (fora as barradas pelas regras), com a situação de cada. */
+async function manchetesDoGrupo(db, grupoId) {
+  const { rows } = await db.query(
+    `select e.id, e.titulo, e.data_original,
+            case
+              when pv.titulo is not null then 'projeto: ' || pv.titulo
+              when e.triagem = 'descartada' then 'descartada: ' || coalesce(e.triagem_motivo, '')
+              else 'na fila'
+            end as situacao
+       from capex_radar.evidencias e
+       left join lateral (
+         select p.titulo from capex_radar.evidencia_projeto ep
+           join capex_radar.projetos p on p.id = ep.projeto_id
+          where ep.evidencia_id = e.id and ep.situacao = 'aceito' limit 1
+       ) pv on true
+      where e.grupo_id = $1 and e.data_original is not null
+        and coalesce(e.extracao->>'etapa', '') <> 'regras'`,
     [grupoId],
   );
   return rows;
@@ -261,14 +371,14 @@ async function registrar(db, dados) {
   return linha.id;
 }
 
-/** Executa a ação aprovada pelas travas. Devolve o projeto criado ou ligado. */
-async function executarAcao({ db, grupo, noticia, saida, travas, matriz, agente }) {
+/** Executa a decisão final. Devolve o projeto criado ou ligado. */
+async function executarAcao({ grupo, noticia, saida, alvo, matriz, agente }) {
   const vinculo = { confianca: saida.confianca, motivo: saida.justificativa.slice(0, 300), modelo: agente.modelo };
-  if (travas.acao === "vinculada") {
-    await painel.vincularNoticia(noticia.id, travas.projeto_id, { ator: ATOR_AGENTE, origem: "ia", vinculo });
-    return { projeto_id: travas.projeto_id };
+  if (alvo.acao === "vinculada") {
+    await painel.vincularNoticia(noticia.id, alvo.projeto_id, { ator: ATOR_AGENTE, origem: "ia", vinculo });
+    return { projeto_id: alvo.projeto_id };
   }
-  if (travas.acao === "descartada") {
+  if (alvo.acao === "descartada") {
     await painel.descartarNoticia(noticia.id, MOTIVOS[saida.motivo].rotulo, { ator: ATOR_AGENTE, rotulo: "Agente" });
     return {};
   }
@@ -290,44 +400,54 @@ async function executarAcao({ db, grupo, noticia, saida, travas, matriz, agente 
     estagio: p.estagio || (saida.analise.situacao === "em_construcao" ? "mobilizacao" : "anuncio"),
     data_anuncio: dataFato || dia(noticia.data_original),
   }, { ator: ATOR_AGENTE, origem: "ia", status: "em_revisao", vinculo });
-  return { projeto_id: projeto.id, projeto };
+  return { projeto_id: projeto.id, projeto: { ...projeto, uf, municipio, objeto: p.objeto, valor_estimado_brl: p.valor_brl ?? null } };
 }
 
 /**
- * Decide a fila de um grupo. As notícias vão em ordem cronológica e cada
- * projeto criado entra na lista de comparação da próxima, para a segunda
- * notícia do mesmo empreendimento ser vinculada em vez de virar outro projeto.
+ * Decide a fila de um grupo. As notícias vão em ordem cronológica; cada
+ * projeto criado entra na lista de comparação e cada decisão atualiza a
+ * situação das manchetes próximas, para a notícia seguinte do mesmo
+ * empreendimento ser vinculada em vez de virar outro projeto.
  */
-async function decidirGrupo({ db, grupo, agente, limite = 400, limiar = limiarPadrao(), onProgresso = () => {} }) {
+async function decidirGrupo({ db, grupo, agente, limite = 400, onProgresso = () => {} }) {
   const resumo = { grupo: grupo.nome, lidas: 0, projetos_criados: 0, vinculadas: 0, descartadas: 0, revisao_humana: 0, erros: 0 };
   const fila = await filaDoAgente(db, grupo.id, limite);
   if (!fila.length) return resumo;
   const projetos = await projetosParaComparar(db, grupo.id);
+  const manchetes = await manchetesDoGrupo(db, grupo.id);
+  const porId = new Map(manchetes.map((m) => [m.id, m]));
   const matriz = await matrizPrincipal(db, grupo.id);
   for (const noticia of fila) {
-    const entrada = montarEntrada(grupo, noticia, projetos);
+    const entrada = montarEntrada(grupo, noticia, projetos, noticiasProximas(noticia, manchetes));
     const base = { evidencia_id: noticia.id, grupo_id: grupo.id, modelo: agente.modelo, entrada };
     resumo.lidas += 1;
-    let saida;
+    let final;
     try {
-      saida = await agente.decidir(entrada);
+      final = await decisaoFinal(agente, entrada, { projetos, noticia });
     } catch (error) {
       resumo.erros += 1;
       await registrar(db, { ...base, acao: "erro", acao_motivo: String(error.message).slice(0, 300) });
       onProgresso(resumo.lidas, fila.length);
       continue;
     }
-    const travas = aplicarTravas(saida, { projetos, limiar, temMatriz: Boolean(matriz) });
-    let acao = travas.acao;
-    let acaoMotivo = travas.motivo || null;
-    let projetoId = travas.projeto_id || null;
+    const { saida } = final;
+    const alvo = acaoDaDecisao(saida, { temMatriz: Boolean(matriz) });
+    let acao = alvo.acao;
+    let acaoMotivo = [final.ajuste, alvo.motivo].filter(Boolean).join(" · ") || null;
+    let projetoId = alvo.projeto_id || null;
     if (acao !== "revisao_humana") {
       try {
-        const r = await executarAcao({ db, grupo, noticia, saida, travas, matriz, agente });
+        const r = await executarAcao({ grupo, noticia, saida, alvo, matriz, agente });
         projetoId = r.projeto_id || null;
+        const situacaoNova = acao === "descartada"
+          ? `descartada: Agente: ${MOTIVOS[saida.motivo].rotulo}`
+          : `projeto: ${r.projeto?.titulo || projetos.find((p) => String(p.id) === String(projetoId))?.titulo || ""}`;
+        if (porId.has(noticia.id)) porId.get(noticia.id).situacao = situacaoNova;
         if (r.projeto) {
-          projetos.unshift({ ...r.projeto, objeto: saida.projeto.objeto, uf: saida.projeto.uf, municipio: saida.projeto.municipio,
-            estagio: saida.projeto.estagio || "anuncio", noticias: [noticia.titulo] });
+          projetos.unshift({ ...r.projeto, estagio: saida.projeto.estagio || "anuncio", data_anuncio: noticia.data_original, noticias: [noticia.titulo] });
+        } else if (acao === "vinculada") {
+          const p = projetos.find((x) => String(x.id) === String(projetoId));
+          if (p) p.noticias = [...(p.noticias || []), noticia.titulo].slice(-5);
         }
       } catch (error) {
         acao = "erro";
@@ -368,11 +488,12 @@ const ACOES = {
   erro: "Erro",
 };
 
-async function listarDecisoes(db, { avaliacao = "pendentes", acao = "", grupoId = null, id = null, limite = 100 } = {}) {
+async function listarDecisoes(db, { avaliacao = "pendentes", acao = "", grupoId = null, versao = null, id = null, limite = 100 } = {}) {
   const filtros = [id ? "d.id = $1" : FILTRO_AVALIACAO[avaliacao] || FILTRO_AVALIACAO.pendentes];
   const params = id ? [id] : [];
   if (!id && ACOES[acao]) { params.push(acao); filtros.push(`d.acao = $${params.length}`); }
   if (!id && grupoId) { params.push(grupoId); filtros.push(`d.grupo_id = $${params.length}`); }
+  if (!id && versao) { params.push(versao); filtros.push(`d.versao_prompt = $${params.length}`); }
   params.push(limite);
   const { rows } = await db.query(
     `select d.*, g.nome as grupo, e.titulo, e.url, e.veiculo, e.data_original, e.triagem,
@@ -389,7 +510,12 @@ async function listarDecisoes(db, { avaliacao = "pendentes", acao = "", grupoId 
   return rows;
 }
 
-async function resumoDecisoes(db) {
+async function versoesDoPrompt(db) {
+  const { rows } = await db.query("select distinct versao_prompt from capex_radar.agente_decisao order by 1 desc");
+  return rows.map((r) => r.versao_prompt);
+}
+
+async function resumoDecisoes(db, { versao = null } = {}) {
   const { rows: [r] } = await db.query(
     `select count(*)::int as total,
             count(*) filter (where acao = 'projeto_criado')::int as projeto_criado,
@@ -400,7 +526,9 @@ async function resumoDecisoes(db) {
             count(*) filter (where avaliacao is not null)::int as avaliadas,
             count(*) filter (where avaliacao = 'correta')::int as corretas,
             count(*) filter (where avaliacao = 'incorreta')::int as incorretas
-       from capex_radar.agente_decisao`,
+       from capex_radar.agente_decisao
+      where $1::text is null or versao_prompt = $1`,
+    [versao],
   );
   return r;
 }
@@ -517,23 +645,27 @@ async function exportarTreino(db, { incluirPendentes = false } = {}) {
 module.exports = {
   ATOR_AGENTE,
   VERSAO_PROMPT,
-  LIMIAR_PADRAO,
   MOTIVOS,
   ACOES,
   AVALIACOES,
   PROMPT,
+  noticiasProximas,
   montarEntrada,
   lerSaida,
-  aplicarTravas,
+  problemaDaSaida,
+  resolverDecisao,
+  acaoDaDecisao,
+  decisaoFinal,
   criarAgente,
   agentePadrao,
-  limiarPadrao,
   filaDoAgente,
+  manchetesDoGrupo,
   projetosParaComparar,
   contarFila,
   decidirGrupo,
   listarDecisoes,
   resumoDecisoes,
+  versoesDoPrompt,
   desfazerDecisao,
   avaliarDecisao,
   exemploDeTreino,

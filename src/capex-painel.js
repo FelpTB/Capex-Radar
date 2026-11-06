@@ -788,7 +788,7 @@ function cardDecisao(d) {
     ${saida.analise ? `<p class="news-card__hint">Investimento: ${sinal(analise.investimento)} · gera obra: ${sinal(analise.gera_obra)} · situação: ${esc(SITUACAO_OBRA_ROTULO[analise.situacao] || "—")} · no Brasil: ${sinal(analise.no_brasil)}${mesmo ? ` · mesmo projeto: ${esc(mesmo)}` : ""}</p>` : ""}
     ${proposto}
     ${projeto}
-    ${d.acao_motivo ? `<p class="news-card__hint">${d.acao === "erro" ? "Erro" : "Trava"}: ${esc(d.acao_motivo)}</p>` : ""}
+    ${d.acao_motivo ? `<p class="news-card__hint">${d.acao === "erro" ? "Erro" : "Ajuste"}: ${esc(d.acao_motivo)}</p>` : ""}
     ${avaliado || formAvaliacao(d)}
   </article>`;
 }
@@ -803,7 +803,7 @@ function contagensAgente(r) {
   };
 }
 
-function paginaAgente({ resumo, decisoes, filtros, grupos, fila, totalProjetos, notice = "", job = null, limiar, modelo, temChave }) {
+function paginaAgente({ resumo, decisoes, filtros, grupos, fila, totalProjetos, notice = "", job = null, modelo, temChave, versoes = [] }) {
   const c = contagensAgente(resumo);
   const rodar = temChave
     ? `<button class="button js-triar" type="button" data-grupo="" data-modo="agente">Rodar o agente${fila ? ` (${fila} na fila)` : ""}</button>`
@@ -812,6 +812,7 @@ function paginaAgente({ resumo, decisoes, filtros, grupos, fila, totalProjetos, 
     avaliacao: Object.entries(agente.AVALIACOES),
     acao: [["", "Todas as ações"], ...Object.entries(agente.ACOES)],
     grupo: [["", "Todas as empresas"], ...grupos.map((g) => [g.id, g.nome])],
+    versao: [["", "Todas as versões"], ...versoes.map((v) => [v, v])],
   };
   const lista = decisoes.length
     ? decisoes.map(cardDecisao).join("")
@@ -826,7 +827,7 @@ function paginaAgente({ resumo, decisoes, filtros, grupos, fila, totalProjetos, 
         <div>
           <p class="eyebrow">Teste de monitoramento · triagem automática</p>
           <h1>Agente de triagem</h1>
-          <p>O agente lê a fila "A revisar" e cria o projeto, liga a um projeto existente ou descarta. Abaixo de ${limiar}% de confiança, ou com análise incoerente, a notícia fica para você. Avalie as decisões: elas formam o conjunto de treino.</p>
+          <p>O agente lê a fila "A revisar" e decide cada notícia: cria o projeto, liga a um projeto existente ou descarta. A avaliação é sobre a decisão final dele e forma o conjunto de treino.</p>
         </div>
         ${rodar}
       </section>
@@ -844,6 +845,7 @@ function paginaAgente({ resumo, decisoes, filtros, grupos, fila, totalProjetos, 
         <div><label>Avaliação</label><select name="avaliacao">${selectOptions(opcoes.avaliacao, filtros.avaliacao)}</select></div>
         <div><label>Ação</label><select name="acao">${selectOptions(opcoes.acao, filtros.acao || "")}</select></div>
         <div><label>Empresa</label><select name="grupo">${selectOptions(opcoes.grupo, filtros.grupo || "")}</select></div>
+        <div><label>Versão do prompt</label><select name="versao">${selectOptions(opcoes.versao, filtros.versao || "")}</select></div>
         <div class="source-filters__actions"><noscript><button class="button button--small" type="submit">Filtrar</button></noscript></div>
         <p class="source-filters__count muted">${decisoes.length} decisão(ões) neste filtro${decisoes.length >= 100 ? " (as 100 mais recentes)" : ""}.</p>
       </form>
@@ -983,13 +985,15 @@ function registrarMonitoramento(app) {
       avaliacao: agente.AVALIACOES[req.query.avaliacao] ? req.query.avaliacao : "pendentes",
       acao: agente.ACOES[req.query.acao] ? req.query.acao : "",
       grupo: uuid.safeParse(req.query.grupo).success ? req.query.grupo : "",
+      versao: /^agente-v\d+$/.test(req.query.versao || "") ? req.query.versao : "",
     };
     const grupos = await painel.resumoGrupos();
-    const [resumo, decisoes, fila, projetos] = await Promise.all([
-      agente.resumoDecisoes(pool),
-      agente.listarDecisoes(pool, { avaliacao: filtros.avaliacao, acao: filtros.acao, grupoId: filtros.grupo || null }),
+    const [resumo, decisoes, fila, projetos, versoes] = await Promise.all([
+      agente.resumoDecisoes(pool, { versao: filtros.versao || null }),
+      agente.listarDecisoes(pool, { avaliacao: filtros.avaliacao, acao: filtros.acao, grupoId: filtros.grupo || null, versao: filtros.versao || null }),
       agente.contarFila(pool, grupos.map((g) => g.id)),
       painel.carteira(),
+      agente.versoesDoPrompt(pool),
     ]);
     const { getConfig } = require("./config");
     const config = getConfig();
@@ -999,7 +1003,7 @@ function registrarMonitoramento(app) {
       totalProjetos: projetos.length,
       notice: aviso(req),
       job: triagem.triagemAtiva(),
-      limiar: agente.limiarPadrao(),
+      versoes,
       modelo: config.claudeDecisionModel,
       temChave: Boolean(config.claudeApiKey),
     }));
