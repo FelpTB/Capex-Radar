@@ -25,11 +25,11 @@ const FILTRO_SITUACAO = {
   todas: "true",
 };
 
-async function emTransacao(trabalho) {
+async function emTransacao(trabalho, ator = ATOR) {
   const client = await pool.connect();
   try {
     await client.query("begin");
-    await client.query("select set_config('capex_radar.ator', $1, true)", [ATOR]);
+    await client.query("select set_config('capex_radar.ator', $1, true)", [ator]);
     const resultado = await trabalho(client);
     await client.query("commit");
     return resultado;
@@ -67,7 +67,9 @@ async function listarNoticias({ grupoId = null, situacao = "revisar", limite = 1
     `select e.id, e.titulo, e.url, e.veiculo, e.data_original, e.triagem, e.triagem_motivo,
             e.extracao, g.id as grupo_id, g.nome as grupo, g.nicho,
             sug.projeto_id as sugerido_projeto_id, sug.projeto_titulo as sugerido_projeto,
-            sug.confianca as sugerido_confianca
+            sug.confianca as sugerido_confianca,
+            ag.decisao as agente_decisao, ag.motivo as agente_motivo, ag.confianca as agente_confianca,
+            ag.acao as agente_acao, ag.acao_motivo as agente_trava
        from capex_radar.evidencias e
        join capex_radar.grupos g on g.id = e.grupo_id
        left join lateral (
@@ -78,6 +80,13 @@ async function listarNoticias({ grupoId = null, situacao = "revisar", limite = 1
           order by ep.confianca desc nulls last
           limit 1
        ) sug on true
+       left join lateral (
+         select d.decisao, d.motivo, d.confianca, d.acao, d.acao_motivo
+           from capex_radar.agente_decisao d
+          where d.evidencia_id = e.id
+          order by d.criado_em desc
+          limit 1
+       ) ag on true
       where ($1::uuid is null or e.grupo_id = $1) and ${filtro}
       order by e.data_original desc nulls last
       limit $2`,
@@ -145,6 +154,15 @@ async function restaurarNoticia(evidenciaId) {
         where id = $1 and triagem = 'descartada'`,
       [evidenciaId],
     );
+    // Desfazer um descarte do agente pelo card conta como avaliação: estava errado.
+    await client.query(
+      `update capex_radar.agente_decisao
+          set desfeita = true,
+              avaliacao = coalesce(avaliacao, 'incorreta'),
+              avaliado_por = coalesce(avaliado_por, $2), avaliado_em = coalesce(avaliado_em, now())
+        where evidencia_id = $1 and acao = 'descartada' and not desfeita`,
+      [evidenciaId, `${ATOR} (desfez)`],
+    ).catch((error) => { if (error.code !== "42P01") throw error; });
   });
 }
 
@@ -233,6 +251,22 @@ async function obterNoticia(id) {
   };
 }
 
+// Quando a revisão humana decide uma notícia que o agente deixou para ela,
+// a decisão humana vira o rótulo da decisão do agente (conjunto de treino).
+async function rotularPelaRevisao(client, evidenciaId, decisaoHumana, motivo = null) {
+  await client.query(
+    `update capex_radar.agente_decisao
+        set avaliacao = case when decisao = $2 then 'correta' else 'incorreta' end,
+            decisao_correta = $2, motivo_correto = $3,
+            avaliado_por = $4, avaliado_em = now()
+      where evidencia_id = $1 and acao = 'revisao_humana' and avaliacao is null`,
+    [evidenciaId, decisaoHumana, motivo, `${ATOR} (revisão)`],
+  ).catch((error) => {
+    // Sem a migração 022 a tabela não existe; a revisão segue normalmente.
+    if (error.code !== "42P01") throw error;
+  });
+}
+
 async function marcarVinculada(client, evidenciaId) {
   await client.query(
     "update capex_radar.evidencias set triagem = 'vinculada' where id = $1",
@@ -240,8 +274,11 @@ async function marcarVinculada(client, evidenciaId) {
   );
 }
 
-/** Cria o projeto a partir da notícia e aceita o vínculo na mesma transação. */
-async function criarProjetoDaNoticia(evidenciaId, dados) {
+/**
+ * Cria o projeto a partir da notícia e aceita o vínculo na mesma transação.
+ * O agente passa ator, origem 'ia', status 'em_revisao' e os dados do vínculo.
+ */
+async function criarProjetoDaNoticia(evidenciaId, dados, { ator = ATOR, origem = "manual", status = "ativo", vinculo = {} } = {}) {
   return emTransacao(async (client) => {
     const { rows: [noticia] } = await client.query(
       "select id, grupo_id from capex_radar.evidencias where id = $1 for update",
@@ -251,32 +288,33 @@ async function criarProjetoDaNoticia(evidenciaId, dados) {
     const { rows: [projeto] } = await client.query(
       `insert into capex_radar.projetos
          (titulo, grupo_id, matriz_cnpj, filial_cnpj, uf, municipio, objeto,
-          valor_estimado_brl, fonte_valor, estagio, data_anuncio, evidencia_primaria_id)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          valor_estimado_brl, fonte_valor, estagio, data_anuncio, evidencia_primaria_id, status)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        returning id, titulo`,
       [dados.titulo, noticia.grupo_id, dados.matriz_cnpj, dados.filial_cnpj || null,
         dados.uf || null, dados.municipio || null, dados.objeto || null,
         dados.valor_estimado_brl ?? null, dados.valor_estimado_brl ? "noticia" : null,
-        dados.estagio, dados.data_anuncio || null, evidenciaId],
+        dados.estagio, dados.data_anuncio || null, evidenciaId, status],
     );
     await client.query(
       `insert into capex_radar.evidencia_projeto
-         (evidencia_id, projeto_id, origem, situacao, revisado_por, revisado_em)
-       values ($1, $2, 'manual', 'aceito', $3, now())`,
-      [evidenciaId, projeto.id, ATOR],
+         (evidencia_id, projeto_id, origem, situacao, confianca, motivo, modelo, revisado_por, revisado_em)
+       values ($1, $2, $3, 'aceito', $4, $5, $6, $7, now())`,
+      [evidenciaId, projeto.id, origem, vinculo.confianca ?? null, vinculo.motivo ?? null, vinculo.modelo ?? null, ator],
     );
     await client.query(
       `update capex_radar.evidencia_projeto set situacao = 'rejeitado', revisado_por = $2, revisado_em = now()
         where evidencia_id = $1 and situacao = 'sugerido'`,
-      [evidenciaId, ATOR],
+      [evidenciaId, ator],
     );
     await marcarVinculada(client, evidenciaId);
+    if (ator === ATOR) await rotularPelaRevisao(client, evidenciaId, "criar_projeto");
     return projeto;
-  });
+  }, ator);
 }
 
 /** Liga a notícia a um projeto do mesmo grupo (aceita a sugestão, se houver). */
-async function vincularNoticia(evidenciaId, projetoId) {
+async function vincularNoticia(evidenciaId, projetoId, { ator = ATOR, origem = "manual", vinculo = {} } = {}) {
   return emTransacao(async (client) => {
     const { rows } = await client.query(
       `select p.id from capex_radar.projetos p
@@ -287,14 +325,20 @@ async function vincularNoticia(evidenciaId, projetoId) {
     if (!rows.length) throw new Error("O projeto não é da mesma empresa da notícia.");
     await client.query(
       `insert into capex_radar.evidencia_projeto
-         (evidencia_id, projeto_id, origem, situacao, revisado_por, revisado_em)
-       values ($1, $2, 'manual', 'aceito', $3, now())
+         (evidencia_id, projeto_id, origem, situacao, confianca, motivo, modelo, revisado_por, revisado_em)
+       values ($1, $2, $3, 'aceito', $4, $5, $6, $7, now())
        on conflict (evidencia_id, projeto_id) do update
          set situacao = 'aceito', revisado_por = excluded.revisado_por, revisado_em = now()`,
-      [evidenciaId, projetoId, ATOR],
+      [evidenciaId, projetoId, origem, vinculo.confianca ?? null, vinculo.motivo ?? null, vinculo.modelo ?? null, ator],
+    );
+    await client.query(
+      `update capex_radar.evidencia_projeto set situacao = 'rejeitado', revisado_por = $3, revisado_em = now()
+        where evidencia_id = $1 and projeto_id <> $2 and situacao = 'sugerido'`,
+      [evidenciaId, projetoId, ator],
     );
     await marcarVinculada(client, evidenciaId);
-  });
+    if (ator === ATOR) await rotularPelaRevisao(client, evidenciaId, "vincular");
+  }, ator);
 }
 
 /** Rejeita a sugestão da IA; a notícia volta como possível projeto novo. */
@@ -315,18 +359,19 @@ async function rejeitarSugestao(evidenciaId, projetoId) {
   });
 }
 
-async function descartarNoticia(evidenciaId, motivo) {
+async function descartarNoticia(evidenciaId, motivo, { ator = ATOR, rotulo = "Revisão" } = {}) {
   return emTransacao(async (client) => {
     await client.query(
       `update capex_radar.evidencias set triagem = 'descartada', triagem_motivo = $2 where id = $1`,
-      [evidenciaId, `Revisão: ${motivo || "não é projeto"}`],
+      [evidenciaId, `${rotulo}: ${motivo || "não é projeto"}`],
     );
     await client.query(
       `update capex_radar.evidencia_projeto set situacao = 'rejeitado', revisado_por = $2, revisado_em = now()
         where evidencia_id = $1 and situacao = 'sugerido'`,
-      [evidenciaId, ATOR],
+      [evidenciaId, ator],
     );
-  });
+    if (ator === ATOR) await rotularPelaRevisao(client, evidenciaId, "descartar", motivo || null);
+  }, ator);
 }
 
 // Projetos da carteira. Os descartados ficam fora, a não ser que sejam pedidos.
@@ -384,6 +429,8 @@ async function excluirProjeto(id) {
 module.exports = {
   ATOR,
   SITUACOES,
+  FILTRO_SITUACAO,
+  emTransacao,
   resumoGrupos,
   listarNoticias,
   noticiaDoCard,

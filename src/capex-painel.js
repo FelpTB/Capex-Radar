@@ -14,6 +14,7 @@ const { buscaDoGrupo } = require("./capex-busca");
 const { googleNewsUrl } = require("./news-queries");
 const { ESTAGIOS, iaPadrao } = require("./capex-ia");
 const triagem = require("./capex-triagem-jobs");
+const agente = require("./capex-agente");
 const { esc, money, badge, selectOptions, layout } = require("./html");
 
 const NICHOS = {
@@ -99,6 +100,7 @@ function abas(ativa, totalProjetos) {
     ${aba("noticias", "/monitoramento", "Notícias")}
     ${aba("buscas", "/monitoramento/buscas", "Buscas")}
     ${aba("carteira", "/monitoramento/carteira", `Carteira (${totalProjetos})`)}
+    ${aba("agente", "/monitoramento/agente", "Agente")}
   </nav>`;
 }
 
@@ -152,15 +154,16 @@ function cardNoticia(noticia) {
     ${leitura ? `<p class="news-card__reading">${esc(leitura)}</p>` : ""}
     ${motivoIa ? `<p class="news-card__why">IA: ${esc(motivoIa)}</p>` : ""}
     ${sugestao}
+    ${linhaAgente(noticia)}
     ${acoesCard(noticia)}
   </article>`;
 }
 
-function barraTriagem(job) {
+function barraTriagem(job, rotulo = "Triagem da IA") {
   const ativo = job && job.status === "rodando";
   return `<section class="triage-progress${ativo ? "" : " is-hidden"}" id="triagem-progresso" data-job="${ativo ? job.id : ""}" aria-live="polite">
     <div class="triage-progress__head">
-      <strong>Triagem da IA</strong>
+      <strong>${ativo && job.modo === "agente" ? "Agente" : rotulo}</strong>
       <span class="js-triagem-texto">${ativo ? `${job.feitas} de ${job.total} · ${esc(job.grupo_atual || job.escopo)}` : ""}</span>
     </div>
     <div class="progress"><div class="progress__bar js-triagem-barra" style="width:${ativo ? job.percentual : 0}%"></div></div>
@@ -683,6 +686,171 @@ const projetoSchema = z.object({
   data_anuncio: z.preprocess(vazioParaNull, z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable()),
 });
 
+// ---------------------------------------------------------------------------
+// Agente: decisões automáticas e avaliação para o conjunto de treino
+// ---------------------------------------------------------------------------
+
+const DECISAO_ROTULO = {
+  criar_projeto: "Criar projeto",
+  vincular: "Vincular a projeto existente",
+  descartar: "Descartar",
+  revisar: "Revisão humana",
+};
+
+const ACAO_TIPO = {
+  projeto_criado: "success",
+  vinculada: "info",
+  descartada: "danger",
+  revisao_humana: "warning",
+  erro: "danger",
+};
+
+const SITUACAO_OBRA_ROTULO = {
+  anunciado: "anunciado",
+  em_construcao: "em construção",
+  concluido: "concluído",
+  incerto: "incerto",
+};
+
+function sinal(valor) {
+  if (valor === true) return "sim";
+  if (valor === false) return "não";
+  return "—";
+}
+
+// Linha com a sugestão do agente no card da notícia (quando ele deixou para a revisão).
+function linhaAgente(noticia) {
+  if (noticia.agente_acao !== "revisao_humana" || !noticia.agente_decisao) return "";
+  const motivo = agente.MOTIVOS[noticia.agente_motivo]?.rotulo || noticia.agente_motivo || "";
+  return `<p class="news-card__agent">Agente: <strong>${esc(DECISAO_ROTULO[noticia.agente_decisao] || noticia.agente_decisao)}</strong>${noticia.agente_confianca != null ? ` (${noticia.agente_confianca}%)` : ""}${motivo ? ` · ${esc(motivo)}` : ""}${noticia.agente_trava ? ` · deixou para você: ${esc(noticia.agente_trava)}` : ""}</p>`;
+}
+
+function formAvaliacao(d) {
+  const base = `/monitoramento/agente/${d.id}/avaliar`;
+  const podeDesfazer = ["projeto_criado", "vinculada", "descartada"].includes(d.acao) && !d.desfeita;
+  const motivos = [["", "motivo (opcional)"], ...Object.entries(agente.MOTIVOS)
+    .filter(([, m]) => m.decisao !== "revisar")
+    .map(([codigo, m]) => [codigo, m.rotulo])];
+  const decisoes = Object.entries(DECISAO_ROTULO).filter(([k]) => k !== "revisar" && k !== d.decisao);
+  return `<div class="news-card__actions">
+    <form class="js-acao" method="post" action="${base}">
+      <input type="hidden" name="avaliacao" value="correta">
+      <button class="button button--small" type="submit">Correta</button>
+    </form>
+    <details class="agent-wrong">
+      <summary class="button button--small button--secondary">Incorreta…</summary>
+      <form class="js-acao agent-wrong__form" method="post" action="${base}">
+        <input type="hidden" name="avaliacao" value="incorreta">
+        <label>O certo era<select name="decisao_correta">${selectOptions(decisoes)}</select></label>
+        <label>Motivo<select name="motivo_correto">${selectOptions(motivos)}</select></label>
+        <label>Observação<input name="observacao" maxlength="600" placeholder="por que o agente errou (opcional)"></label>
+        ${podeDesfazer ? `<label class="checkbox"><input type="checkbox" name="desfazer" value="1" checked> Desfazer a ação do agente e devolver a notícia para a revisão</label>` : ""}
+        <button class="button button--small button--danger" type="submit">Salvar avaliação</button>
+      </form>
+    </details>
+    ${d.acao === "revisao_humana" && d.evidencia_id ? `<a class="news-card__more" href="/monitoramento/noticias/${d.evidencia_id}">decidir a notícia →</a>` : ""}
+  </div>`;
+}
+
+function cardDecisao(d) {
+  const saida = d.saida || {};
+  const analise = saida.analise || {};
+  const motivo = agente.MOTIVOS[d.motivo]?.rotulo || d.motivo || "";
+  const titulo = d.url
+    ? `<a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.titulo || d.entrada?.noticia?.titulo || "")}</a>`
+    : esc(d.titulo || d.entrada?.noticia?.titulo || "(notícia excluída)");
+  const projeto = d.projeto_id && d.projeto_titulo
+    ? `<p class="news-card__hint">Projeto: <a href="/monitoramento/projetos/${d.projeto_id}">${esc(d.projeto_titulo)}</a>${d.projeto_status === "em_revisao" ? ` ${badge("em revisão", "warning")}` : ""}</p>`
+    : "";
+  const proposto = saida.projeto && d.decisao === "criar_projeto"
+    ? `<p class="news-card__reading">${esc([saida.projeto.titulo, local(saida.projeto.uf, saida.projeto.municipio),
+      saida.projeto.valor_brl ? money(saida.projeto.valor_brl) : "", ESTAGIO_ROTULO[saida.projeto.estagio] || ""].filter(Boolean).join(" · "))}</p>`
+    : "";
+  const mesmo = analise.mesmo_projeto_id
+    ? (d.entrada?.projetos || []).find((p) => String(p.id) === String(analise.mesmo_projeto_id))?.titulo || analise.mesmo_projeto_id
+    : "";
+  const avaliado = d.avaliacao
+    ? `<div class="news-card__done">${badge(d.avaliacao === "correta" ? "avaliada: correta" : "avaliada: incorreta", d.avaliacao === "correta" ? "success" : "danger")}
+        <span class="muted">${d.avaliacao === "incorreta" && d.decisao_correta ? `o certo era ${esc(DECISAO_ROTULO[d.decisao_correta])}${d.motivo_correto ? ` (${esc(agente.MOTIVOS[d.motivo_correto]?.rotulo || d.motivo_correto)})` : ""}` : ""}${d.observacao ? ` · ${esc(d.observacao)}` : ""}${d.desfeita ? " · ação desfeita" : ""} · ${esc(d.avaliado_por || "")}</span></div>`
+    : "";
+  return `<article class="news-card news-card--agente" id="decisao-${d.id}" data-id="${d.id}">
+    <div class="news-card__meta">
+      ${badge(agente.ACOES[d.acao] || d.acao, ACAO_TIPO[d.acao] || "neutral")}
+      ${d.confianca != null ? `<span>${d.confianca}% de confiança</span>` : ""}
+      <span>${esc(dia(d.data_original || d.entrada?.noticia?.data))}</span>
+      <span>${esc(d.veiculo || d.entrada?.noticia?.veiculo || "")}</span>
+      <span>${esc(d.grupo || "")}</span>
+      <span class="news-card__more muted">${esc(d.modelo)} · ${esc(d.versao_prompt)} · ${esc(diaHora(d.criado_em))}</span>
+    </div>
+    <h3 class="news-card__title">${titulo}</h3>
+    ${d.decisao ? `<p class="news-card__reading">${esc(DECISAO_ROTULO[d.decisao])}${motivo ? ` · ${esc(motivo)}` : ""}</p>` : ""}
+    ${saida.justificativa ? `<p class="news-card__why">${esc(saida.justificativa)}</p>` : ""}
+    ${saida.analise ? `<p class="news-card__hint">Investimento: ${sinal(analise.investimento)} · gera obra: ${sinal(analise.gera_obra)} · situação: ${esc(SITUACAO_OBRA_ROTULO[analise.situacao] || "—")} · no Brasil: ${sinal(analise.no_brasil)}${mesmo ? ` · mesmo projeto: ${esc(mesmo)}` : ""}</p>` : ""}
+    ${proposto}
+    ${projeto}
+    ${d.acao_motivo ? `<p class="news-card__hint">${d.acao === "erro" ? "Erro" : "Trava"}: ${esc(d.acao_motivo)}</p>` : ""}
+    ${avaliado || formAvaliacao(d)}
+  </article>`;
+}
+
+function contagensAgente(r) {
+  const pct = r.avaliadas ? Math.round((r.corretas / r.avaliadas) * 100) : null;
+  return {
+    ag_total: r.total,
+    ag_pendentes: r.total - r.avaliadas,
+    ag_avaliadas: r.avaliadas,
+    ag_acerto: pct == null ? "—" : `${pct}%`,
+  };
+}
+
+function paginaAgente({ resumo, decisoes, filtros, grupos, fila, totalProjetos, notice = "", job = null, limiar, modelo, temChave }) {
+  const c = contagensAgente(resumo);
+  const rodar = temChave
+    ? `<button class="button js-triar" type="button" data-grupo="" data-modo="agente">Rodar o agente${fila ? ` (${fila} na fila)` : ""}</button>`
+    : `<span class="muted">CLAUDE_API_KEY não configurada</span>`;
+  const opcoes = {
+    avaliacao: Object.entries(agente.AVALIACOES),
+    acao: [["", "Todas as ações"], ...Object.entries(agente.ACOES)],
+    grupo: [["", "Todas as empresas"], ...grupos.map((g) => [g.id, g.nome])],
+  };
+  const lista = decisoes.length
+    ? decisoes.map(cardDecisao).join("")
+    : `<div class="empty"><h2>Nenhuma decisão neste filtro</h2><p>${resumo.total ? "Troque o filtro acima." : "Rode o agente para ele decidir a fila de notícias."}</p></div>`;
+  return layout({
+    title: "Agente",
+    active: "monitoramento",
+    scripts: SCRIPT,
+    body: `
+      ${notice}
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">Teste de monitoramento · triagem automática</p>
+          <h1>Agente de triagem</h1>
+          <p>O agente lê a fila "A revisar" e cria o projeto, liga a um projeto existente ou descarta. Abaixo de ${limiar}% de confiança, ou com análise incoerente, a notícia fica para você. Avalie as decisões: elas formam o conjunto de treino.</p>
+        </div>
+        ${rodar}
+      </section>
+      ${abas("agente", totalProjetos)}
+      ${barraTriagem(job, "Agente")}
+      <section class="stats">
+        <div><strong data-stat="ag_total">${c.ag_total}</strong><span>Decisões do agente</span></div>
+        <div><strong data-stat="ag_pendentes">${c.ag_pendentes}</strong><span>Sem avaliação</span></div>
+        <div><strong data-stat="ag_avaliadas">${c.ag_avaliadas}</strong><span>Avaliadas</span></div>
+        <div><strong data-stat="ag_acerto">${c.ag_acerto}</strong><span>Acerto nas avaliadas</span></div>
+      </section>
+      <p class="muted">${resumo.projeto_criado} projetos criados · ${resumo.vinculada} vinculadas · ${resumo.descartada} descartadas · ${resumo.revisao_humana} para revisão humana${resumo.erro ? ` · ${resumo.erro} com erro` : ""} · modelo ${esc(modelo)} · prompt ${esc(agente.VERSAO_PROMPT)} ·
+        <a href="/monitoramento/agente/treino.jsonl">baixar conjunto de treino (JSONL)</a></p>
+      <form class="source-filters js-filtros" method="get" action="/monitoramento/agente">
+        <div><label>Avaliação</label><select name="avaliacao">${selectOptions(opcoes.avaliacao, filtros.avaliacao)}</select></div>
+        <div><label>Ação</label><select name="acao">${selectOptions(opcoes.acao, filtros.acao || "")}</select></div>
+        <div><label>Empresa</label><select name="grupo">${selectOptions(opcoes.grupo, filtros.grupo || "")}</select></div>
+        <div class="source-filters__actions"><noscript><button class="button button--small" type="submit">Filtrar</button></noscript></div>
+        <p class="source-filters__count muted">${decisoes.length} decisão(ões) neste filtro${decisoes.length >= 100 ? " (as 100 mais recentes)" : ""}.</p>
+      </form>
+      <section class="news-list">${lista}</section>`,
+  });
+}
+
 function querJson(req) {
   return (req.get("accept") || "").includes("application/json");
 }
@@ -805,7 +973,63 @@ function registrarMonitoramento(app) {
     const grupoId = uuid.safeParse(req.body.grupo_id).success ? req.body.grupo_id : null;
     const ia = iaPadrao();
     if (!ia) return res.status(422).json({ ok: false, mensagem: "CLAUDE_API_KEY não configurada: a triagem precisa da IA." });
-    res.json({ ok: true, job: await triagem.iniciarTriagem({ grupoId, ia }) });
+    const comAgente = req.body.modo === "agente" ? agente.agentePadrao() : null;
+    res.json({ ok: true, job: await triagem.iniciarTriagem({ grupoId, ia, agente: comAgente }) });
+  });
+
+  // Agente: decisões, avaliação e conjunto de treino.
+  app.get("/monitoramento/agente", async (req, res) => {
+    const filtros = {
+      avaliacao: agente.AVALIACOES[req.query.avaliacao] ? req.query.avaliacao : "pendentes",
+      acao: agente.ACOES[req.query.acao] ? req.query.acao : "",
+      grupo: uuid.safeParse(req.query.grupo).success ? req.query.grupo : "",
+    };
+    const grupos = await painel.resumoGrupos();
+    const [resumo, decisoes, fila, projetos] = await Promise.all([
+      agente.resumoDecisoes(pool),
+      agente.listarDecisoes(pool, { avaliacao: filtros.avaliacao, acao: filtros.acao, grupoId: filtros.grupo || null }),
+      agente.contarFila(pool, grupos.map((g) => g.id)),
+      painel.carteira(),
+    ]);
+    const { getConfig } = require("./config");
+    const config = getConfig();
+    res.send(paginaAgente({
+      resumo, decisoes, filtros, grupos,
+      fila: [...fila.values()].reduce((t, n) => t + n, 0),
+      totalProjetos: projetos.length,
+      notice: aviso(req),
+      job: triagem.triagemAtiva(),
+      limiar: agente.limiarPadrao(),
+      modelo: config.claudeDecisionModel,
+      temChave: Boolean(config.claudeApiKey),
+    }));
+  });
+
+  app.post("/monitoramento/agente/:id/avaliar", async (req, res) => {
+    const id = uuid.parse(req.params.id);
+    const mensagemOk = req.body.avaliacao === "correta" ? "Decisão marcada como correta." : "Avaliação salva.";
+    try {
+      await agente.avaliarDecisao(id, {
+        avaliacao: req.body.avaliacao,
+        decisao_correta: req.body.decisao_correta || null,
+        motivo_correto: req.body.motivo_correto || null,
+        observacao: req.body.observacao || null,
+        desfazer: req.body.desfazer === "1",
+      });
+    } catch (error) {
+      if (!querJson(req)) throw error;
+      return res.status(422).json({ ok: false, mensagem: error.message });
+    }
+    if (!querJson(req)) return res.redirect(`/monitoramento/agente?message=${encodeURIComponent(mensagemOk)}`);
+    const [[decisao], resumo] = await Promise.all([agente.listarDecisoes(pool, { id, limite: 1 }), agente.resumoDecisoes(pool)]);
+    res.json({ ok: true, mensagem: mensagemOk, card: decisao ? cardDecisao(decisao) : "", contagens: contagensAgente(resumo) });
+  });
+
+  app.get("/monitoramento/agente/treino.jsonl", async (req, res) => {
+    const exemplos = await agente.exportarTreino(pool, { incluirPendentes: req.query.todas === "1" });
+    res.set("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.set("Content-Disposition", `attachment; filename="capex-agente-treino-${new Date().toISOString().slice(0, 10)}.jsonl"`);
+    res.send(exemplos.map((e) => JSON.stringify(e)).join("\n") + (exemplos.length ? "\n" : ""));
   });
 
   app.get("/monitoramento/triagem/:id", (req, res) => {
@@ -895,6 +1119,9 @@ module.exports = {
   paginaNoticia,
   paginaBuscas,
   paginaCarteira,
+  paginaAgente,
+  cardDecisao,
+  linhaAgente,
   filtrosCarteira,
   filtrarCarteira,
   localProjeto,

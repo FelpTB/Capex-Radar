@@ -5,6 +5,7 @@ const { applyYieldDecisions, retireStaleSources } = require("./source-lifecycle"
 const { DIARIOS_PDF, syncDoePdf } = require("./enrichment/doe-pdf");
 const capexColetor = require("./capex-coletor");
 const { iaPadrao } = require("./capex-ia");
+const capexAgente = require("./capex-agente");
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const SCAN_MS = WEEK_MS;
@@ -70,12 +71,23 @@ async function runCapexWeekly() {
   try {
     const grupos = await capexColetor.gruposVencidos(client, await capexColetor.carregarGrupos(client));
     if (!grupos.length) return null;
-    return await capexColetor.coletarGrupos({
+    const resultado = await capexColetor.coletarGrupos({
       client,
       grupos,
       ...capexColetor.janelaSemanal(),
       ia: iaPadrao(),
     });
+    // Triagem automática: o agente decide a fila das empresas coletadas.
+    // CAPEX_AGENTE_AUTO=0 desliga e deixa tudo para a revisão na tela.
+    const agente = /^(0|false|no|off)$/i.test(process.env.CAPEX_AGENTE_AUTO?.trim() || "") ? null : capexAgente.agentePadrao();
+    if (agente) {
+      resultado.agente = [];
+      const coletados = new Set(resultado.coleta.map((c) => c.grupo));
+      for (const grupo of grupos.filter((g) => coletados.has(g.nome))) {
+        resultado.agente.push(await capexAgente.decidirGrupo({ db: client, grupo, agente }));
+      }
+    }
+    return resultado;
   } finally {
     client.release();
   }

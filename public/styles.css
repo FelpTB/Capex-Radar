@@ -391,6 +391,14 @@ body.is-loading main.container { opacity: .6; transition: opacity .15s; }
 .news-card__discard input { width: 190px; }
 .news-card__done { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
 .news-card__done form { margin: 0 0 0 auto; }
+.news-card__agent { margin: 0 0 4px; padding: 6px 10px; background: var(--surface); border-left: 3px solid #d9a441; border-radius: 6px; font-size: 13px; }
+.agent-wrong summary { list-style: none; cursor: pointer; }
+.agent-wrong summary::-webkit-details-marker { display: none; }
+.agent-wrong[open] { flex-basis: 100%; }
+.agent-wrong__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; align-items: end; margin-top: 10px; }
+.agent-wrong__form label { margin: 0; font-size: 13px; }
+.agent-wrong__form .checkbox { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; }
+.agent-wrong__form .checkbox input { width: auto; }
 .link-button--neutral { color: var(--green); font-weight: 650; }
 
 /* Triagem da IA */

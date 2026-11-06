@@ -195,11 +195,16 @@
     box.classList.remove("is-hidden");
     box.dataset.job = job.status === "rodando" ? job.id : "";
     box.querySelector(".js-triagem-barra").style.width = `${job.percentual}%`;
+    const ag = job.agente || {};
+    const fimAgente = `Agente: ${ag.projetos_criados} projeto(s) criado(s) · ${ag.vinculadas} vinculada(s) · ${ag.descartadas} descartada(s) · ${ag.revisao_humana} para você${ag.erros ? ` · ${ag.erros} erro(s)` : ""}`;
+    const fimTriagem = `Concluída: ${job.resumo.lidas} lidas · ${job.resumo.capex} de CapEx · ${job.resumo.regras + job.resumo.ia_descartadas} descartadas${job.resumo.erros_ia ? ` · ${job.resumo.erros_ia} lote(s) com erro` : ""}`;
     const texto = job.status === "rodando"
       ? `${job.feitas} de ${job.total} notícias · ${job.grupo_atual || job.escopo}`
       : job.status === "erro"
         ? `Parou com erro: ${job.erro}`
-        : `Concluída: ${job.resumo.lidas} lidas · ${job.resumo.capex} de CapEx · ${job.resumo.regras + job.resumo.ia_descartadas} descartadas${job.resumo.erros_ia ? ` · ${job.resumo.erros_ia} lote(s) com erro` : ""}`;
+        : job.modo === "agente" ? `${fimAgente} · triagem: ${job.resumo.lidas} lidas` : fimTriagem;
+    const rotulo = box.querySelector(".triage-progress__head strong");
+    if (rotulo) rotulo.textContent = job.modo === "agente" ? "Agente" : "Triagem da IA";
     box.querySelector(".js-triagem-texto").textContent = texto;
     box.classList.toggle("is-done", job.status !== "rodando");
     document.querySelectorAll(".js-triar").forEach((b) => { b.disabled = job.status === "rodando"; });
@@ -220,7 +225,8 @@
       mostrarProgresso(dados.job);
       if (dados.job.status !== "rodando") {
         acompanhando = null;
-        avisar(dados.job.status === "erro" ? "A triagem parou com erro." : "Triagem concluída.", dados.job.status === "erro" ? "erro" : "ok");
+        const nome = dados.job.modo === "agente" ? "O agente" : "A triagem";
+        avisar(dados.job.status === "erro" ? `${nome} parou com erro.` : `${nome} terminou.`, dados.job.status === "erro" ? "erro" : "ok");
         await recarregarConteudo();
         const box = document.getElementById("triagem-progresso");
         if (box) mostrarProgresso(dados.job);
@@ -238,7 +244,7 @@
       const resposta = await fetch("/monitoramento/triagem", {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ grupo_id: botao.dataset.grupo || "" }),
+        body: new URLSearchParams({ grupo_id: botao.dataset.grupo || "", modo: botao.dataset.modo || "triagem" }),
       });
       const dados = await resposta.json();
       if (!dados.ok) throw new Error(dados.mensagem);

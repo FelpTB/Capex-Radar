@@ -443,7 +443,7 @@ async function gruposVencidos(client, grupos) {
   return grupos.filter((grupo) => !recentes.has(grupo.id));
 }
 
-function resumoTexto({ coleta, triagem }) {
+function resumoTexto({ coleta, triagem, agente = null }) {
   const soma = (lista, campo) => lista.reduce((total, item) => total + (item[campo] || 0), 0);
   return [
     `${coleta.length} empresas`,
@@ -451,6 +451,7 @@ function resumoTexto({ coleta, triagem }) {
     `${soma(triagem, "capex")} de CapEx (${soma(triagem, "sugeridos")} vínculos sugeridos, ${soma(triagem, "novos_projetos")} possíveis projetos novos)`,
     soma(coleta, "erros") ? `${soma(coleta, "erros")} janelas com erro` : null,
     soma(triagem, "erros_ia") ? `${soma(triagem, "erros_ia")} lotes da IA com erro` : null,
+    agente ? `agente: ${soma(agente, "projetos_criados")} projetos criados, ${soma(agente, "vinculadas")} vinculadas, ${soma(agente, "descartadas")} descartadas, ${soma(agente, "revisao_humana")} para revisão` : null,
   ].filter(Boolean).join(" · ");
 }
 
