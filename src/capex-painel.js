@@ -69,6 +69,14 @@ function local(uf, municipio) {
   return [municipio, uf].filter(Boolean).join(" / ");
 }
 
+// Local do projeto na carteira. Sem local do projeto nem filial, a view usa a
+// sede da matriz, e isso fica dito para não parecer o local da obra.
+function localProjeto(p) {
+  const texto = local(p.uf, p.municipio);
+  if (!texto) return "—";
+  return p.local_origem === "matriz" ? `Sede: ${texto}` : texto;
+}
+
 // Uma linha curta com o que a IA leu na manchete.
 function resumoExtracao(extracao) {
   if (!extracao) return "";
@@ -547,7 +555,7 @@ function cardProjeto(p) {
         <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
         <p class="project-card__company">${esc(p.grupo)} · ${esc(p.matriz_razao_social)}</p>
         <dl class="facts">
-          <div><dt>Local</dt><dd>${esc(local(p.uf, p.municipio) || "—")}</dd></div>
+          <div><dt>Local</dt><dd>${esc(localProjeto(p))}</dd></div>
           <div><dt>Valor</dt><dd>${esc(money(p.valor_estimado_brl))}</dd></div>
           <div><dt>Evidências</dt><dd>${p.n_evidencias || 0}</dd></div>
           <div><dt>Anúncio</dt><dd>${esc(dia(dataDoAnuncio(p)))}</dd></div>
@@ -635,7 +643,7 @@ function paginaProjeto({ projeto, timeline, notice }) {
       </section>
       <section class="stats">
         <div><strong>${esc(money(projeto.valor_estimado_brl))}</strong><span>Valor estimado${projeto.fonte_valor ? ` · ${esc(projeto.fonte_valor)}` : ""}</span></div>
-        <div><strong>${esc(local(projeto.uf, projeto.municipio) || "—")}</strong><span>Local</span></div>
+        <div><strong>${esc(localProjeto(projeto))}</strong><span>${projeto.local_origem === "matriz" ? "Local não informado (sede da matriz)" : "Local"}</span></div>
         <div><strong>${timeline.length}</strong><span>Evidências</span></div>
         <div><strong>${esc(dia(projeto.data_anuncio))}</strong><span>Anúncio</span></div>
       </section>
@@ -889,5 +897,6 @@ module.exports = {
   paginaCarteira,
   filtrosCarteira,
   filtrarCarteira,
+  localProjeto,
   paginaProjeto,
 };

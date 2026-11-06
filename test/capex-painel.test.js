@@ -151,3 +151,12 @@ test("página da carteira mostra filtros, contagem e vazio do filtro", () => {
   assert.match(vazio, /Nenhum projeto neste filtro/);
   assert.match(paginaCarteira({ projetos: [] }), /Nenhum projeto ainda/);
 });
+
+test("local do projeto diz quando é só a sede da matriz", () => {
+  const { localProjeto } = require("../src/capex-painel");
+  assert.equal(localProjeto({ uf: "MS", municipio: null, local_origem: "projeto" }), "MS");
+  assert.equal(localProjeto({ uf: "SC", municipio: "CHAPECO", local_origem: "matriz" }), "Sede: CHAPECO / SC");
+  assert.equal(localProjeto({ uf: null, municipio: null }), "—");
+  const html = paginaCarteira({ projetos: [{ ...PROJETOS[0], uf: "SC", municipio: "CHAPECO", local_origem: "matriz" }] });
+  assert.match(html, /<dd>Sede: CHAPECO \/ SC<\/dd>/);
+});
