@@ -48,3 +48,9 @@ Em 05/11/2026, a busca da Heineken aparecia como "O Google recusou o servidor" n
 Os 5 projetos e as 41 evidências de `public.projeto` e `public.evidencia` foram excluídos em 05/11/2026, para o foco ficar no teste. O backup está em `data/backups/projetos-antigos-2026-11-05.json`, que não é versionado.
 
 A página inicial e o logo agora abrem o Monitoramento. O menu antigo continua como "Projetos (MVP)".
+
+## Filtros da carteira
+
+`/monitoramento/carteira` filtra os projetos por empresa, nicho, UF, estágio, situação (ativos e em revisão por padrão; descartados só quando pedidos), faixa de valor estimado e ano do anúncio. O ano usa a data do anúncio ou, sem ela, a da primeira evidência. A ordem pode ser por evidência mais recente, maior valor, anúncio mais recente ou número de evidências.
+
+Os filtros aplicam ao mudar o select, sem recarregar a página, e ficam na URL. Abaixo deles aparecem a contagem e a soma do valor estimado do que está filtrado.

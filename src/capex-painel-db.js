@@ -329,10 +329,12 @@ async function descartarNoticia(evidenciaId, motivo) {
   });
 }
 
-async function carteira() {
+// Projetos da carteira. Os descartados ficam fora, a não ser que sejam pedidos.
+async function carteira({ incluirDescartados = false } = {}) {
   const { rows } = await pool.query(
-    `select * from capex_radar.vw_carteira where status <> 'descartado'
+    `select * from capex_radar.vw_carteira where $1 or status <> 'descartado'
       order by coalesce(ultima_evidencia_em, criado_em) desc`,
+    [incluirDescartados],
   );
   return rows;
 }

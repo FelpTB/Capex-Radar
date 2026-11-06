@@ -8,7 +8,7 @@ Item **Monitoramento** no menu. Rotas em [`src/capex-painel.js`](../../src/capex
 |---|---|
 | `/monitoramento` | Números do teste, filtro por empresa e situação, notícias (150 mais recentes do filtro) e tabela das 38 empresas, com o botão **Triar com IA** quando há notícia sem triagem. |
 | `/monitoramento/noticias/:id` | Notícia, leitura da IA (objeto, local, valor, estágio, filial sugerida), vínculos e as ações de revisão. |
-| `/monitoramento/carteira` | Projetos criados na revisão (`vw_carteira`). |
+| `/monitoramento/carteira` | Projetos criados na revisão (`vw_carteira`), com filtros por empresa, nicho, UF, estágio, situação, faixa de valor e ano do anúncio, e ordenação. |
 | `/monitoramento/projetos/:id` | Projeto com a linha do tempo das evidências aceitas (`vw_projeto_timeline`) e a exclusão. |
 
 **Situações da notícia:**

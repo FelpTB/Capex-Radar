@@ -475,12 +475,73 @@ function listaCurtaNoticias(noticias, guardadas = new Set()) {
 // Carteira e projeto
 // ---------------------------------------------------------------------------
 
-function paginaCarteira({ projetos, notice }) {
-  const cards = projetos.length
-    ? projetos.map((p) => `
+const STATUS_ROTULO = { ativo: "Ativo", em_revisao: "Em revisão", descartado: "Descartado" };
+
+// Faixas de valor estimado (R$). "sem" pega os projetos sem valor informado.
+const FAIXAS_VALOR = {
+  sem: { rotulo: "Sem valor informado", teste: (v) => v == null },
+  ate100m: { rotulo: "Até R$ 100 mi", teste: (v) => v != null && v < 1e8 },
+  "100m": { rotulo: "R$ 100 mi a 500 mi", teste: (v) => v != null && v >= 1e8 && v < 5e8 },
+  "500m": { rotulo: "R$ 500 mi a 1 bi", teste: (v) => v != null && v >= 5e8 && v < 1e9 },
+  "1b": { rotulo: "R$ 1 bi ou mais", teste: (v) => v != null && v >= 1e9 },
+};
+
+const ORDENS = {
+  recentes: { rotulo: "Evidência mais recente", chave: (p) => -tempo(p.ultima_evidencia_em || p.criado_em) },
+  valor: { rotulo: "Maior valor", chave: (p) => -(p.valor_estimado_brl == null ? -1 : Number(p.valor_estimado_brl)) },
+  anuncio: { rotulo: "Anúncio mais recente", chave: (p) => -tempo(dataDoAnuncio(p)) },
+  evidencias: { rotulo: "Mais evidências", chave: (p) => -(p.n_evidencias || 0) },
+};
+
+function tempo(valor) {
+  return valor ? new Date(valor).getTime() : 0;
+}
+
+// Data do projeto: a do anúncio ou, sem ela, a da primeira evidência.
+function dataDoAnuncio(p) {
+  return p.data_anuncio || p.primeira_evidencia_em || null;
+}
+
+function anoDoProjeto(p) {
+  const d = dataDoAnuncio(p);
+  return d ? String(new Date(d).getUTCFullYear()) : "";
+}
+
+// Lê os filtros da query string, aceitando só valores conhecidos.
+function filtrosCarteira(query = {}) {
+  const texto = (v) => (typeof v === "string" ? v.trim() : "");
+  return {
+    grupo: uuid.safeParse(query.grupo).success ? query.grupo : "",
+    nicho: NICHOS[query.nicho] ? query.nicho : "",
+    uf: /^[A-Za-z]{2}$/.test(texto(query.uf)) ? texto(query.uf).toUpperCase() : "",
+    estagio: ESTAGIO_ROTULO[query.estagio] ? query.estagio : "",
+    status: STATUS_ROTULO[query.status] || query.status === "todos" ? query.status : "",
+    valor: FAIXAS_VALOR[query.valor] ? query.valor : "",
+    ano: /^\d{4}$/.test(texto(query.ano)) ? texto(query.ano) : "",
+    ordem: ORDENS[query.ordem] ? query.ordem : "recentes",
+  };
+}
+
+// Aplica os filtros e a ordem. Sem situação escolhida, mostra ativos e em revisão.
+function filtrarCarteira(projetos, f) {
+  const lista = projetos.filter((p) =>
+    (!f.grupo || p.grupo_id === f.grupo)
+    && (!f.nicho || p.nicho === f.nicho)
+    && (!f.uf || p.uf === f.uf)
+    && (!f.estagio || p.estagio === f.estagio)
+    && (f.status === "todos" || (f.status ? p.status === f.status : p.status !== "descartado"))
+    && (!f.valor || FAIXAS_VALOR[f.valor].teste(p.valor_estimado_brl == null ? null : Number(p.valor_estimado_brl)))
+    && (!f.ano || anoDoProjeto(p) === f.ano));
+  const chave = ORDENS[f.ordem || "recentes"].chave;
+  return lista.sort((a, b) => chave(a) - chave(b));
+}
+
+function cardProjeto(p) {
+  return `
       <article class="project-card">
         <div class="project-card__top">
           ${badge(ESTAGIO_ROTULO[p.estagio] || p.estagio, p.estagio === "cancelado" ? "danger" : p.estagio === "operacao" ? "success" : "info")}
+          ${p.status && p.status !== "ativo" ? badge(STATUS_ROTULO[p.status] || p.status, p.status === "descartado" ? "danger" : "warning") : ""}
           <span class="muted">${esc(NICHOS[p.nicho] || p.nicho)}</span>
         </div>
         <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
@@ -489,13 +550,52 @@ function paginaCarteira({ projetos, notice }) {
           <div><dt>Local</dt><dd>${esc(local(p.uf, p.municipio) || "—")}</dd></div>
           <div><dt>Valor</dt><dd>${esc(money(p.valor_estimado_brl))}</dd></div>
           <div><dt>Evidências</dt><dd>${p.n_evidencias || 0}</dd></div>
+          <div><dt>Anúncio</dt><dd>${esc(dia(dataDoAnuncio(p)))}</dd></div>
         </dl>
         <div class="card-actions">
           <span class="muted">Última evidência: ${esc(dia(p.ultima_evidencia_em))}</span>
           <a href="/monitoramento/projetos/${p.id}">Linha do tempo →</a>
         </div>
-      </article>`).join("")
-    : `<div class="empty"><h2>Nenhum projeto ainda</h2><p>Aprove uma notícia na lista para criar o primeiro.</p><a class="button" href="/monitoramento">Ver notícias</a></div>`;
+      </article>`;
+}
+
+// `projetos` é a carteira inteira (com descartados); os filtros são aplicados aqui,
+// e as opções de empresa, UF e ano saem dos próprios projetos.
+function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) {
+  const visiveis = filtrarCarteira([...projetos], filtros);
+  const naCarteira = projetos.filter((p) => p.status !== "descartado").length;
+  const unicos = (lista) => [...new Set(lista.filter(Boolean))];
+  const empresas = new Map(projetos.map((p) => [p.grupo_id, p.grupo]));
+  const opcoes = {
+    grupo: [["", "Todas"], ...[...empresas].sort((a, b) => String(a[1]).localeCompare(String(b[1]), "pt-BR"))],
+    nicho: [["", "Todos"], ...Object.entries(NICHOS)],
+    uf: [["", "Todas"], ...unicos(projetos.map((p) => p.uf)).sort().map((uf) => [uf, uf])],
+    estagio: [["", "Todos"], ...Object.entries(ESTAGIO_ROTULO)],
+    status: [["", "Ativos e em revisão"], ...Object.entries(STATUS_ROTULO), ["todos", "Todos"]],
+    valor: [["", "Qualquer valor"], ...Object.entries(FAIXAS_VALOR).map(([k, v]) => [k, v.rotulo])],
+    ano: [["", "Todos"], ...unicos(projetos.map(anoDoProjeto)).sort().reverse().map((a) => [a, a])],
+    ordem: Object.entries(ORDENS).map(([k, v]) => [k, v.rotulo]),
+  };
+  const campo = (nome, rotulo) => `<div><label>${rotulo}</label><select name="${nome}">${selectOptions(opcoes[nome], filtros[nome] || "")}</select></div>`;
+  const algumFiltro = ["grupo", "nicho", "uf", "estagio", "status", "valor", "ano"].some((k) => filtros[k]);
+  const somaValor = visiveis.reduce((t, p) => t + (p.valor_estimado_brl == null ? 0 : Number(p.valor_estimado_brl)), 0);
+  const filtrosHtml = projetos.length ? `
+      <form class="source-filters js-filtros" method="get" action="/monitoramento/carteira">
+        ${campo("grupo", "Empresa")}
+        ${campo("nicho", "Nicho")}
+        ${campo("uf", "UF")}
+        ${campo("estagio", "Estágio")}
+        ${campo("status", "Situação")}
+        ${campo("valor", "Valor estimado")}
+        ${campo("ano", "Ano do anúncio")}
+        ${campo("ordem", "Ordenar por")}
+        <div class="source-filters__actions"><noscript><button class="button button--small" type="submit">Filtrar</button></noscript>${algumFiltro ? '<a href="/monitoramento/carteira">Limpar filtros</a>' : ""}</div>
+        <p class="source-filters__count muted">${visiveis.length} projeto(s) neste filtro${somaValor ? ` · ${esc(money(somaValor))} em valor estimado` : ""}.</p>
+      </form>` : "";
+  let cards;
+  if (visiveis.length) cards = visiveis.map(cardProjeto).join("");
+  else if (projetos.length) cards = `<div class="empty"><h2>Nenhum projeto neste filtro</h2><p>Troque ou limpe os filtros acima.</p><a class="button" href="/monitoramento/carteira">Limpar filtros</a></div>`;
+  else cards = `<div class="empty"><h2>Nenhum projeto ainda</h2><p>Aprove uma notícia na lista para criar o primeiro.</p><a class="button" href="/monitoramento">Ver notícias</a></div>`;
   return layout({
     title: "Carteira",
     active: "monitoramento",
@@ -505,7 +605,8 @@ function paginaCarteira({ projetos, notice }) {
       <section class="page-heading">
         <div><p class="eyebrow">Teste de monitoramento</p><h1>Carteira de projetos</h1><p>Projetos aprovados na revisão das notícias, com a linha do tempo das evidências aceitas.</p></div>
       </section>
-      ${abas("carteira", projetos.length)}
+      ${abas("carteira", naCarteira)}
+      ${filtrosHtml}
       <section class="project-grid">${cards}</section>`,
   });
 }
@@ -622,7 +723,11 @@ function registrarMonitoramento(app) {
   });
 
   app.get("/monitoramento/carteira", async (req, res) => {
-    res.send(paginaCarteira({ projetos: await painel.carteira(), notice: aviso(req) }));
+    res.send(paginaCarteira({
+      projetos: await painel.carteira({ incluirDescartados: true }),
+      filtros: filtrosCarteira(req.query),
+      notice: aviso(req),
+    }));
   });
 
   app.get("/monitoramento/noticias/:id", async (req, res) => {
@@ -782,5 +887,7 @@ module.exports = {
   paginaNoticia,
   paginaBuscas,
   paginaCarteira,
+  filtrosCarteira,
+  filtrarCarteira,
   paginaProjeto,
 };

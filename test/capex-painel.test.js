@@ -110,3 +110,44 @@ test("página do projeto tem exclusão com confirmação", () => {
   assert.match(html, /action="\/monitoramento\/projetos\/p1\/excluir"/);
   assert.match(html, /confirm\('Excluir este projeto e as 1 evidência/);
 });
+
+const { paginaCarteira, filtrosCarteira, filtrarCarteira } = require("../src/capex-painel");
+
+const PROJETOS = [
+  { id: "p1", titulo: "Fábrica MS", grupo_id: GRUPO.id, grupo: "Bracell", matriz_razao_social: "BRACELL", nicho: "papel_celulose", uf: "MS", municipio: "Bataguassu", estagio: "licenciamento", status: "ativo", valor_estimado_brl: "25000000000", data_anuncio: "2024-03-01", n_evidencias: 4, ultima_evidencia_em: "2025-01-10T00:00:00Z" },
+  { id: "p2", titulo: "CD Cajamar", grupo_id: "2b1c3d4e-0000-4000-8000-000000000002", grupo: "Mercado Livre", matriz_razao_social: "EBAZAR", nicho: "ecommerce", uf: "SP", municipio: "Cajamar", estagio: "anuncio", status: "em_revisao", valor_estimado_brl: null, data_anuncio: null, primeira_evidencia_em: "2025-06-01T00:00:00Z", n_evidencias: 1, ultima_evidencia_em: "2025-06-01T00:00:00Z" },
+  { id: "p3", titulo: "Linha nova", grupo_id: GRUPO.id, grupo: "Bracell", matriz_razao_social: "BRACELL", nicho: "papel_celulose", uf: "SP", municipio: "Lençóis Paulista", estagio: "operacao", status: "descartado", valor_estimado_brl: "300000000", data_anuncio: "2023-05-01", n_evidencias: 2, ultima_evidencia_em: "2024-01-01T00:00:00Z" },
+];
+
+test("filtros da carteira aceitam só valores conhecidos", () => {
+  const f = filtrosCarteira({ grupo: "x", nicho: "ecommerce", uf: "sp", estagio: "nada", status: "todos", valor: "1b", ano: "2024", ordem: "valor" });
+  assert.deepEqual(f, { grupo: "", nicho: "ecommerce", uf: "SP", estagio: "", status: "todos", valor: "1b", ano: "2024", ordem: "valor" });
+  assert.equal(filtrosCarteira({}).ordem, "recentes");
+});
+
+test("filtra a carteira por empresa, UF, valor, ano e situação", () => {
+  const ids = (q) => filtrarCarteira([...PROJETOS], filtrosCarteira(q)).map((p) => p.id);
+  assert.deepEqual(ids({}), ["p2", "p1"]);
+  assert.deepEqual(ids({ status: "todos" }), ["p2", "p1", "p3"]);
+  assert.deepEqual(ids({ status: "descartado" }), ["p3"]);
+  assert.deepEqual(ids({ grupo: GRUPO.id, status: "todos" }), ["p1", "p3"]);
+  assert.deepEqual(ids({ uf: "SP" }), ["p2"]);
+  assert.deepEqual(ids({ valor: "1b" }), ["p1"]);
+  assert.deepEqual(ids({ valor: "sem" }), ["p2"]);
+  assert.deepEqual(ids({ valor: "100m", status: "todos" }), ["p3"]);
+  assert.deepEqual(ids({ ano: "2025" }), ["p2"]);
+  assert.deepEqual(ids({ ordem: "valor", status: "todos" }), ["p1", "p3", "p2"]);
+  assert.deepEqual(ids({ ordem: "evidencias" }), ["p1", "p2"]);
+});
+
+test("página da carteira mostra filtros, contagem e vazio do filtro", () => {
+  const html = paginaCarteira({ projetos: PROJETOS, filtros: filtrosCarteira({ nicho: "papel_celulose" }) });
+  assert.match(html, /class="source-filters js-filtros" method="get" action="\/monitoramento\/carteira"/);
+  assert.match(html, /<option value="papel_celulose" selected>/);
+  assert.match(html, /1 projeto\(s\) neste filtro · R\$\s?25\.000\.000\.000/);
+  assert.match(html, /Carteira \(2\)/);
+  assert.match(html, /Limpar filtros/);
+  const vazio = paginaCarteira({ projetos: PROJETOS, filtros: filtrosCarteira({ uf: "AM" }) });
+  assert.match(vazio, /Nenhum projeto neste filtro/);
+  assert.match(paginaCarteira({ projetos: [] }), /Nenhum projeto ainda/);
+});
