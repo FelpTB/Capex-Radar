@@ -6,6 +6,7 @@ const { DIARIOS_PDF, syncDoePdf } = require("./enrichment/doe-pdf");
 const capexColetor = require("./capex-coletor");
 const { iaPadrao } = require("./capex-ia");
 const capexAgente = require("./capex-agente");
+const capexFiltro = require("./capex-filtro");
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const SCAN_MS = WEEK_MS;
@@ -77,6 +78,16 @@ async function runCapexWeekly() {
       ...capexColetor.janelaSemanal(),
       ia: iaPadrao(),
     });
+    // Filtro CapEx: segunda passada, mais rígida, sobre o que a triagem
+    // deixou na fila (CAPEX_FILTRO=0 desliga).
+    const coletadosFiltro = new Set(resultado.coleta.map((c) => c.grupo));
+    const filtro = capexFiltro.filtroPadrao();
+    if (filtro) {
+      resultado.filtro = [];
+      for (const grupo of grupos.filter((g) => coletadosFiltro.has(g.nome))) {
+        resultado.filtro.push(await capexFiltro.filtrarGrupo({ db: client, grupo, filtro }));
+      }
+    }
     // Triagem automática: o agente decide a fila das empresas coletadas.
     // CAPEX_AGENTE_AUTO=0 desliga e deixa tudo para a revisão na tela.
     const agente = /^(0|false|no|off)$/i.test(process.env.CAPEX_AGENTE_AUTO?.trim() || "") ? null : capexAgente.agentePadrao();

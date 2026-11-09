@@ -21,7 +21,7 @@ Fechada em 04/11/2026. Lista em formato de carga: [`seeds/capex_radar/empresas-t
 
 ## Pendências
 
-- **Shein:** CNPJ não localizado no cadastro. Os CDs em Guarulhos operam com parceiros logísticos.
+- **Shein:** matriz IN GLOW BRASIL INTERMEDIACAO DE NEGOCIOS LTDA (45.814.425/0001-72), localizada em 09/11/2026 pelo sócio ROADGET BUSINESS PTE. LTD. (holding de Singapura) no `cnpj_db`. Relacionadas: IN GLOW BRASIL INTERMEDIACAO E TECNOLOGIA (46.338.048) e MODA MUNDIAL BRASIL PAGAMENTOS (50.617.696). As filiais da IN GLOW em Guarulhos/SP, abertas em 2024, correspondem aos CDs.
 - **Receita Brasil das multinacionais:** usada só para ordenar; não muda a lista.
 
 ## O que isso muda no esquema (Fase 1)

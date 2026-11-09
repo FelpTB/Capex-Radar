@@ -1,6 +1,7 @@
 // Agente de triagem automática do capex_radar.
 //
-// Lê as notícias que a triagem marcou como CapEx (fila "A revisar") e decide
+// Lê as notícias que a triagem marcou como CapEx (fila "A revisar") e que o
+// filtro CapEx manteve (capex-filtro.js, quando ligado) e decide
 // cada uma, em ordem cronológica, entre:
 //   - criar_projeto: investimento com obra, anunciado ou em construção;
 //   - vincular: é um projeto já cadastrado (evita repetir projeto);
@@ -17,6 +18,7 @@ const { z } = require("zod");
 const { criarCliente, pedirJson } = require("./claude");
 const painel = require("./capex-painel-db");
 const { ESTAGIOS } = require("./capex-ia");
+const filtroCapex = require("./capex-filtro");
 
 const ATOR_AGENTE = "ia:agente";
 const VERSAO_PROMPT = "agente-v2";
@@ -293,6 +295,7 @@ async function filaDoAgente(db, grupoId, limite = 400) {
     `select e.id, e.titulo, e.veiculo, e.url, e.data_original, e.extracao
        from capex_radar.evidencias e
       where e.grupo_id = $1 and ${painel.FILTRO_SITUACAO.revisar} and ${SEM_DECISAO}
+        and ${filtroCapex.condicaoAgente()}
       order by e.data_original nulls last
       limit $2`,
     [grupoId, limite],
@@ -305,6 +308,7 @@ async function contarFila(db, grupoIds) {
     `select e.grupo_id, count(*)::int as n
        from capex_radar.evidencias e
       where e.grupo_id = any($1::uuid[]) and ${painel.FILTRO_SITUACAO.revisar} and ${SEM_DECISAO}
+        and ${filtroCapex.condicaoAgente()}
       group by e.grupo_id`,
     [grupoIds],
   );

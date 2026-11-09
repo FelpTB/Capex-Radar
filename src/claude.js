@@ -2,7 +2,8 @@
 //
 // Todas as chamadas pedem um objeto JSON e cada módulo valida a resposta com
 // zod. O modelo padrão é o Claude Haiku 5.5, o mais barato, com esforço baixo
-// e sem pensamento estendido: são triagens e extrações curtas.
+// e sem pensamento estendido: são triagens e extrações curtas. O filtro CapEx
+// pede um modelo maior e esforço médio.
 const Anthropic = require("@anthropic-ai/sdk");
 
 const MODELO_PADRAO = "claude-haiku-5-5";
@@ -26,12 +27,12 @@ function extrairJson(texto) {
  * @param {Anthropic} client
  * @param {{model?: string, system: string, user: string, maxTokens?: number}} p
  */
-async function pedirJson(client, { model = MODELO_PADRAO, system, user, maxTokens = 8000 }) {
+async function pedirJson(client, { model = MODELO_PADRAO, system, user, maxTokens = 8000, effort = "low" }) {
   const response = await client.messages.create({
     model,
     max_tokens: maxTokens,
     thinking: { type: "disabled" },
-    output_config: { effort: "low" },
+    output_config: { effort },
     system: `${system} ${INSTRUCAO_JSON}`,
     messages: [{ role: "user", content: user }],
   });
