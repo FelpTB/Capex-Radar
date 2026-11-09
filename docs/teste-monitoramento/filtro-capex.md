@@ -33,15 +33,35 @@ A triagem usa o Claude Haiku e lê só a manchete. Ela é larga de propósito: d
 | `fora_brasil` | ativo fora do Brasil |
 | `cancelado` | cancelado sem projeto cadastrado |
 
-6. **Repetição.** Fica só uma manchete por fato, a mais completa. Um fato novo do mesmo empreendimento (licença, início de obra, financiamento) é mantido, para o agente ligar ao projeto.
-7. **Travas em código** (`fecharDecisoes`):
+6. **E-commerce.** Abrir ou inaugurar CD, hub ou galpão em geral é ocupar um galpão alugado e pronto. Só fica quando a manchete fala de construção, terreno, built-to-suit ou de um valor investido no CD.
+7. **Repetição.** Fica só uma manchete por fato, a mais completa. Um fato novo do mesmo empreendimento (licença, início de obra, financiamento) é mantido, para o agente ligar ao projeto.
+8. **Rótulo de fato.** Antes de decidir, o modelo agrupa o lote por fato e dá a cada item um rótulo curto, como "CD Goiânia - inauguração". O código usa esse rótulo para manter a coerência.
+9. **Travas em código** (`fecharDecisoes`):
+   - mesmo fato, mesmo veredito: se um item do fato foi descartado por mérito (concluido, sem_obra…), os outros itens desse fato seguem o descarte;
+   - um fato, uma notícia mantida: se dois itens do mesmo fato ficaram mantidos, o segundo vira `repetida` do primeiro;
    - descartar sem motivo válido vira manter;
    - `repetida` precisa apontar para uma manchete mantida; se não apontar, vira manter;
    - uma cadeia de repetidas é seguida até a manchete mantida.
 
+## Validação (simulação, 09/11/2026)
+
+Resultados de `--simular` com o Sonnet 5.5 nas primeiras notícias da fila de cada grupo:
+
+| Grupo | Lidas | Mantidas | Descartadas | Repetidas |
+| --- | --- | --- | --- | --- |
+| JBS | 50 | 9 | 41 | 17 |
+| Shopee | 60 | 7 | 53 | 16 |
+| Bracell | 50 | 13 | 37 | 19 |
+
+Exemplos:
+
+- **JBS:** as sete manchetes de Diamantino viraram uma. A compra da Languiru, a reabertura de Juara, a fábrica na Espanha e "R$ 15 bi até 2026" saíram.
+- **Shopee:** as inaugurações de CD sem obra conhecida saíram. "Confirma construção de hub em Colatina" ficou.
+- **Bracell:** a linha do tempo de Bataguassu ficou com um fato por etapa (anúncio, RIMA, confirmação, incentivo, licença, início de obra).
+
 ## O que é gravado
 
-- `capex_radar.evidencias.filtro`: `{versao, modelo, decisao, motivo, repete_id, justificativa, em}`.
+- `capex_radar.evidencias.filtro`: `{versao, modelo, decisao, motivo, fato, repete_id, justificativa, ajuste?, em}`.
 - No descarte, a notícia vai para `triagem = 'descartada'` com o motivo "Filtro CapEx: …" (na repetição, com a manchete repetida). O vínculo sugerido é rejeitado.
 - O ator nos logs é `ia:filtro`.
 - A notícia descartada continua na aba Descartadas e pode ser restaurada pelo card.

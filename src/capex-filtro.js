@@ -61,7 +61,8 @@ NÃO é CapEx (descartar):
 - aquisição, fusão, compra de participação, compra de planta, frigorífico ou empresa já em operação, arrendamento de unidade pronta (motivo aquisicao);
 - compra de máquinas, equipamentos, frota, caminhões, TI, software, automação, manutenção ou modernização sem obra; marketing; P&D sem prédio novo (motivo sem_obra);
 - reabertura, retomada, religamento ou recuperação de unidade que já existia (após enchente, incêndio, paralisação), quando não há ampliação com obra (motivo reabertura);
-- inauguração, entrada em operação ou obra concluída, quando não há projeto cadastrado igual na lista (motivo concluido). Se houver projeto cadastrado do mesmo empreendimento, mantenha: é um fato do projeto;
+- inauguração, abertura, entrada em operação ou obra concluída de um empreendimento que NÃO aparece em projetos nem em mantidas (motivo concluido). O radar quer obra por fazer; a inauguração de algo que nunca vimos ser construído chega tarde. Isso vale para todos os nichos;
+- abrir, inaugurar ou "instalar-se" em centro de distribuição, hub, galpão ou centro logístico sem sinal de construção: em geral é ocupar galpão alugado e pronto (motivo concluido se já abriu; sem_obra se é só ocupação, hub de última milha, ponto de coleta ou loja). Mantenha CD ou galpão só quando a manchete fala de construir, obra, terreno, terraplenagem, built-to-suit ou um investimento em reais ligado a esse CD;
 - plano de investimento agregado ("investirá R$ 15 bi no Brasil até 2026", "R$ 1 bilhão em 2024") sem uma unidade, cidade ou obra identificada (motivo generico);
 - intenção sem decisão da empresa: governo quer atrair, governador busca, empresa "estuda", "avalia", "negocia incentivo", "pode instalar" (motivo especulacao);
 - resultado, ações, dívida, dividendos, produto, lançamento, promoção, loja, varejo, contratação de executivo, processo judicial, prêmio, ESG sem obra (motivo nao_investimento);
@@ -74,15 +75,19 @@ Várias manchetes contam o MESMO FATO: o mesmo anúncio, a mesma licença, o mes
 - Dentro do lote: mantenha a mais completa (com valor, município ou estágio) e marque as outras como repetida com repete = "i:<número do item mantido>".
 - Contra as manchetes já mantidas (lista mantidas, itens com id): se o item conta o mesmo fato de uma delas, é repetida com repete = "id:<id>".
 - Fato NOVO do mesmo empreendimento (anúncio em junho, licença em setembro, início de obra no ano seguinte) NÃO é repetição: mantenha, porque é a linha do tempo do projeto.
+- Conclusão, inauguração ou reabertura de um empreendimento que JÁ aparece em mantidas ou em projetos (ex.: a unidade ampliada que reabre) é fato do projeto: mantenha uma manchete desse fato e marque as demais do mesmo fato como repetida. Sem o empreendimento em mantidas ou projetos, valem os motivos concluido e reabertura.
 - A lista mantidas inclui as manchetes já ligadas a projetos. Se o item conta o mesmo fato de uma delas, é repetida. Fato novo de um empreendimento da lista projetos: mantenha (o agente liga ao projeto).
 
-Para cada item do lote responda: i, decisao ("manter" ou "descartar"), motivo (null se manter; senão um código da lista), repete (só para motivo repetida; senão null) e justificativa (uma frase curta citando o que decide).
+ANTES DE RESPONDER, agrupe os itens do lote por fato e dê a cada item um rótulo fato curto e padronizado: empreendimento + local + tipo do fato (ex.: "CD Goiânia - inauguração", "frigorífico Diamantino - anúncio ampliação", "fábrica ração Seberi - anúncio"). Itens com o mesmo fato recebem exatamente o mesmo rótulo. Cada rótulo tem no máximo UM item manter; os outros são repetida apontando para ele.
+
+Para cada item do lote responda: i, fato (o rótulo), decisao ("manter" ou "descartar"), motivo (null se manter; senão um código da lista), repete (só para motivo repetida; senão null) e justificativa (uma frase curta citando o que decide).
 Códigos de motivo: ${Object.keys(MOTIVOS).join(", ")}.
 
-Responda somente com JSON: {"itens":[{"i":0,"decisao":"manter","motivo":null,"repete":null,"justificativa":"..."}]}, com um elemento por item recebido.`;
+Responda somente com JSON: {"itens":[{"i":0,"fato":"...","decisao":"manter","motivo":null,"repete":null,"justificativa":"..."}]}, com um elemento por item recebido.`;
 
 const itemSchema = z.object({
   i: z.number().int().nonnegative(),
+  fato: z.string().trim().max(200).nullable().optional().catch(null),
   decisao: z.enum(["manter", "descartar"]),
   motivo: z.enum(Object.keys(MOTIVOS)).nullable().optional().catch(null),
   repete: z.string().trim().nullable().optional().catch(null),
@@ -185,6 +190,41 @@ function fecharDecisoes(raw, lote, mantidas = []) {
       : { ...base, decisao: "manter", motivo: null, repete_id: null, repete_titulo: null,
         ajuste: "repetida sem manchete mantida válida; mantida" });
   }
+  // Mesmo fato, mesmo veredito. Se o modelo descartou um item do fato por um
+  // motivo de mérito (concluido, sem_obra...), os itens mantidos com o mesmo
+  // rótulo seguem esse descarte. Depois, um fato, uma manchete: se ficaram
+  // dois itens mantidos com o mesmo rótulo, fica o primeiro e os outros viram
+  // repetida dele.
+  const normal = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const ordem = [...decisoes.keys()].sort((a, b) => a - b);
+  const descartePorFato = new Map();
+  for (const i of ordem) {
+    const d = decisoes.get(i);
+    d.fato = respostas.get(i)?.fato || null;
+    const fato = normal(d.fato);
+    if (fato && d.decisao === "descartar" && d.motivo !== "repetida" && !descartePorFato.has(fato)) {
+      descartePorFato.set(fato, d.motivo);
+    }
+  }
+  for (const i of ordem) {
+    const d = decisoes.get(i);
+    const motivo = descartePorFato.get(normal(d.fato));
+    if (d.decisao === "manter" && motivo) {
+      decisoes.set(i, { ...d, decisao: "descartar", motivo, ajuste: `mesmo fato de item descartado como ${motivo}` });
+    }
+  }
+  const primeiroPorFato = new Map();
+  for (const i of ordem) {
+    const d = decisoes.get(i);
+    const fato = normal(d.fato);
+    if (d.decisao !== "manter" || !fato) continue;
+    if (!primeiroPorFato.has(fato)) { primeiroPorFato.set(fato, i); continue; }
+    const j = primeiroPorFato.get(fato);
+    decisoes.set(i, {
+      ...d, decisao: "descartar", motivo: "repetida", repete_id: String(lote[j].id), repete_titulo: lote[j].titulo,
+      ajuste: "mesmo fato de outro item mantido no lote",
+    });
+  }
   return decisoes;
 }
 
@@ -205,8 +245,9 @@ function criarFiltro({ client, modelo = MODELO_FILTRO_PADRAO, esforco = "medium"
         model: modelo,
         system: PROMPT,
         user: JSON.stringify(entrada),
-        maxTokens: 6000,
+        maxTokens: 16000,
         effort: esforco,
+        thinking: null, // padrão do modelo: o Sonnet pensa antes de decidir o lote
       });
     },
   };
@@ -294,6 +335,7 @@ async function gravar(noticia, decisao, filtro) {
     modelo: filtro.modelo,
     decisao: decisao.decisao,
     motivo: decisao.motivo,
+    fato: decisao.fato || null,
     repete_id: decisao.repete_id,
     justificativa: decisao.justificativa,
     ...(decisao.ajuste ? { ajuste: decisao.ajuste } : {}),

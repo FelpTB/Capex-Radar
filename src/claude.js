@@ -27,11 +27,13 @@ function extrairJson(texto) {
  * @param {Anthropic} client
  * @param {{model?: string, system: string, user: string, maxTokens?: number}} p
  */
-async function pedirJson(client, { model = MODELO_PADRAO, system, user, maxTokens = 8000, effort = "low" }) {
+// thinking: o padrão desliga o pensamento (Haiku). null não manda o campo e
+// deixa o padrão do modelo (o Sonnet 5.5 não aceita "disabled").
+async function pedirJson(client, { model = MODELO_PADRAO, system, user, maxTokens = 8000, effort = "low", thinking = { type: "disabled" } }) {
   const response = await client.messages.create({
     model,
     max_tokens: maxTokens,
-    thinking: { type: "disabled" },
+    ...(thinking ? { thinking } : {}),
     output_config: { effort },
     system: `${system} ${INSTRUCAO_JSON}`,
     messages: [{ role: "user", content: user }],

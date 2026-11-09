@@ -92,3 +92,22 @@ test("o agente só lê o que o filtro manteve, a não ser que o filtro esteja de
   assert.equal(condicaoAgente(), "true");
   if (antes === undefined) delete process.env.CAPEX_FILTRO; else process.env.CAPEX_FILTRO = antes;
 });
+
+test("dois itens mantidos com o mesmo fato: fica o primeiro", () => {
+  const d = fecharDecisoes(resposta([
+    { i: 0, fato: "CD Goiânia - inauguração", decisao: "manter", justificativa: "a" },
+    { i: 1, fato: "cd goiania  inauguracao", decisao: "manter", justificativa: "b" },
+    { i: 2, fato: "CD Rio - inauguração", decisao: "manter", justificativa: "c" },
+  ]), lote);
+  assert.equal(d.get(0).decisao, "manter");
+  assert.deepEqual([d.get(1).motivo, d.get(1).repete_id], ["repetida", "a"]);
+  assert.equal(d.get(2).decisao, "manter");
+});
+
+test("mesmo fato, mesmo veredito: o mantido segue o descarte de mérito", () => {
+  const d = fecharDecisoes(resposta([
+    { i: 0, fato: "CD Guarulhos - inauguração", decisao: "descartar", motivo: "concluido", justificativa: "a" },
+    { i: 1, fato: "CD Guarulhos - inauguração", decisao: "manter", justificativa: "b" },
+  ]), lote);
+  assert.deepEqual([d.get(1).decisao, d.get(1).motivo], ["descartar", "concluido"]);
+});
