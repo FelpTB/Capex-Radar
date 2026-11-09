@@ -198,11 +198,15 @@
     const ag = job.agente || {};
     const fimAgente = `Agente: ${ag.projetos_criados} projeto(s) criado(s) · ${ag.vinculadas} vinculada(s) · ${ag.descartadas} descartada(s) · ${ag.revisao_humana} para você${ag.erros ? ` · ${ag.erros} erro(s)` : ""}`;
     const fimTriagem = `Concluída: ${job.resumo.lidas} lidas · ${job.resumo.capex} de CapEx · ${job.resumo.regras + job.resumo.ia_descartadas} descartadas${job.resumo.erros_ia ? ` · ${job.resumo.erros_ia} lote(s) com erro` : ""}`;
+    const fi = job.filtro || {};
+    const fimFiltro = fi.ativo
+      ? ` · filtro CapEx: ${fi.mantidas} mantida(s), ${fi.descartadas} descartada(s) (${fi.repetidas} repetida(s))${fi.erros ? `, ${fi.erros} erro(s)` : ""}`
+      : "";
     const texto = job.status === "rodando"
       ? `${job.feitas} de ${job.total} notícias · ${job.grupo_atual || job.escopo}`
       : job.status === "erro"
         ? `Parou com erro: ${job.erro}`
-        : job.modo === "agente" ? `${fimAgente} · triagem: ${job.resumo.lidas} lidas` : fimTriagem;
+        : job.modo === "agente" ? `${fimAgente} · triagem: ${job.resumo.lidas} lidas${fimFiltro}` : `${fimTriagem}${fimFiltro}`;
     const rotulo = box.querySelector(".triage-progress__head strong");
     if (rotulo) rotulo.textContent = job.modo === "agente" ? "Agente" : "Triagem da IA";
     box.querySelector(".js-triagem-texto").textContent = texto;

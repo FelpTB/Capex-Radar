@@ -13,6 +13,7 @@ const { lerRss, noticiasDoRss, chaveDedupe, carregarGrupos } = require("./capex-
 const { buscaDoGrupo } = require("./capex-busca");
 const { googleNewsUrl } = require("./news-queries");
 const { ESTAGIOS, iaPadrao } = require("./capex-ia");
+const filtroCapex = require("./capex-filtro");
 const triagem = require("./capex-triagem-jobs");
 const agente = require("./capex-agente");
 const { esc, money, badge, selectOptions, layout } = require("./html");
@@ -976,7 +977,8 @@ function registrarMonitoramento(app) {
     const ia = iaPadrao();
     if (!ia) return res.status(422).json({ ok: false, mensagem: "CLAUDE_API_KEY não configurada: a triagem precisa da IA." });
     const comAgente = req.body.modo === "agente" ? agente.agentePadrao() : null;
-    res.json({ ok: true, job: await triagem.iniciarTriagem({ grupoId, ia, agente: comAgente }) });
+    const filtro = filtroCapex.filtroPadrao();
+    res.json({ ok: true, job: await triagem.iniciarTriagem({ grupoId, ia, agente: comAgente, filtro }) });
   });
 
   // Agente: decisões, avaliação e conjunto de treino.
