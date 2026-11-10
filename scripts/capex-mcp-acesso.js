@@ -8,7 +8,7 @@
 //
 // O token aparece uma única vez, na criação; o banco guarda só o hash. Para
 // trocar um token, revogue e crie outro. Papéis: leitura | edicao.
-// Endereço mostrado nas instruções: RADAR_URL (ex.: https://radar.exemplo.com).
+// Endereço mostrado nas instruções: RADAR_URL, ou o do Railway por padrão.
 const { Client } = require("pg");
 const { getConfig } = require("../src/config");
 const mcp = require("../src/capex-mcp");
@@ -41,7 +41,7 @@ async function criar(client, args) {
      values ($1, $2, $3, $4, $5)`,
     [args.nome.trim(), email, papel, mcp.hashToken(token), token.slice(0, 10)],
   );
-  const base = (process.env.RADAR_URL || "https://<endereço-do-radar>").replace(/\/+$/, "");
+  const base = (process.env.RADAR_URL || "https://capex-radar-buscafornecedor.up.railway.app").replace(/\/+$/, "");
   console.log(`Acesso criado para ${args.nome} <${email}>, papel ${papel}.
 
 Token (aparece só agora; envie por um canal privado):

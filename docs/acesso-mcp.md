@@ -25,13 +25,13 @@ Peça ao administrador do Radar, informando nome, e-mail da ABC Advise e papel (
 
 ## Como conectar
 
-Nos exemplos, `https://<endereço-do-radar>` é o endereço do Radar no Railway e `cxr_...` é o seu token.
+Endereço do Radar: `https://capex-radar-buscafornecedor.up.railway.app`. Nos exemplos, `cxr_...` é o seu token.
 
 ### Claude Desktop ou claude.ai
 
 1. Abra **Configurações > Conectores > Adicionar conector personalizado**.
 2. Nome: `Radar CapEx`.
-3. URL: `https://<endereço-do-radar>/mcp/cxr_...` (o token vai no fim do endereço).
+3. URL: `https://capex-radar-buscafornecedor.up.railway.app/mcp/cxr_...` (o token vai no fim do endereço).
 4. Salve e ative o conector numa conversa, pelo menu de ferramentas.
 
 Em planos Team ou Enterprise, o conector pode precisar ser adicionado por um administrador da organização no Claude.
@@ -39,14 +39,14 @@ Em planos Team ou Enterprise, o conector pode precisar ser adicionado por um adm
 ### Claude Code
 
 ```bash
-claude mcp add --transport http radar-capex https://<endereço-do-radar>/mcp --header "Authorization: Bearer cxr_..."
+claude mcp add --transport http radar-capex https://capex-radar-buscafornecedor.up.railway.app/mcp --header "Authorization: Bearer cxr_..."
 ```
 
 ### Outros clientes MCP
 
 Qualquer cliente compatível com **Streamable HTTP** funciona. Há duas formas de passar o token:
-- `POST https://<endereço-do-radar>/mcp` com o cabeçalho `Authorization: Bearer cxr_...` (preferida);
-- `POST https://<endereço-do-radar>/mcp/cxr_...`, para clientes que não deixam configurar cabeçalhos.
+- `POST https://capex-radar-buscafornecedor.up.railway.app/mcp` com o cabeçalho `Authorization: Bearer cxr_...` (preferida);
+- `POST https://capex-radar-buscafornecedor.up.railway.app/mcp/cxr_...`, para clientes que não deixam configurar cabeçalhos.
 
 O servidor não mantém sessão: cada requisição é independente.
 
@@ -94,7 +94,7 @@ O modelo deve mostrar o que vai mudar e pedir confirmação antes de alterar. Co
 
 ## Administração
 
-Comandos para quem administra o Radar, rodados na pasta do projeto com acesso ao banco (`SUPABASE_STRING` no `.env`). `RADAR_URL` deixa as instruções impressas com o endereço certo.
+Comandos para quem administra o Radar, rodados na pasta do projeto com acesso ao banco (`SUPABASE_STRING` no `.env`). `RADAR_URL` troca o endereço impresso nas instruções (padrão: o do Railway).
 
 ```bash
 npm run capex:mcp -- criar --nome "Maria Souza" --email maria@abcadvise.com.br --papel edicao
