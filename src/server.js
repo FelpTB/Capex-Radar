@@ -23,6 +23,7 @@ const { catalogPageBody, hasSourcePage, hubBody, scopeBadge, scopeSection } = re
 const { BRAZIL_UFS } = require("./source-lifecycle");
 const { readRawSample, sampleSectionHtml } = require("./source-sample");
 const { registrarMonitoramento } = require("./capex-painel");
+const { registrarMcp } = require("./capex-mcp");
 const {
   CAPTURE_DECISIONS,
   DASHBOARD_PROFILES,
@@ -1110,6 +1111,7 @@ app.post("/projetos/:id/evidencias/:evidenciaId/excluir", async (req, res) => {
 });
 
 registrarMonitoramento(app);
+registrarMcp(app);
 
 app.use((error, _req, res, _next) => {
   console.error(error instanceof z.ZodError ? error.issues : error.message);

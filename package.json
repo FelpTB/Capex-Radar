@@ -19,7 +19,8 @@
     "capex:filtrar": "node scripts/capex-filtrar.js",
     "capex:processar": "node scripts/capex-processar.js",
     "capex:avaliar-projetos": "node scripts/capex-avaliar-projetos.js",
-    "capex:secundarias": "node scripts/capex-fontes-secundarias.js"
+    "capex:secundarias": "node scripts/capex-fontes-secundarias.js",
+    "capex:mcp": "node scripts/capex-mcp-acesso.js"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +31,7 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "cheerio": "^1.2.0",
     "dotenv": "^18.0.3",
     "express": "^5.2.1",

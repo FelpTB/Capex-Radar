@@ -8,6 +8,9 @@ const fases = require("./capex-fases");
 
 const ATOR = "usuario:painel";
 
+// Decisão de uma pessoa (painel ou modelo dela via MCP): vira rótulo de treino.
+const ehHumano = (ator) => String(ator).startsWith("usuario:");
+
 // Situações da notícia na tela, a partir de triagem, extracao, vínculos e fases.
 // "A revisar" só traz o que passou por todas as fases de IA ligadas
 // (capex-fases.js); o que ainda está entre o Filtro 1 e o Filtro 3 fica em
@@ -131,7 +134,7 @@ function leituraDaNoticia({ extracao, enriquecimento }) {
  * Aprovação com um clique a partir do card: aceita a sugestão de vínculo da
  * IA ou cria o projeto com a leitura da IA (matriz principal, filial sugerida).
  */
-async function aprovarNoticia(evidenciaId) {
+async function aprovarNoticia(evidenciaId, { ator = ATOR } = {}) {
   const { rows: [noticia] } = await pool.query(
     `select e.id, e.titulo, e.extracao, e.enriquecimento, e.data_original, g.nome as grupo,
             (select ep.projeto_id from capex_radar.evidencia_projeto ep
@@ -146,7 +149,7 @@ async function aprovarNoticia(evidenciaId) {
   );
   if (!noticia) throw new Error("Notícia não encontrada");
   if (noticia.sugerido) {
-    await vincularNoticia(evidenciaId, noticia.sugerido);
+    await vincularNoticia(evidenciaId, noticia.sugerido, { ator });
     return { acao: "vinculada", projeto_id: noticia.sugerido };
   }
   if (!noticia.matriz) throw new Error(`${noticia.grupo} ainda não tem CNPJ cadastrado; o projeto não pode nascer.`);
@@ -162,12 +165,12 @@ async function aprovarNoticia(evidenciaId) {
     valor_estimado_brl: ex.valor_brl ?? null,
     estagio: ex.estagio || "anuncio",
     data_anuncio: dataFato || diaIso(noticia.data_original),
-  });
+  }, { ator });
   return { acao: "projeto_criado", projeto_id: projeto.id, projeto_titulo: projeto.titulo };
 }
 
 /** Desfaz um descarte: a notícia volta para a revisão (ou para a fila da IA). */
-async function restaurarNoticia(evidenciaId) {
+async function restaurarNoticia(evidenciaId, { ator = ATOR } = {}) {
   return emTransacao(async (client) => {
     await client.query(
       `update capex_radar.evidencias
@@ -184,9 +187,9 @@ async function restaurarNoticia(evidenciaId) {
               avaliacao = coalesce(avaliacao, 'incorreta'),
               avaliado_por = coalesce(avaliado_por, $2), avaliado_em = coalesce(avaliado_em, now())
         where evidencia_id = $1 and acao = 'descartada' and not desfeita`,
-      [evidenciaId, `${ATOR} (desfez)`],
+      [evidenciaId, `${ator} (desfez)`],
     ).catch((error) => { if (error.code !== "42P01") throw error; });
-  });
+  }, ator);
 }
 
 /** Janelas de busca de um grupo, com a consulta usada e o resultado. */
@@ -276,14 +279,14 @@ async function obterNoticia(id) {
 
 // Quando a revisão humana decide uma notícia que o agente deixou para ela,
 // a decisão humana vira o rótulo da decisão do agente (conjunto de treino).
-async function rotularPelaRevisao(client, evidenciaId, decisaoHumana, motivo = null) {
+async function rotularPelaRevisao(client, evidenciaId, decisaoHumana, motivo = null, ator = ATOR) {
   await client.query(
     `update capex_radar.agente_decisao
         set avaliacao = case when decisao = $2 then 'correta' else 'incorreta' end,
             decisao_correta = $2, motivo_correto = $3,
             avaliado_por = $4, avaliado_em = now()
       where evidencia_id = $1 and acao = 'revisao_humana' and avaliacao is null`,
-    [evidenciaId, decisaoHumana, motivo, `${ATOR} (revisão)`],
+    [evidenciaId, decisaoHumana, motivo, `${ator} (revisão)`],
   ).catch((error) => {
     // Sem a migração 022 a tabela não existe; a revisão segue normalmente.
     if (error.code !== "42P01") throw error;
@@ -331,7 +334,7 @@ async function criarProjetoDaNoticia(evidenciaId, dados, { ator = ATOR, origem =
       [evidenciaId, ator],
     );
     await marcarVinculada(client, evidenciaId);
-    if (ator === ATOR) await rotularPelaRevisao(client, evidenciaId, "criar_projeto");
+    if (ehHumano(ator)) await rotularPelaRevisao(client, evidenciaId, "criar_projeto", null, ator);
     return projeto;
   }, ator);
 }
@@ -360,7 +363,7 @@ async function vincularNoticia(evidenciaId, projetoId, { ator = ATOR, origem = "
       [evidenciaId, projetoId, ator],
     );
     await marcarVinculada(client, evidenciaId);
-    if (ator === ATOR) await rotularPelaRevisao(client, evidenciaId, "vincular");
+    if (ehHumano(ator)) await rotularPelaRevisao(client, evidenciaId, "vincular", null, ator);
   }, ator);
 }
 
@@ -393,7 +396,7 @@ async function descartarNoticia(evidenciaId, motivo, { ator = ATOR, rotulo = "Re
         where evidencia_id = $1 and situacao = 'sugerido'`,
       [evidenciaId, ator],
     );
-    if (ator === ATOR) await rotularPelaRevisao(client, evidenciaId, "descartar", motivo || null);
+    if (ehHumano(ator)) await rotularPelaRevisao(client, evidenciaId, "descartar", motivo || null, ator);
   }, ator);
 }
 
@@ -452,8 +455,71 @@ async function excluirProjeto(id) {
   });
 }
 
+// Campos do projeto que uma pessoa pode corrigir à mão (painel ou MCP).
+const CAMPOS_EDITAVEIS = [
+  "titulo", "objeto", "uf", "municipio", "valor_estimado_brl", "fonte_valor",
+  "flag_validacao", "estagio", "tendencia", "data_anuncio", "data_inicio", "data_fim",
+];
+
+/** Corrige campos do projeto. Só os de CAMPOS_EDITAVEIS; o log_acao guarda o antes e o depois. */
+async function atualizarProjeto(id, campos, { ator = ATOR } = {}) {
+  const nomes = Object.keys(campos).filter((c) => CAMPOS_EDITAVEIS.includes(c) && campos[c] !== undefined);
+  if (!nomes.length) throw new Error("Nenhum campo editável informado.");
+  return emTransacao(async (client) => {
+    const sets = nomes.map((c, i) => `${c} = $${i + 2}`).join(", ");
+    const { rows: [projeto] } = await client.query(
+      `update capex_radar.projetos set ${sets}, atualizado_em = now()
+        where id = $1 returning id, titulo, ${nomes.join(", ")}`,
+      [id, ...nomes.map((c) => campos[c])],
+    );
+    if (!projeto) throw new Error("Projeto não encontrado.");
+    return projeto;
+  }, ator);
+}
+
+/**
+ * Muda a situação do projeto na carteira: confirmar (em_revisao -> ativo),
+ * devolver para revisão ou descartar. Confirmar também marca como correta a
+ * decisão do agente que criou o projeto, como na aba Agente.
+ */
+async function alterarStatusProjeto(id, status, { ator = ATOR, motivo = null } = {}) {
+  if (!["ativo", "em_revisao", "descartado"].includes(status)) throw new Error(`Status inválido: ${status}`);
+  return emTransacao(async (client) => {
+    const { rows: [antes] } = await client.query(
+      "select id, titulo, status from capex_radar.projetos where id = $1 for update",
+      [id],
+    );
+    if (!antes) throw new Error("Projeto não encontrado.");
+    if (antes.status === status) return { ...antes, alterado: false };
+    await client.query(
+      `update capex_radar.projetos
+          set status = $2, atualizado_em = now(),
+              avaliacao = case when $2 = 'descartado'
+                then coalesce(avaliacao, '{}'::jsonb) || jsonb_build_object(
+                       'status_anterior', $3::text, 'motivo', $4::text, 'por', $5::text, 'em', now())
+                else avaliacao end
+        where id = $1`,
+      [id, status, antes.status, motivo, ator],
+    );
+    if (antes.status === "em_revisao" && status === "ativo") {
+      await client.query(
+        `update capex_radar.agente_decisao
+            set avaliacao = 'correta', avaliado_por = $2, avaliado_em = now(),
+                decisao_correta = case when decisao = 'revisar' then null else decisao end,
+                motivo_correto = motivo
+          where projeto_id = $1 and acao = 'projeto_criado' and avaliacao is null`,
+        [id, ator],
+      ).catch((error) => { if (!["42P01", "42703"].includes(error.code)) throw error; });
+    }
+    return { id, titulo: antes.titulo, status_anterior: antes.status, status, alterado: true };
+  }, ator);
+}
+
 module.exports = {
   ATOR,
+  CAMPOS_EDITAVEIS,
+  atualizarProjeto,
+  alterarStatusProjeto,
   SITUACOES,
   FILTRO_SITUACAO,
   emTransacao,
