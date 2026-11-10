@@ -610,7 +610,7 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
   else cards = `<div class="empty"><h2>Nenhum projeto ainda</h2><p>Aprove uma notícia na lista para criar o primeiro.</p><a class="button" href="/monitoramento">Ver notícias</a></div>`;
   return layout({
     title: "Carteira",
-    active: "monitoramento",
+    active: "projetos",
     scripts: SCRIPT,
     body: `
       ${notice}
@@ -632,7 +632,7 @@ function paginaProjeto({ projeto, timeline, notice }) {
     </article>`).join("");
   return layout({
     title: projeto.titulo,
-    active: "monitoramento",
+    active: "projetos",
     scripts: SCRIPT,
     body: `
       ${notice}

@@ -74,6 +74,9 @@
       feito = true;
       main().replaceWith(novo);
       document.title = doc.title;
+      // O destaque do menu muda entre Monitoramento e Projetos (Carteira).
+      const menu = doc.querySelector(".topbar nav");
+      if (menu) document.querySelector(".topbar nav")?.replaceWith(menu);
       depois();
     };
     if (document.startViewTransition && !document.hidden) {
