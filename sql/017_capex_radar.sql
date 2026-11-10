@@ -286,7 +286,14 @@ join capex_radar.fontes f     on f.codigo = e.fonte_codigo
 where ep.situacao = 'aceito';
 
 -- Carteira: projeto com empresa, local e resumo das evidências (base dos filtros).
-create or replace view capex_radar.vw_carteira as
+-- Só cria a view quando ela não existe. A 021 redefine a view com uma coluna a
+-- mais (local_origem), e um create or replace com a versão antiga falharia no
+-- deploy ("cannot drop columns from view"), que reaplica todos os arquivos.
+do $do$
+begin
+  if to_regclass('capex_radar.vw_carteira') is null then
+    execute $v$
+create view capex_radar.vw_carteira as
 select
   p.id,
   p.titulo,
@@ -321,7 +328,11 @@ left join lateral (
          max(t.data_original) as ultima_evidencia_em
   from capex_radar.vw_projeto_timeline t
   where t.projeto_id = p.id
-) ev on true;
+) ev on true
+    $v$;
+  end if;
+end
+$do$;
 
 -- Fila de revisão: vínculos sugeridos ainda não revisados e evidências sem destino.
 create or replace view capex_radar.vw_fila_revisao as
