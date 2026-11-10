@@ -23,6 +23,33 @@
     setTimeout(() => el.remove(), 4300);
   }
 
+  // -------------------------------------------------------------------------
+  // Pedidos JSON tolerantes: o proxy do Railway responde 429 com o texto
+  // "rate limited" (não é JSON). Nesse caso espera e tenta de novo algumas
+  // vezes; qualquer outra resposta que não seja JSON vira uma mensagem legível.
+  // -------------------------------------------------------------------------
+  const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  async function pedirJson(url, opcoes = {}, { tentativas = 4 } = {}) {
+    for (let tentativa = 1; ; tentativa += 1) {
+      const resposta = await fetch(url, opcoes);
+      if (resposta.status === 429 && tentativa < tentativas) {
+        const retry = Number(resposta.headers.get("Retry-After"));
+        await esperar(Number.isFinite(retry) && retry > 0 ? retry * 1000 : 1500 * 2 ** (tentativa - 1));
+        continue;
+      }
+      const texto = await resposta.text();
+      let dados = null;
+      try { dados = JSON.parse(texto); } catch { /* resposta não é JSON */ }
+      if (dados) return { resposta, dados };
+      const erro = new Error(resposta.status === 429
+        ? "O servidor limitou os pedidos por um momento. Espere alguns segundos e tente de novo."
+        : `O servidor respondeu ${resposta.status}${texto ? `: ${texto.slice(0, 120)}` : ""}`);
+      erro.status = resposta.status;
+      throw erro;
+    }
+  }
+
   function atualizarNumeros(contagens) {
     if (!contagens) return;
     for (const [chave, valor] of Object.entries(contagens)) {
@@ -128,12 +155,11 @@
       botoes.forEach((el) => { el.disabled = true; });
       card?.classList.add("is-busy");
       try {
-        const resposta = await fetch(form.action, {
+        const { resposta, dados } = await pedirJson(form.action, {
           method: "POST",
           headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
           body: corpo,
         });
-        const dados = await resposta.json();
         if (!resposta.ok || !dados.ok) throw new Error(dados.mensagem || "Não foi possível concluir");
         if (card && dados.card) {
           const tmp = document.createElement("div");
@@ -218,11 +244,13 @@
     if (acompanhando === id) return;
     acompanhando = id;
     while (acompanhando === id) {
+      // Com a aba em segundo plano, não consulta: poupa pedidos ao servidor.
+      if (document.hidden) { await esperar(3000); continue; }
       let dados;
       try {
-        dados = await (await fetch(`/monitoramento/triagem/${id}`, { headers: { Accept: "application/json" } })).json();
+        ({ dados } = await pedirJson(`/monitoramento/triagem/${id}`, { headers: { Accept: "application/json" } }, { tentativas: 1 }));
       } catch {
-        await new Promise((r) => setTimeout(r, 3000));
+        await esperar(6000);
         continue;
       }
       if (!dados.ok) { avisar(dados.mensagem, "erro"); acompanhando = null; return; }
@@ -236,7 +264,7 @@
         if (box) mostrarProgresso(dados.job);
         return;
       }
-      await new Promise((r) => setTimeout(r, 1500));
+      await esperar(3000);
     }
   }
 
@@ -245,12 +273,11 @@
     if (!botao) return;
     botao.disabled = true;
     try {
-      const resposta = await fetch("/monitoramento/triagem", {
+      const { dados } = await pedirJson("/monitoramento/triagem", {
         method: "POST",
         headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ grupo_id: botao.dataset.grupo || "", modo: botao.dataset.modo || "triagem" }),
       });
-      const dados = await resposta.json();
       if (!dados.ok) throw new Error(dados.mensagem);
       mostrarProgresso(dados.job);
       if (dados.job.status === "rodando") acompanhar(dados.job.id);
