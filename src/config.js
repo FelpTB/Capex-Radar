@@ -33,6 +33,11 @@ function getConfig() {
     claudeEnrichModel: process.env.CLAUDE_ENRICH_MODEL?.trim() || "claude-sonnet-5-5",
     claudeFilter3Model: process.env.CLAUDE_FILTER3_MODEL?.trim() || "claude-sonnet-5-5",
     dadosGovToken: process.env.TOKEN_DADOS_GOV?.trim() || null,
+    // Acesso MCP: endereço público (vira o emissor OAuth) e login Google da ABC Advise.
+    radarUrl: (process.env.RADAR_URL?.trim() || "https://capex-radar-buscafornecedor.up.railway.app").replace(/\/+$/, ""),
+    googleClientId: process.env.GOOGLE_CLIENT_ID?.trim() || null,
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim() || null,
+    mcpDominio: (process.env.MCP_DOMINIO?.trim() || "abcadvise.com.br").toLowerCase(),
     port: Number(process.env.PORT || 3000),
     nodeEnv,
     isProduction: nodeEnv === "production",

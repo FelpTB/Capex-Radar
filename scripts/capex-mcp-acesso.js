@@ -1,11 +1,17 @@
-// Acessos MCP ao Radar CapEx: cria, lista e revoga tokens pessoais.
+// Acessos MCP ao Radar CapEx.
+//
+// Normalmente ninguém precisa receber nada: a pessoa conecta o Radar no Claude
+// e entra com a conta Google da organização, ganhando 'leitura'. Use liberar
+// para dar 'edicao' a um e-mail (antes ou depois do primeiro login).
 //
 // Uso:
+//   npm run capex:mcp -- liberar --email maria@abcadvise.com.br --papel edicao
 //   npm run capex:mcp -- criar --nome "Maria Souza" --email maria@abcadvise.com.br --papel edicao
 //   npm run capex:mcp -- listar
 //   npm run capex:mcp -- revogar --email maria@abcadvise.com.br
 //   npm run capex:mcp -- uso [--email maria@abcadvise.com.br] [--limite 50]
 //
+// criar gera um token pessoal fixo, para clientes MCP sem login OAuth.
 // O token aparece uma única vez, na criação; o banco guarda só o hash. Para
 // trocar um token, revogue e crie outro. Papéis: leitura | edicao.
 // Endereço mostrado nas instruções: RADAR_URL, ou o do Railway por padrão.
@@ -55,9 +61,28 @@ Claude Desktop / claude.ai (Configurações > Conectores > Adicionar conector pe
 `);
 }
 
+async function liberar(client, args) {
+  if (!args.email) throw new Error("Informe --email.");
+  const papel = args.papel || "edicao";
+  if (!mcp.PAPEIS.includes(papel)) throw new Error(`Papel inválido: ${papel}. Use ${mcp.PAPEIS.join(" ou ")}.`);
+  const email = args.email.trim().toLowerCase();
+  await client.query("select set_config('capex_radar.ator', 'usuario:admin:capex-mcp', false)");
+  const { rows: [atual] } = await client.query(
+    `update capex_radar.mcp_acessos set papel = $2
+      where lower(email) = $1 and revogado_em is null returning nome`,
+    [email, papel],
+  );
+  if (atual) return console.log(`${atual.nome} <${email}> agora tem papel ${papel}.`);
+  await client.query(
+    `insert into capex_radar.mcp_acessos (nome, email, papel, origem) values ($1, $2, $3, 'liberado')`,
+    [args.nome?.trim() || email, email, papel],
+  );
+  console.log(`${email} liberado com papel ${papel}. A pessoa entra sozinha, com a conta Google, ao conectar o Radar no Claude.`);
+}
+
 async function listar(client) {
   const { rows } = await client.query(
-    `select a.nome, a.email, a.papel, a.token_inicio, a.criado_em, a.revogado_em, a.ultimo_uso_em,
+    `select a.nome, a.email, a.papel, a.token_inicio, a.origem, a.criado_em, a.revogado_em, a.ultimo_uso_em,
             (select count(*)::int from capex_radar.mcp_uso u where u.acesso_id = a.id) as chamadas
        from capex_radar.mcp_acessos a
       order by a.revogado_em is not null, a.nome`,
@@ -66,7 +91,8 @@ async function listar(client) {
   for (const r of rows) {
     const situacao = r.revogado_em ? `revogado em ${r.revogado_em.toISOString().slice(0, 10)}` : "ativo";
     const uso = r.ultimo_uso_em ? `último uso ${r.ultimo_uso_em.toISOString().slice(0, 16).replace("T", " ")}` : "nunca usado";
-    console.log(`${r.nome.padEnd(28)} ${r.email.padEnd(36)} ${r.papel.padEnd(8)} ${r.token_inicio}…  ${situacao}, ${uso}, ${r.chamadas} chamadas`);
+    const token = r.token_inicio ? `token ${r.token_inicio}…` : "login Google";
+    console.log(`${r.nome.padEnd(28)} ${r.email.padEnd(36)} ${r.papel.padEnd(8)} ${token.padEnd(20)} ${situacao}, ${uso}, ${r.chamadas} chamadas`);
   }
 }
 
@@ -96,8 +122,8 @@ async function uso(client, args) {
 
 async function main() {
   const args = argumentos(process.argv.slice(2));
-  const comandos = { criar, listar, revogar, uso };
-  if (!comandos[args.comando]) throw new Error("Comando: criar | listar | revogar | uso");
+  const comandos = { liberar, criar, listar, revogar, uso };
+  if (!comandos[args.comando]) throw new Error("Comando: liberar | criar | listar | revogar | uso");
   const config = getConfig();
   const client = new Client({
     connectionString: config.databaseUrl,

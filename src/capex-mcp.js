@@ -45,7 +45,15 @@ function tokenDaRequisicao(req) {
   return req.params?.token || null;
 }
 
-async function autenticar(token, { db = pool } = {}) {
+/**
+ * Quem é a pessoa: token pessoal fixo (cxr_) ou token do login com Google
+ * (cxa_, emitido pelo provedor OAuth de capex-mcp-oauth.js).
+ */
+async function autenticar(token, { db = pool, provedor = null } = {}) {
+  if (token && provedor && token.startsWith("cxa_")) {
+    const info = await provedor.verifyAccessToken(token).catch(() => null);
+    return info?.extra?.acesso || null;
+  }
   if (!token || !token.startsWith(PREFIXO_TOKEN)) return null;
   const { rows: [acesso] } = await db.query(
     `update capex_radar.mcp_acessos set ultimo_uso_em = now()
@@ -398,14 +406,21 @@ function erroJsonRpc(res, status, mensagem) {
 /** Rotas /mcp (token no Authorization: Bearer) e /mcp/<token> (para clientes sem cabeçalho). */
 function registrarMcp(app, deps = {}) {
   const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
+  const { getOAuthProtectedResourceMetadataUrl } = require("@modelcontextprotocol/sdk/server/auth/router.js");
+  const oauth = require("./capex-mcp-oauth");
+  const config = deps.config || require("./config").getConfig();
+  // Login com a conta Google da organização: o cliente MCP descobre e conduz sozinho.
+  const provedor = deps.provedor || oauth.criarProvedor({ db: deps.db, config, google: deps.google });
+  oauth.registrarOAuth(app, provedor, config);
+  const metadados = getOAuthProtectedResourceMetadataUrl(new URL(`${config.radarUrl}/mcp`));
   const tratar = async (req, res) => {
-    const acesso = await autenticar(tokenDaRequisicao(req), deps).catch((error) => {
+    const acesso = await autenticar(tokenDaRequisicao(req), { ...deps, provedor }).catch((error) => {
       console.error("[mcp] autenticação:", error.message);
       return null;
     });
     if (!acesso) {
-      res.set("WWW-Authenticate", 'Bearer realm="radar-capex"');
-      return erroJsonRpc(res, 401, "Token ausente, inválido ou revogado. Peça um acesso ao administrador do Radar CapEx.");
+      res.set("WWW-Authenticate", `Bearer realm="radar-capex", resource_metadata="${metadados}"`);
+      return erroJsonRpc(res, 401, "Entre com a sua conta Google da organização (o cliente MCP abre o login) ou use um token pessoal válido.");
     }
     // Sem sessão: cada requisição sobe um servidor com as ferramentas do papel da pessoa.
     const servidor = criarServidorMcp(acesso, deps);

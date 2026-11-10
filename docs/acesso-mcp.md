@@ -1,54 +1,49 @@
 # Acesso ao Radar CapEx por MCP
 
-Pessoas da ABC Advise podem consultar e alterar o Radar CapEx conversando com um modelo (Claude ou outro cliente compatível com MCP). O modelo usa as mesmas regras do painel: cada alteração fica registrada com o nome da pessoa.
+Pessoas da ABC Advise podem consultar e alterar o Radar CapEx conversando com um modelo (Claude ou outro cliente compatível com MCP). Cada pessoa conecta sozinha, entrando com a própria conta Google da empresa. O modelo segue as mesmas regras do painel, e cada alteração fica registrada com o nome da pessoa.
 
 ## O que é
 
-- **MCP** (Model Context Protocol) é o padrão que conecta um assistente de IA a um sistema. O Radar publica um servidor MCP em `/mcp`.
-- Cada pessoa recebe um **token pessoal**. O token define quem ela é e o que pode fazer.
+- **MCP** (Model Context Protocol) é o padrão que conecta um assistente de IA a um sistema. O Radar publica um servidor MCP em `https://capex-radar-buscafornecedor.up.railway.app/mcp`.
+- Na primeira conexão, o Claude abre o login do Google. Só entram contas **@abcadvise.com.br**.
 - O modelo não acessa o banco diretamente. Ele só usa as ferramentas descritas abaixo, que chamam as mesmas funções dos botões do painel.
 
 ## Papéis
 
-| Papel | Pode | Não pode |
-|---|---|---|
-| `leitura` | Consultar a carteira, os projetos, as notícias e o histórico de alterações | Alterar qualquer coisa |
-| `edicao` | Tudo da leitura, mais corrigir projetos, confirmar ou descartar projetos, e aprovar, vincular, descartar ou restaurar notícias | Excluir projetos, rodar SQL, mudar código e disparar as rodadas de IA (que gastam créditos) |
+| Papel | Quem tem | Pode | Não pode |
+|---|---|---|---|
+| `leitura` | Qualquer conta @abcadvise.com.br, a partir do primeiro login | Consultar a carteira, os projetos, as notícias e o histórico de alterações | Alterar qualquer coisa |
+| `edicao` | Quem o administrador liberou pelo e-mail | Tudo da leitura, mais corrigir projetos, confirmar ou descartar projetos, e aprovar, vincular, descartar ou restaurar notícias | Excluir projetos, rodar SQL, mudar código e disparar as rodadas de IA (que gastam créditos) |
 
-Exclusões e rodadas de IA ficam com o administrador do Radar.
-
-## Como pedir acesso
-
-Peça ao administrador do Radar, informando nome, e-mail da ABC Advise e papel (`leitura` ou `edicao`). Ele envia o token por um canal privado.
-
-**O token é pessoal.** Não compartilhe, não cole em documentos, e-mails ou canais abertos. Se vazar, avise o administrador: ele revoga o token e cria outro.
+Exclusões e rodadas de IA ficam com o administrador do Radar. Para ter edição, peça ao administrador. Não precisa receber nada: depois de liberado, o papel vale na próxima conversa.
 
 ## Como conectar
 
-Endereço do Radar: `https://capex-radar-buscafornecedor.up.railway.app`. Nos exemplos, `cxr_...` é o seu token.
+Ninguém precisa enviar nada para você. Só são necessários o endereço e a sua conta Google da ABC Advise.
 
 ### Claude Desktop ou claude.ai
 
 1. Abra **Configurações > Conectores > Adicionar conector personalizado**.
 2. Nome: `Radar CapEx`.
-3. URL: `https://capex-radar-buscafornecedor.up.railway.app/mcp/cxr_...` (o token vai no fim do endereço).
-4. Salve e ative o conector numa conversa, pelo menu de ferramentas.
+3. URL: `https://capex-radar-buscafornecedor.up.railway.app/mcp`
+4. Clique em **Conectar**. Abre o login do Google: entre com a conta @abcadvise.com.br.
+5. Ative o conector numa conversa, pelo menu de ferramentas.
 
-Em planos Team ou Enterprise, o conector pode precisar ser adicionado por um administrador da organização no Claude.
+Em planos Team ou Enterprise, um administrador da organização no Claude pode adicionar o conector uma vez para todos. Cada pessoa só clica em **Conectar** e entra com a própria conta.
 
 ### Claude Code
 
 ```bash
-claude mcp add --transport http radar-capex https://capex-radar-buscafornecedor.up.railway.app/mcp --header "Authorization: Bearer cxr_..."
+claude mcp add --transport http radar-capex https://capex-radar-buscafornecedor.up.railway.app/mcp
 ```
+
+Depois, dentro do Claude Code, rode `/mcp`, escolha `radar-capex` e autentique. O navegador abre o login do Google.
 
 ### Outros clientes MCP
 
-Qualquer cliente compatível com **Streamable HTTP** funciona. Há duas formas de passar o token:
-- `POST https://capex-radar-buscafornecedor.up.railway.app/mcp` com o cabeçalho `Authorization: Bearer cxr_...` (preferida);
-- `POST https://capex-radar-buscafornecedor.up.railway.app/mcp/cxr_...`, para clientes que não deixam configurar cabeçalhos.
+Qualquer cliente compatível com **Streamable HTTP** e com autorização OAuth do MCP funciona. Ele descobre o login sozinho a partir da resposta 401 de `/mcp`. O servidor não mantém sessão: cada requisição é independente.
 
-O servidor não mantém sessão: cada requisição é independente.
+Para clientes sem OAuth, o administrador pode gerar um token pessoal fixo (`cxr_...`). Ele é usado no cabeçalho `Authorization: Bearer cxr_...` ou no fim do endereço (`/mcp/cxr_...`). Esse token é pessoal: não compartilhe e avise o administrador se vazar.
 
 ## Ferramentas
 
@@ -94,25 +89,38 @@ O modelo deve mostrar o que vai mudar e pedir confirmação antes de alterar. Co
 
 ## Administração
 
-Comandos para quem administra o Radar, rodados na pasta do projeto com acesso ao banco (`SUPABASE_STRING` no `.env`). `RADAR_URL` troca o endereço impresso nas instruções (padrão: o do Railway).
+### Configuração única: login com Google
+
+Feita uma vez, por quem administra o Google Workspace da ABC Advise ou um projeto no Google Cloud:
+
+1. No [Google Cloud Console](https://console.cloud.google.com/), crie ou escolha um projeto e abra **APIs e serviços > Tela de consentimento OAuth**. Tipo **Interno**: só contas da ABC Advise. Nome: `Radar CapEx`.
+2. Em **Credenciais > Criar credenciais > ID do cliente OAuth**, escolha **Aplicativo da Web**.
+3. Em **URIs de redirecionamento autorizados**, informe `https://capex-radar-buscafornecedor.up.railway.app/oauth/google/callback`.
+4. No Railway, adicione as variáveis `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` com os valores gerados. Opcionalmente, configure `MCP_DOMINIO` (padrão `abcadvise.com.br`) e `RADAR_URL` (padrão: o endereço do Railway).
+
+Sem essas variáveis, quem tenta conectar vê a mensagem "login com Google ainda não foi configurado". Os tokens fixos continuam funcionando.
+
+### Comandos
+
+Rodados na pasta do projeto com acesso ao banco (`SUPABASE_STRING` no `.env`).
 
 ```bash
-npm run capex:mcp -- criar --nome "Maria Souza" --email maria@abcadvise.com.br --papel edicao
+npm run capex:mcp -- liberar --email maria@abcadvise.com.br --papel edicao
 ```
 
-Cria o acesso e imprime o token **uma única vez**, já com as instruções de conexão. O banco guarda só o hash do token: se a pessoa perder o token, revogue e crie outro.
+Dá papel de edição a um e-mail. Pode ser antes ou depois do primeiro login, e vale na próxima conversa da pessoa. Com `--papel leitura`, tira a edição.
 
 ```bash
 npm run capex:mcp -- listar
 ```
 
-Mostra os acessos, o papel, se estão ativos, o último uso e o número de chamadas.
+Mostra os acessos, o papel, a forma de entrada (login Google ou token fixo), se estão ativos, o último uso e o número de chamadas.
 
 ```bash
 npm run capex:mcp -- revogar --email maria@abcadvise.com.br
 ```
 
-Revoga na hora: a próxima chamada com esse token recebe 401.
+Revoga na hora: os tokens da pessoa param de valer e ela não consegue entrar de novo pelo Google. Para devolver o acesso, use `liberar`.
 
 ```bash
 npm run capex:mcp -- uso --email maria@abcadvise.com.br --limite 50
@@ -120,19 +128,26 @@ npm run capex:mcp -- uso --email maria@abcadvise.com.br --limite 50
 
 Mostra as últimas chamadas de uma pessoa (ou de todos, sem `--email`).
 
-Para mudar o papel de alguém, revogue o acesso e crie outro com o papel novo.
+```bash
+npm run capex:mcp -- criar --nome "Maria Souza" --email maria@abcadvise.com.br --papel edicao
+```
+
+Token pessoal fixo, só para clientes MCP sem OAuth. Imprime o token **uma única vez**. O banco guarda só o hash.
 
 ## Segurança
 
-- Tokens têm 192 bits aleatórios e prefixo `cxr_`. Só o hash SHA-256 fica no banco (`capex_radar.mcp_acessos`).
-- O formato com o token no endereço (`/mcp/cxr_...`) existe para clientes que não deixam configurar cabeçalhos, como o conector personalizado do claude.ai. Endereços podem aparecer em logs de proxy: prefira o cabeçalho quando o cliente permitir e revogue tokens que não estejam em uso.
+- O login exige conta Google com e-mail verificado do domínio `abcadvise.com.br`. Contas de fora recebem "sem acesso", e acessos revogados não voltam sozinhos.
+- O fluxo é OAuth 2.1 com PKCE e registro dinâmico de clientes. O token de acesso vale 8 horas, e o de renovação vale 90 dias e é trocado a cada uso. Códigos valem 10 minutos e uma única vez.
+- Só o hash SHA-256 dos tokens fica no banco (`capex_radar.mcp_acessos` e `capex_radar.mcp_oauth_tokens`).
+- O token fixo no endereço (`/mcp/cxr_...`) pode aparecer em logs de proxy. Prefira o login Google.
 - As ferramentas validam tudo o que recebem (ids, estágios, datas) antes de tocar no banco.
-- **O painel web (`/monitoramento`) ainda não tem login.** O MCP exige token, mas quem tiver o endereço do painel consegue usar os botões. Proteger o painel é o próximo passo.
+- **O painel web (`/monitoramento`) ainda não tem login.** O MCP exige login, mas quem tiver o endereço do painel consegue usar os botões.
 
 ## Implementação
 
-- Servidor: `src/capex-mcp.js`, montado em `src/server.js` (`registrarMcp`).
+- Servidor MCP: `src/capex-mcp.js`, montado em `src/server.js` (`registrarMcp`).
+- Login OAuth com Google: `src/capex-mcp-oauth.js`. Usa o `mcpAuthRouter` do SDK oficial, que serve `/authorize`, `/token`, `/register`, `/revoke` e os `.well-known`, e o retorno do Google em `/oauth/google/callback`.
 - Funções de escrita: `src/capex-painel-db.js` (`atualizarProjeto`, `alterarStatusProjeto`, `aprovarNoticia`, `descartarNoticia`, `vincularNoticia`, `restaurarNoticia`).
-- Tabelas: `sql/027_capex_radar_mcp.sql`.
+- Tabelas: `sql/027_capex_radar_mcp.sql` e `sql/028_capex_radar_mcp_oauth.sql`.
 - Administração: `scripts/capex-mcp-acesso.js`.
 - Testes: `test/capex-mcp.test.js`, incluindo uma conexão real com o cliente MCP oficial.

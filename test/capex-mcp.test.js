@@ -174,3 +174,64 @@ test("servidor HTTP: sem token 401; com token lista as ferramentas do papel e ex
     servidor.close();
   }
 });
+
+const oauth = require("../src/capex-mcp-oauth");
+
+test("login Google: só e-mail verificado do domínio da organização", () => {
+  const dominio = "abcadvise.com.br";
+  assert.deepEqual(oauth.contaDoDominio({ email: "Wal@ABCadvise.com.br", email_verified: true, hd: "abcadvise.com.br" }, dominio), { ok: true, email: "wal@abcadvise.com.br" });
+  assert.equal(oauth.contaDoDominio({ email: "wal@gmail.com", email_verified: true }, dominio).ok, false);
+  assert.equal(oauth.contaDoDominio({ email: "wal@abcadvise.com.br", email_verified: false, hd: dominio }, dominio).ok, false);
+  assert.equal(oauth.contaDoDominio({ email: "wal@abcadvise.com.br.evil.com", email_verified: true }, dominio).ok, false);
+});
+
+test("id_token: lê o payload", () => {
+  const payload = Buffer.from(JSON.stringify({ email: "a@b.com" })).toString("base64url");
+  assert.equal(oauth.lerIdToken(`x.${payload}.y`).email, "a@b.com");
+  assert.throws(() => oauth.lerIdToken("abc"));
+});
+
+test("primeiro login cria acesso de leitura; liberado mantém o papel; revogado não entra", async () => {
+  const banco = (linhas) => {
+    const inseridos = [];
+    return {
+      inseridos,
+      async query(sql, params) {
+        if (sql.startsWith("select id, nome, email, papel")) return { rows: linhas };
+        if (sql.includes("insert into capex_radar.mcp_acessos")) {
+          inseridos.push(params);
+          return { rows: [{ id: "novo", nome: params[0], email: params[1], papel: "leitura" }] };
+        }
+        if (sql.startsWith("update capex_radar.mcp_acessos set nome")) return { rows: [] };
+        throw new Error(sql);
+      },
+    };
+  };
+  const vazio = banco([]);
+  assert.equal((await oauth.acessoDoEmail(vazio, "x@abcadvise.com.br", "X")).papel, "leitura");
+  assert.equal(vazio.inseridos.length, 1);
+  const liberado = banco([{ id: "a", nome: "w@abcadvise.com.br", email: "w@abcadvise.com.br", papel: "edicao", revogado_em: null }]);
+  const acesso = await oauth.acessoDoEmail(liberado, "w@abcadvise.com.br", "Wal Tagan");
+  assert.equal(acesso.papel, "edicao");
+  assert.equal(acesso.nome, "Wal Tagan");
+  assert.equal(await oauth.acessoDoEmail(banco([{ id: "r", email: "r@abcadvise.com.br", papel: "edicao", revogado_em: new Date() }]), "r@abcadvise.com.br", "R"), null);
+});
+
+test("sem token, /mcp aponta para os metadados OAuth (o Claude abre o login)", async () => {
+  const app = express();
+  app.use(express.json());
+  mcp.registrarMcp(app, { db: bancoFalso(), painel: painelFalso(), config: { radarUrl: "http://localhost:9", mcpDominio: "abcadvise.com.br" } });
+  const servidor = app.listen(0);
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  try {
+    const r = await fetch(`${base}/mcp`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    assert.equal(r.status, 401);
+    assert.match(r.headers.get("www-authenticate"), /resource_metadata="http:\/\/localhost:9\/\.well-known\/oauth-protected-resource\/mcp"/);
+    const meta = await (await fetch(`${base}/.well-known/oauth-protected-resource/mcp`)).json();
+    assert.deepEqual(meta.authorization_servers, ["http://localhost:9/"]);
+    const as = await (await fetch(`${base}/.well-known/oauth-authorization-server`)).json();
+    assert.equal(as.registration_endpoint, "http://localhost:9/register");
+  } finally {
+    servidor.close();
+  }
+});
