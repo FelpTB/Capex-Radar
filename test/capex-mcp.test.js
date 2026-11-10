@@ -24,6 +24,10 @@ function bancoFalso(acessos = {}) {
         return { rows: [] };
       }
       if (sql.includes("from capex_radar.grupos")) return { rows: [{ id: "g1", nome: "Bracell" }] };
+      if (sql.includes("from capex_radar.mcp_acessos") && sql.includes("lower(email)")) return { rows: [] };
+      if (sql.includes("insert into capex_radar.mcp_acessos")) {
+        return { rows: [{ id: "aberto", nome: "Acesso aberto", email: params[0], papel: "edicao" }] };
+      }
       throw new Error(`consulta inesperada: ${sql}`);
     },
   };
@@ -139,7 +143,7 @@ test("servidor HTTP: sem token 401; com token lista as ferramentas do papel e ex
   const painel = painelFalso();
   const app = express();
   app.use(express.json());
-  mcp.registrarMcp(app, { db, painel });
+  mcp.registrarMcp(app, { db, painel, config: { radarUrl: "http://localhost:9", mcpAberto: false } });
   const servidor = app.listen(0);
   const base = `http://127.0.0.1:${servidor.address().port}`;
   try {
@@ -231,6 +235,33 @@ test("sem token, /mcp aponta para os metadados OAuth (o Claude abre o login)", a
     assert.deepEqual(meta.authorization_servers, ["http://localhost:9/"]);
     const as = await (await fetch(`${base}/.well-known/oauth-authorization-server`)).json();
     assert.equal(as.registration_endpoint, "http://localhost:9/register");
+  } finally {
+    servidor.close();
+  }
+});
+
+test("acesso aberto: sem token, conecta direto com edição e audita como acesso aberto", async () => {
+  const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
+  const { StreamableHTTPClientTransport } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
+  const db = bancoFalso();
+  const painel = painelFalso();
+  const app = express();
+  app.use(express.json());
+  mcp.registrarMcp(app, { db, painel, config: { radarUrl: "http://localhost:9", mcpAberto: true } });
+  const servidor = app.listen(0);
+  const base = `http://127.0.0.1:${servidor.address().port}`;
+  try {
+    // Sem login, o cliente não deve achar servidor OAuth.
+    assert.equal((await fetch(`${base}/.well-known/oauth-authorization-server`)).status, 404);
+    const cliente = new Client({ name: "teste", version: "1.0.0" });
+    await cliente.connect(new StreamableHTTPClientTransport(new URL(`${base}/mcp`)));
+    const nomes = (await cliente.listTools()).tools.map((t) => t.name);
+    assert.ok(nomes.includes("alterar_status_projeto"));
+    const r = await cliente.callTool({ name: "alterar_status_projeto", arguments: { id: PROJETO, status: "ativo" } });
+    assert.ok(!r.isError, r.content?.[0]?.text);
+    assert.equal(painel.chamadas[0].ator, "usuario:mcp:acesso-aberto@radar");
+    assert.equal(db.usos[0].ferramenta, "alterar_status_projeto");
+    await cliente.close();
   } finally {
     servidor.close();
   }

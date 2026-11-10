@@ -37,6 +37,8 @@ function getConfig() {
     radarUrl: (process.env.RADAR_URL?.trim() || "https://capex-radar-buscafornecedor.up.railway.app").replace(/\/+$/, ""),
     googleClientId: process.env.GOOGLE_CLIENT_ID?.trim() || null,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim() || null,
+    // MCP sem login (padrão): qualquer um com o endereço usa, com edição. MCP_ABERTO=0 exige login.
+    mcpAberto: !/^(0|false|no|off)$/i.test(process.env.MCP_ABERTO?.trim() || ""),
     mcpDominio: (process.env.MCP_DOMINIO?.trim() || "abcadvise.com.br").toLowerCase(),
     port: Number(process.env.PORT || 3000),
     nodeEnv,

@@ -403,21 +403,48 @@ function erroJsonRpc(res, status, mensagem) {
   res.status(status).json({ jsonrpc: "2.0", error: { code: -32000, message: mensagem }, id: null });
 }
 
+// Acesso aberto: quem conecta sem login usa este acesso compartilhado, com
+// edição. As alterações ficam no log como 'usuario:mcp:acesso-aberto@radar'.
+const EMAIL_ABERTO = "acesso-aberto@radar";
+let acessoAbertoCache = null;
+
+async function acessoAberto(db) {
+  if (acessoAbertoCache) return acessoAbertoCache;
+  const { rows: [existente] } = await db.query(
+    `select id, nome, email, papel from capex_radar.mcp_acessos
+      where lower(email) = $1 and revogado_em is null`,
+    [EMAIL_ABERTO],
+  );
+  const acesso = existente || (await db.query(
+    `insert into capex_radar.mcp_acessos (nome, email, papel, origem)
+     values ('Acesso aberto', $1, 'edicao', 'liberado')
+     on conflict do nothing
+     returning id, nome, email, papel`,
+    [EMAIL_ABERTO],
+  )).rows[0];
+  if (!acesso) return acessoAberto(db); // outra requisição criou ao mesmo tempo
+  acessoAbertoCache = acesso;
+  return acesso;
+}
+
 /** Rotas /mcp (token no Authorization: Bearer) e /mcp/<token> (para clientes sem cabeçalho). */
 function registrarMcp(app, deps = {}) {
   const { StreamableHTTPServerTransport } = require("@modelcontextprotocol/sdk/server/streamableHttp.js");
   const { getOAuthProtectedResourceMetadataUrl } = require("@modelcontextprotocol/sdk/server/auth/router.js");
   const oauth = require("./capex-mcp-oauth");
   const config = deps.config || require("./config").getConfig();
+  const db = deps.db || pool;
   // Login com a conta Google da organização: o cliente MCP descobre e conduz sozinho.
+  // Com o acesso aberto (MCP_ABERTO, padrão), não há login: o cliente não deve achar OAuth.
   const provedor = deps.provedor || oauth.criarProvedor({ db: deps.db, config, google: deps.google });
-  oauth.registrarOAuth(app, provedor, config);
+  if (!config.mcpAberto) oauth.registrarOAuth(app, provedor, config);
   const metadados = getOAuthProtectedResourceMetadataUrl(new URL(`${config.radarUrl}/mcp`));
   const tratar = async (req, res) => {
-    const acesso = await autenticar(tokenDaRequisicao(req), { ...deps, provedor }).catch((error) => {
+    let acesso = await autenticar(tokenDaRequisicao(req), { ...deps, provedor }).catch((error) => {
       console.error("[mcp] autenticação:", error.message);
       return null;
     });
+    if (!acesso && config.mcpAberto) acesso = await acessoAberto(db);
     if (!acesso) {
       res.set("WWW-Authenticate", `Bearer realm="radar-capex", resource_metadata="${metadados}"`);
       return erroJsonRpc(res, 401, "Entre com a sua conta Google da organização (o cliente MCP abre o login) ou use um token pessoal válido.");
