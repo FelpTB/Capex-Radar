@@ -142,7 +142,8 @@ const PROJETOS = [
 
 test("filtros da carteira aceitam só valores conhecidos", () => {
   const f = filtrosCarteira({ grupo: "x", nicho: "ecommerce", uf: "sp", estagio: "nada", status: "todos", valor: "1b", ano: "2024", ordem: "valor" });
-  assert.deepEqual(f, { grupo: "", nicho: "ecommerce", uf: "SP", estagio: "", status: "todos", valor: "1b", ano: "2024", ordem: "valor" });
+  assert.deepEqual(f, { grupo: "", nicho: "ecommerce", uf: "SP", estagio: "", status: "todos", valor: "1b", ano: "2024", processamento: "", ordem: "valor" });
+  assert.equal(filtrosCarteira({ processamento: "processado" }).processamento, "processado");
   assert.equal(filtrosCarteira({}).ordem, "recentes");
 });
 
@@ -171,6 +172,24 @@ test("página da carteira mostra filtros, contagem e vazio do filtro", () => {
   const vazio = paginaCarteira({ projetos: PROJETOS, filtros: filtrosCarteira({ uf: "AM" }) });
   assert.match(vazio, /Nenhum projeto neste filtro/);
   assert.match(paginaCarteira({ projetos: [] }), /Nenhum projeto ainda/);
+});
+
+test("carteira separa os processados e agrupa por status; projeto mostra a linha do tempo", () => {
+  const { paginaProjeto } = require("../src/capex-painel");
+  const processado = { ...PROJETOS[0], secundarias: { gravadas: 2, fontes: [{ codigo: "SEC-CNO", diretas: 2 }], em: "2026-11-10" }, linha_tempo: { resumo: "Fábrica em licença.", marcos: [{ data: "2024-03-01", tipo: "licenca", marco: "Licença prévia", evidencias: ["e1"] }] } };
+  const lista = [processado, PROJETOS[1], PROJETOS[2]];
+  const ids = (q) => filtrarCarteira([...lista], filtrosCarteira(q)).map((p) => p.id);
+  assert.deepEqual(ids({ processamento: "processado" }), ["p1"]);
+  assert.deepEqual(ids({ processamento: "pendente", status: "todos" }), ["p2", "p3"]);
+  const html = paginaCarteira({ projetos: lista, filtros: filtrosCarteira({ status: "todos" }) });
+  assert.ok(html.indexOf("Ativo <span") < html.indexOf("Em revisão <span") && html.indexOf("Em revisão <span") < html.indexOf("Descartado <span"));
+  assert.match(html, /linha do tempo com 1 marco/);
+  assert.match(html, /<select name="processamento">/);
+  const pagina = paginaProjeto({ projeto: { ...processado, matriz_cnpj: "1", flag_validacao: "A_VALIDAR" }, timeline: [{ evidencia_id: "e1", titulo: "CNO", fonte_nome: "CNO dados abertos (RFB)", data_original: "2024-03-01" }], notice: "" });
+  assert.match(pagina, /Linha do tempo do projeto/);
+  assert.match(pagina, /01\/03\/2024/);
+  assert.match(pagina, /fonte oficial/);
+  assert.match(pagina, /Fontes secundárias consultadas: 1, com 2 registro/);
 });
 
 test("local do projeto diz quando é só a sede da matriz", () => {

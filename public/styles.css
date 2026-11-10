@@ -442,3 +442,15 @@ details.js-janela[open] { min-width: 380px; }
   .news-card__discard input { width: 100%; }
   .news-card__more { margin-left: 0; }
 }
+
+/* Carteira separada por status e linha do tempo do projeto */
+.project-status-group { margin-top: 22px; }
+.project-status-group > h2 { margin: 0 0 12px; font-size: 18px; }
+.project-timeline { margin: 18px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.project-timeline > h2 { margin-top: 0; }
+.milestones { list-style: none; margin: 12px 0 0; padding: 0; border-left: 2px solid var(--line); }
+.milestone { display: grid; grid-template-columns: 96px 1fr; gap: 10px; padding: 0 0 12px 14px; position: relative; font-size: 14px; }
+.milestone::before { content: ""; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); }
+.milestone__date { color: var(--muted); font-variant-numeric: tabular-nums; }
+.milestone p { margin: 2px 0 0; font-size: 12px; }
+@media (max-width: 600px) { .milestone { grid-template-columns: 1fr; gap: 2px; } }

@@ -139,3 +139,52 @@ Os projetos que já estavam na carteira nasceram, muitas vezes, só da manchete.
   ```bash
   npm run capex:avaliar-projetos
   ```
+
+## Fontes secundárias e linha do tempo dos projetos
+
+Os maiores projetos da carteira passam pelas fontes secundárias e ganham uma linha do tempo. Ativos e em revisão entram juntos, ordenados por valor estimado. O código está em [`src/capex-fontes-secundarias.js`](../../src/capex-fontes-secundarias.js) e a migração em [`sql/026`](../../sql/026_capex_radar_fontes_secundarias.sql).
+
+1. **Consulta.** A rotina usa a coleta do MVP (`consultViableSources`, em `src/enrichment/run.js`, no modo que não grava) com:
+   - o CNPJ da matriz;
+   - a razão social;
+   - o local e a data do anúncio.
+
+   São consultadas as fontes conectadas que valem para a UF do projeto (BNDES, SIGA, Ibama, CVM, ANTT, ANTAQ, ANP, REIDI, diários oficiais estaduais e municipais, DOU...). O CNO é lido uma vez para todos os projetos, pela raiz do CNPJ, a partir do arquivo local em `cno/`. Os mapas das fontes estão em [enriquecimento-fontes-secundarias.md](../enriquecimento-fontes-secundarias.md).
+2. **Correlação.** Registro de outro estado sai sem passar pelo modelo. Os outros são lidos por `judgeEvidenceContext` (`CLAUDE_DECISION_MODEL`), e só fica o de correlação **direta** com esta obra: mesmo local e contexto do projeto, não só a mesma empresa.
+3. **Evidência.** Cada registro que fica vira uma linha de `capex_radar.evidencias`:
+   - `fonte_codigo` da fonte;
+   - data do próprio registro (contratação, emissão da licença, início da obra...);
+   - `triagem = 'vinculada'`;
+   - o motivo da correlação em `triagem_motivo`.
+
+   A linha é ligada ao projeto como vínculo aceito de origem `ia`. A chave `sec:<fonte>:<hash>` evita duplicar o registro numa nova rodada.
+4. **Linha do tempo.** O modelo (`CLAUDE_FILTER3_MODEL`) lê as notícias (com o enriquecimento) e os registros oficiais e devolve:
+   - os marcos em ordem (anúncio, licença, financiamento, terreno, contratação, obra, operação, atraso, cancelamento), cada um com as evidências que o sustentam;
+   - um resumo;
+   - o estágio atual.
+
+   O estágio do projeto só avança.
+5. **Registro.** O resultado fica em `projetos.secundarias` (fontes consultadas, quantas diretas e quantas gravadas) e em `projetos.linha_tempo`.
+
+**Na Carteira:**
+- **Filtro "Processamento":** separa os projetos com fontes secundárias e linha do tempo dos que ainda não foram processados.
+- **Status:** os cards vêm separados em Ativo, Em revisão e Descartado, na ordem escolhida dentro de cada grupo.
+- **Página do projeto:** mostra a linha do tempo (resumo, marcos com data e fonte) antes da lista de evidências. As evidências levam o selo "notícia" ou "fonte oficial".
+
+**Linha de comando.**
+- Ver quais projetos seriam processados, sem consultar nada:
+  ```bash
+  npm run capex:secundarias -- --listar
+  ```
+- Processar os 20 maiores:
+  ```bash
+  npm run capex:secundarias
+  ```
+- Processar só os 5 maiores:
+  ```bash
+  npm run capex:secundarias -- --limite 5
+  ```
+- Refazer só a linha do tempo:
+  ```bash
+  npm run capex:secundarias -- --so linha
+  ```

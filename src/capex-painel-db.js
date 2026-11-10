@@ -400,7 +400,7 @@ async function descartarNoticia(evidenciaId, motivo, { ator = ATOR, rotulo = "Re
 // Projetos da carteira. Os descartados ficam fora, a não ser que sejam pedidos.
 async function carteira({ incluirDescartados = false } = {}) {
   const { rows } = await pool.query(
-    `select v.*, p.avaliacao
+    `select v.*, p.avaliacao, p.secundarias, p.linha_tempo
        from capex_radar.vw_carteira v
        join capex_radar.projetos p on p.id = v.id
       where $1 or v.status <> 'descartado'
@@ -420,7 +420,7 @@ async function obterProjeto(id) {
         order by data_original nulls last`,
       [id],
     ),
-    pool.query("select objeto, fonte_valor, avaliacao from capex_radar.projetos where id = $1", [id]),
+    pool.query("select objeto, fonte_valor, avaliacao, secundarias, linha_tempo from capex_radar.projetos where id = $1", [id]),
   ]);
   return { projeto: { ...rows[0], ...projeto.rows[0] }, timeline: timeline.rows };
 }

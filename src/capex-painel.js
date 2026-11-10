@@ -532,6 +532,19 @@ function listaCurtaNoticias(noticias, guardadas = new Set()) {
 
 const STATUS_ROTULO = { ativo: "Ativo", em_revisao: "Em revisão", descartado: "Descartado" };
 
+// Processamento do projeto: fontes secundárias consultadas e linha do tempo montada.
+const PROCESSAMENTO = {
+  processado: { rotulo: "Com fontes secundárias e linha do tempo", teste: (p) => Boolean(p.secundarias && p.linha_tempo) },
+  pendente: { rotulo: "Ainda não processados", teste: (p) => !(p.secundarias && p.linha_tempo) },
+};
+
+const STATUS_ORDEM = ["ativo", "em_revisao", "descartado"];
+
+const MARCO_ROTULO = {
+  anuncio: "Anúncio", licenca: "Licença", financiamento: "Financiamento", terreno: "Terreno",
+  contratacao: "Contratação", obra: "Obra", operacao: "Operação", atraso: "Atraso", cancelamento: "Cancelamento", outro: "Marco",
+};
+
 const AVALIACAO_ROTULO = { valido: "válido", invalido: "inválido", duplicado: "duplicado" };
 
 // Uma linha com o que a avaliação da carteira decidiu sobre o projeto.
@@ -584,6 +597,7 @@ function filtrosCarteira(query = {}) {
     status: STATUS_ROTULO[query.status] || query.status === "todos" ? query.status : "",
     valor: FAIXAS_VALOR[query.valor] ? query.valor : "",
     ano: /^\d{4}$/.test(texto(query.ano)) ? texto(query.ano) : "",
+    processamento: PROCESSAMENTO[query.processamento] ? query.processamento : "",
     ordem: ORDENS[query.ordem] ? query.ordem : "recentes",
   };
 }
@@ -597,7 +611,8 @@ function filtrarCarteira(projetos, f) {
     && (!f.estagio || p.estagio === f.estagio)
     && (f.status === "todos" || (f.status ? p.status === f.status : p.status !== "descartado"))
     && (!f.valor || FAIXAS_VALOR[f.valor].teste(p.valor_estimado_brl == null ? null : Number(p.valor_estimado_brl)))
-    && (!f.ano || anoDoProjeto(p) === f.ano));
+    && (!f.ano || anoDoProjeto(p) === f.ano)
+    && (!f.processamento || PROCESSAMENTO[f.processamento].teste(p)));
   const chave = ORDENS[f.ordem || "recentes"].chave;
   return lista.sort((a, b) => chave(a) - chave(b));
 }
@@ -613,6 +628,7 @@ function cardProjeto(p) {
         <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
         <p class="project-card__company">${esc(p.grupo)} · ${esc(p.matriz_razao_social)}</p>
         ${p.avaliacao && p.avaliacao.decisao !== "valido" ? linhaAvaliacao(p.avaliacao) : ""}
+        ${PROCESSAMENTO.processado.teste(p) ? `<p class="project-card__review muted">${badge("fontes secundárias", "success")} ${p.secundarias.gravadas || 0} registro(s) oficial(is) · linha do tempo com ${(p.linha_tempo.marcos || []).length} marco(s)</p>` : ""}
         <dl class="facts">
           <div><dt>Local</dt><dd>${esc(localProjeto(p))}</dd></div>
           <div><dt>Valor</dt><dd>${esc(money(p.valor_estimado_brl))}</dd></div>
@@ -639,12 +655,13 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
     uf: [["", "Todas"], ...unicos(projetos.map((p) => p.uf)).sort().map((uf) => [uf, uf])],
     estagio: [["", "Todos"], ...Object.entries(ESTAGIO_ROTULO)],
     status: [["", "Ativos e em revisão"], ...Object.entries(STATUS_ROTULO), ["todos", "Todos"]],
+    processamento: [["", "Todos"], ...Object.entries(PROCESSAMENTO).map(([k, v]) => [k, v.rotulo])],
     valor: [["", "Qualquer valor"], ...Object.entries(FAIXAS_VALOR).map(([k, v]) => [k, v.rotulo])],
     ano: [["", "Todos"], ...unicos(projetos.map(anoDoProjeto)).sort().reverse().map((a) => [a, a])],
     ordem: Object.entries(ORDENS).map(([k, v]) => [k, v.rotulo]),
   };
   const campo = (nome, rotulo) => `<div><label>${rotulo}</label><select name="${nome}">${selectOptions(opcoes[nome], filtros[nome] || "")}</select></div>`;
-  const algumFiltro = ["grupo", "nicho", "uf", "estagio", "status", "valor", "ano"].some((k) => filtros[k]);
+  const algumFiltro = ["grupo", "nicho", "uf", "estagio", "status", "valor", "ano", "processamento"].some((k) => filtros[k]);
   const somaValor = visiveis.reduce((t, p) => t + (p.valor_estimado_brl == null ? 0 : Number(p.valor_estimado_brl)), 0);
   const filtrosHtml = projetos.length ? `
       <form class="source-filters js-filtros" method="get" action="/monitoramento/carteira">
@@ -653,6 +670,7 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
         ${campo("uf", "UF")}
         ${campo("estagio", "Estágio")}
         ${campo("status", "Situação")}
+        ${campo("processamento", "Processamento")}
         ${campo("valor", "Valor estimado")}
         ${campo("ano", "Ano do anúncio")}
         ${campo("ordem", "Ordenar por")}
@@ -660,7 +678,15 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
         <p class="source-filters__count muted">${visiveis.length} projeto(s) neste filtro${somaValor ? ` · ${esc(money(somaValor))} em valor estimado` : ""}.</p>
       </form>` : "";
   let cards;
-  if (visiveis.length) cards = visiveis.map(cardProjeto).join("");
+  // Os projetos vêm separados por status (ativo, em revisão, descartado), na ordem escolhida dentro de cada um.
+  if (visiveis.length) {
+    cards = STATUS_ORDEM.map((status) => {
+      const doStatus = visiveis.filter((p) => p.status === status);
+      if (!doStatus.length) return "";
+      return `<section class="project-status-group"><h2>${esc(STATUS_ROTULO[status])} <span class="muted">(${doStatus.length})</span></h2>
+        <div class="project-grid">${doStatus.map(cardProjeto).join("")}</div></section>`;
+    }).join("");
+  }
   else if (projetos.length) cards = `<div class="empty"><h2>Nenhum projeto neste filtro</h2><p>Troque ou limpe os filtros acima.</p><a class="button" href="/monitoramento/carteira">Limpar filtros</a></div>`;
   else cards = `<div class="empty"><h2>Nenhum projeto ainda</h2><p>Aprove uma notícia na lista para criar o primeiro.</p><a class="button" href="/monitoramento">Ver notícias</a></div>`;
   return layout({
@@ -674,14 +700,38 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
       </section>
       ${abas("carteira", naCarteira)}
       ${filtrosHtml}
-      <section class="project-grid">${cards}</section>`,
+      ${visiveis.length ? cards : `<section class="project-grid">${cards}</section>`}`,
   });
+}
+
+// Linha do tempo montada pelo modelo: resumo e marcos, cada um com as evidências que o sustentam.
+function blocoLinhaDoTempo(projeto, timeline) {
+  const lt = projeto.linha_tempo;
+  if (!lt) return "";
+  const porId = new Map(timeline.map((t) => [String(t.evidencia_id), t]));
+  const marcos = (lt.marcos || []).map((m) => {
+    const fontes = (m.evidencias || []).map((id) => porId.get(String(id))).filter(Boolean)
+      .map((t) => `<a href="/monitoramento/noticias/${t.evidencia_id}">${esc(t.veiculo || t.fonte_nome || "evidência")}</a>`).join(", ");
+    return `<li class="milestone">
+      <span class="milestone__date">${esc(m.data ? m.data.split("-").reverse().join("/") : "sem data")}</span>
+      <div>${badge(MARCO_ROTULO[m.tipo] || m.tipo, m.tipo === "cancelamento" || m.tipo === "atraso" ? "danger" : m.tipo === "operacao" ? "success" : "info")} ${esc(m.marco)}
+      ${fontes ? `<p class="muted">Fonte: ${fontes}</p>` : ""}</div>
+    </li>`;
+  }).join("");
+  const sec = projeto.secundarias;
+  const consultadas = sec ? `<p class="muted">Fontes secundárias consultadas: ${(sec.fontes || []).length}, com ${sec.gravadas || 0} registro(s) de correlação direta${(sec.fontes || []).filter((f) => f.diretas).length ? ` (${esc(sec.fontes.filter((f) => f.diretas).map((f) => f.codigo.replace(/^(SEC|CAPTURA)-/, "")).join(", "))})` : ""}. Atualizado em ${esc(dia(sec.em))}.</p>` : "";
+  return `<section class="project-timeline">
+    <h2>Linha do tempo do projeto</h2>
+    ${lt.resumo ? `<p>${esc(lt.resumo)}</p>` : ""}
+    ${consultadas}
+    <ol class="milestones">${marcos}</ol>
+  </section>`;
 }
 
 function paginaProjeto({ projeto, timeline, notice }) {
   const itens = timeline.map((t) => `
     <article class="evidence">
-      <div>${t.primaria ? badge("primária", "info") : badge("evidência", "success")} <span class="muted">${esc(dia(t.data_original))} · ${esc(t.veiculo || t.fonte_nome || "")}</span></div>
+      <div>${t.primaria ? badge("primária", "info") : /google news/i.test(t.fonte_nome || "") || !t.fonte_nome ? badge("notícia", "success") : badge("fonte oficial", "warning")} <span class="muted">${esc(dia(t.data_original))} · ${esc(t.veiculo || t.fonte_nome || "")}</span></div>
       <h3><a href="/monitoramento/noticias/${t.evidencia_id}">${esc(t.titulo)}</a></h3>
       ${t.url ? `<p class="evidence-links"><a href="${esc(t.url)}" target="_blank" rel="noopener">Abrir a publicação ↗</a></p>` : ""}
     </article>`).join("");
@@ -706,8 +756,9 @@ function paginaProjeto({ projeto, timeline, notice }) {
         <div><strong>${timeline.length}</strong><span>Evidências</span></div>
         <div><strong>${esc(dia(projeto.data_anuncio))}</strong><span>Anúncio</span></div>
       </section>
+      ${blocoLinhaDoTempo(projeto, timeline)}
       <div class="detail-grid">
-        <section><h2>Linha do tempo</h2>${projeto.objeto ? `<p>${esc(projeto.objeto)}</p>` : ""}<div class="evidence-list">${itens}</div></section>
+        <section><h2>Evidências</h2>${projeto.objeto ? `<p>${esc(projeto.objeto)}</p>` : ""}<div class="evidence-list">${itens}</div></section>
         <aside>
           ${projeto.avaliacao ? `<section class="form-card compact">
             <h2>Avaliação da carteira</h2>

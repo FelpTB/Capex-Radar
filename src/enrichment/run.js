@@ -948,6 +948,7 @@ async function updateProjectFromEvidence(project) {
 }
 
 module.exports = {
+  consultViableSources,
   correlateFound,
   enrichProject,
   ensureStatusDate,

@@ -18,7 +18,8 @@
     "capex:coletar": "node scripts/capex-coletar.js",
     "capex:filtrar": "node scripts/capex-filtrar.js",
     "capex:processar": "node scripts/capex-processar.js",
-    "capex:avaliar-projetos": "node scripts/capex-avaliar-projetos.js"
+    "capex:avaliar-projetos": "node scripts/capex-avaliar-projetos.js",
+    "capex:secundarias": "node scripts/capex-fontes-secundarias.js"
   },
   "keywords": [],
   "author": "",
