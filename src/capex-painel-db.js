@@ -4,12 +4,17 @@
 // log_acao registrar quem decidiu. A IA só sugere; aqui a revisão aceita,
 // rejeita, cria projeto ou descarta a notícia.
 const { pool } = require("./db");
+const fases = require("./capex-fases");
 
 const ATOR = "usuario:painel";
 
-// Situações da notícia na tela, a partir de triagem, extracao e vínculos.
+// Situações da notícia na tela, a partir de triagem, extracao, vínculos e fases.
+// "A revisar" só traz o que passou por todas as fases de IA ligadas
+// (capex-fases.js); o que ainda está entre o Filtro 1 e o Filtro 3 fica em
+// "Em processamento".
 const SITUACOES = {
   revisar: "A revisar",
+  processando: "Em processamento",
   nao_triadas: "Sem triagem",
   vinculadas: "Vinculadas",
   descartadas: "Descartadas",
@@ -17,8 +22,10 @@ const SITUACOES = {
 };
 
 const FILTRO_SITUACAO = {
-  revisar: `(e.triagem = 'novo_projeto' or (e.triagem = 'pendente' and e.extracao is not null)
-             or exists (select 1 from capex_radar.evidencia_projeto s where s.evidencia_id = e.id and s.situacao = 'sugerido'))`,
+  // Fila das fases de IA: triada como possível CapEx e sem decisão final.
+  funil: fases.NO_FUNIL,
+  revisar: `(${fases.NO_FUNIL} and ${fases.condicaoPronta()})`,
+  processando: `(${fases.NO_FUNIL} and not coalesce(${fases.condicaoPronta()}, false))`,
   nao_triadas: "e.triagem = 'pendente' and e.extracao is null",
   vinculadas: "e.triagem = 'vinculada'",
   descartadas: "e.triagem = 'descartada'",
@@ -47,6 +54,7 @@ async function resumoGrupos() {
            count(e.id)::int as total,
            count(e.id) filter (where e.triagem = 'pendente' and e.extracao is null)::int as nao_triadas,
            count(e.id) filter (where ${FILTRO_SITUACAO.revisar})::int as revisar,
+           count(e.id) filter (where ${FILTRO_SITUACAO.processando})::int as processando,
            count(e.id) filter (where e.triagem = 'vinculada')::int as vinculadas,
            count(e.id) filter (where e.triagem = 'descartada')::int as descartadas,
            (select count(*)::int from capex_radar.projetos p
@@ -65,7 +73,9 @@ async function listarNoticias({ grupoId = null, situacao = "revisar", limite = 1
   const filtro = id ? "e.id = $3" : FILTRO_SITUACAO[situacao] || FILTRO_SITUACAO.revisar;
   const { rows } = await pool.query(
     `select e.id, e.titulo, e.url, e.veiculo, e.data_original, e.triagem, e.triagem_motivo,
-            e.extracao, g.id as grupo_id, g.nome as grupo, g.nicho,
+            e.extracao, e.enriquecimento, e.filtro_final,
+            coalesce(${FILTRO_SITUACAO.processando}, false) as em_processamento,
+            g.id as grupo_id, g.nome as grupo, g.nicho,
             sug.projeto_id as sugerido_projeto_id, sug.projeto_titulo as sugerido_projeto,
             sug.confianca as sugerido_confianca,
             ag.decisao as agente_decisao, ag.motivo as agente_motivo, ag.confianca as agente_confianca,
@@ -104,13 +114,26 @@ function diaIso(valor) {
   return valor ? new Date(valor).toISOString().slice(0, 10) : null;
 }
 
+// O que se sabe do projeto: a leitura do Enriquecimento (texto da matéria)
+// vale sobre a da triagem (só a manchete), campo a campo.
+const CAMPOS_LEITURA = ["objeto", "uf", "municipio", "valor_brl", "estagio", "data_fato", "filial_sugerida"];
+
+function leituraDaNoticia({ extracao, enriquecimento }) {
+  const base = { ...(extracao || {}) };
+  const perfil = enriquecimento?.perfil || {};
+  for (const campo of CAMPOS_LEITURA) {
+    if (perfil[campo] !== undefined && perfil[campo] !== null) base[campo] = perfil[campo];
+  }
+  return base;
+}
+
 /**
  * Aprovação com um clique a partir do card: aceita a sugestão de vínculo da
  * IA ou cria o projeto com a leitura da IA (matriz principal, filial sugerida).
  */
 async function aprovarNoticia(evidenciaId) {
   const { rows: [noticia] } = await pool.query(
-    `select e.id, e.titulo, e.extracao, e.data_original, g.nome as grupo,
+    `select e.id, e.titulo, e.extracao, e.enriquecimento, e.data_original, g.nome as grupo,
             (select ep.projeto_id from capex_radar.evidencia_projeto ep
               where ep.evidencia_id = e.id and ep.situacao = 'sugerido'
               order by ep.confianca desc nulls last limit 1) as sugerido,
@@ -127,7 +150,7 @@ async function aprovarNoticia(evidenciaId) {
     return { acao: "vinculada", projeto_id: noticia.sugerido };
   }
   if (!noticia.matriz) throw new Error(`${noticia.grupo} ainda não tem CNPJ cadastrado; o projeto não pode nascer.`);
-  const ex = noticia.extracao || {};
+  const ex = leituraDaNoticia(noticia);
   const dataFato = /^\d{4}-\d{2}-\d{2}$/.test(ex.data_fato || "") ? ex.data_fato : null;
   const projeto = await criarProjetoDaNoticia(evidenciaId, {
     titulo: `${noticia.grupo} — ${ex.objeto || noticia.titulo}`.slice(0, 200),
@@ -435,6 +458,7 @@ module.exports = {
   listarNoticias,
   noticiaDoCard,
   aprovarNoticia,
+  leituraDaNoticia,
   restaurarNoticia,
   historicoBuscas,
   noticiasDaJanela,

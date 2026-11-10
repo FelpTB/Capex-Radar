@@ -294,7 +294,7 @@ async function filaDoAgente(db, grupoId, limite = 400) {
   const { rows } = await db.query(
     `select e.id, e.titulo, e.veiculo, e.url, e.data_original, e.extracao
        from capex_radar.evidencias e
-      where e.grupo_id = $1 and ${painel.FILTRO_SITUACAO.revisar} and ${SEM_DECISAO}
+      where e.grupo_id = $1 and ${painel.FILTRO_SITUACAO.funil} and ${SEM_DECISAO}
         and ${filtroCapex.condicaoAgente()}
       order by e.data_original nulls last
       limit $2`,
@@ -307,7 +307,7 @@ async function contarFila(db, grupoIds) {
   const { rows } = await db.query(
     `select e.grupo_id, count(*)::int as n
        from capex_radar.evidencias e
-      where e.grupo_id = any($1::uuid[]) and ${painel.FILTRO_SITUACAO.revisar} and ${SEM_DECISAO}
+      where e.grupo_id = any($1::uuid[]) and ${painel.FILTRO_SITUACAO.funil} and ${SEM_DECISAO}
         and ${filtroCapex.condicaoAgente()}
       group by e.grupo_id`,
     [grupoIds],

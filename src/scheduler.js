@@ -7,6 +7,8 @@ const capexColetor = require("./capex-coletor");
 const { iaPadrao } = require("./capex-ia");
 const capexAgente = require("./capex-agente");
 const capexFiltro = require("./capex-filtro");
+const capexEnriquecimento = require("./capex-enriquecimento");
+const capexFiltroFinal = require("./capex-filtro-final");
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const SCAN_MS = WEEK_MS;
@@ -78,23 +80,27 @@ async function runCapexWeekly() {
       ...capexColetor.janelaSemanal(),
       ia: iaPadrao(),
     });
-    // Filtro CapEx: segunda passada, mais rígida, sobre o que a triagem
-    // deixou na fila (CAPEX_FILTRO=0 desliga).
-    const coletadosFiltro = new Set(resultado.coleta.map((c) => c.grupo));
-    const filtro = capexFiltro.filtroPadrao();
-    if (filtro) {
-      resultado.filtro = [];
-      for (const grupo of grupos.filter((g) => coletadosFiltro.has(g.nome))) {
-        resultado.filtro.push(await capexFiltro.filtrarGrupo({ db: client, grupo, filtro }));
-      }
+    // Fases do funil depois do Filtro 1 (capex-fases.js), nas empresas
+    // coletadas: Filtro 2, Enriquecimento e Filtro 3. Fase desligada no .env
+    // (CAPEX_FILTRO, CAPEX_ENRIQUECIMENTO, CAPEX_FILTRO_FINAL = 0) não roda.
+    const coletados = new Set(resultado.coleta.map((c) => c.grupo));
+    const daRodada = grupos.filter((g) => coletados.has(g.nome));
+    const fases = [
+      ["filtro", capexFiltro.filtroPadrao(), (grupo, filtro) => capexFiltro.filtrarGrupo({ db: client, grupo, filtro })],
+      ["enriquecimento", capexEnriquecimento.enriquecedorPadrao(), (grupo, enriquecedor) => capexEnriquecimento.enriquecerGrupo({ db: client, grupo, enriquecedor })],
+      ["filtro_final", capexFiltroFinal.filtroFinalPadrao(), (grupo, filtro) => capexFiltroFinal.filtrarGrupo({ db: client, grupo, filtro })],
+    ];
+    for (const [chave, modelo, rodar] of fases) {
+      if (!modelo) continue;
+      resultado[chave] = [];
+      for (const grupo of daRodada) resultado[chave].push(await rodar(grupo, modelo));
     }
     // Triagem automática: o agente decide a fila das empresas coletadas.
     // CAPEX_AGENTE_AUTO=0 desliga e deixa tudo para a revisão na tela.
     const agente = /^(0|false|no|off)$/i.test(process.env.CAPEX_AGENTE_AUTO?.trim() || "") ? null : capexAgente.agentePadrao();
     if (agente) {
       resultado.agente = [];
-      const coletados = new Set(resultado.coleta.map((c) => c.grupo));
-      for (const grupo of grupos.filter((g) => coletados.has(g.nome))) {
+      for (const grupo of daRodada) {
         resultado.agente.push(await capexAgente.decidirGrupo({ db: client, grupo, agente }));
       }
     }

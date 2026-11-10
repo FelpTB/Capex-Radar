@@ -1,4 +1,5 @@
-// Filtro CapEx do capex_radar: segunda passada, depois da triagem.
+// Filtro 2 (Filtro CapEx) do capex_radar: segunda passada, depois da triagem
+// (Filtro 1). Fases do funil em capex-fases.js.
 //
 // A triagem (capex-ia.js) é larga de propósito: o Haiku lê só a manchete e
 // deixa passar tudo que fala de ativo físico do grupo. O filtro relê o que
@@ -14,11 +15,12 @@
 // por fato; um fato novo do mesmo empreendimento (licença, início de obra,
 // financiamento) continua, para o agente ligar ao projeto.
 //
-// A decisão fica em capex_radar.evidencias.filtro (sql/023). O agente só lê
-// notícias que o filtro manteve, enquanto o filtro estiver ligado.
+// A decisão fica em capex_radar.evidencias.filtro (sql/023). O que o filtro
+// mantém segue para o Enriquecimento (capex-enriquecimento.js).
 const { z } = require("zod");
 const { criarCliente, pedirJson } = require("./claude");
 const painel = require("./capex-painel-db");
+const fases = require("./capex-fases");
 
 const ATOR_FILTRO = "ia:filtro";
 const VERSAO_FILTRO = "filtro-v1";
@@ -26,7 +28,7 @@ const MODELO_FILTRO_PADRAO = "claude-sonnet-5-5";
 const LOTE = 25;
 const JANELA_MANTIDAS_DIAS = 120;
 const LIMITE_MANTIDAS = 60;
-const ROTULO = "Filtro CapEx";
+const ROTULO = "Filtro 2";
 
 // Motivos de descarte. O código fica no banco; o rótulo vai para o motivo.
 const MOTIVOS = {
@@ -85,15 +87,19 @@ Códigos de motivo: ${Object.keys(MOTIVOS).join(", ")}.
 
 Responda somente com JSON: {"itens":[{"i":0,"fato":"...","decisao":"manter","motivo":null,"repete":null,"justificativa":"..."}]}, com um elemento por item recebido.`;
 
-const itemSchema = z.object({
-  i: z.number().int().nonnegative(),
-  fato: z.string().trim().max(200).nullable().optional().catch(null),
-  decisao: z.enum(["manter", "descartar"]),
-  motivo: z.enum(Object.keys(MOTIVOS)).nullable().optional().catch(null),
-  repete: z.string().trim().nullable().optional().catch(null),
-  justificativa: z.string().trim().min(1).max(600).catch("sem justificativa"),
-});
-const saidaSchema = z.object({ itens: z.array(itemSchema) });
+function saidaSchemaDe(motivos) {
+  return z.object({
+    itens: z.array(z.object({
+      i: z.number().int().nonnegative(),
+      fato: z.string().trim().max(200).nullable().optional().catch(null),
+      decisao: z.enum(["manter", "descartar"]),
+      motivo: z.enum(Object.keys(motivos)).nullable().optional().catch(null),
+      repete: z.string().trim().nullable().optional().catch(null),
+      justificativa: z.string().trim().min(1).max(600).catch("sem justificativa"),
+    })),
+  });
+}
+const saidaSchema = saidaSchemaDe(MOTIVOS);
 
 function dia(valor) {
   if (!valor) return null;
@@ -137,10 +143,11 @@ function montarEntrada(grupo, lote, { projetos = [], mantidas = [] } = {}) {
  *     manchete da lista mantidas; senão, vira manter;
  *   - repetida de repetida segue a cadeia até a manchete mantida.
  * Devolve Map índice → { decisao, motivo, repete_id, repete_titulo, justificativa }.
+ * O Filtro 3 usa as mesmas regras com a sua lista de motivos.
  */
-function fecharDecisoes(raw, lote, mantidas = []) {
+function fecharDecisoes(raw, lote, mantidas = [], { motivos = null } = {}) {
   if (!raw) throw new Error("O modelo não retornou conteúdo");
-  const { itens } = saidaSchema.parse(JSON.parse(raw));
+  const { itens } = (motivos ? saidaSchemaDe(motivos) : saidaSchema).parse(JSON.parse(raw));
   const respostas = new Map();
   for (const item of itens) {
     if (item.i < lote.length && !respostas.has(item.i)) respostas.set(item.i, item);
@@ -229,8 +236,8 @@ function fecharDecisoes(raw, lote, mantidas = []) {
 }
 
 /** Texto do motivo gravado em triagem_motivo. */
-function motivoTexto(decisao) {
-  const rotulo = MOTIVOS[decisao.motivo] || decisao.motivo;
+function motivoTexto(decisao, motivos = MOTIVOS) {
+  const rotulo = motivos[decisao.motivo] || decisao.motivo;
   if (decisao.motivo === "repetida" && decisao.repete_titulo) {
     return `${rotulo}: “${decisao.repete_titulo.slice(0, 140)}”`;
   }
@@ -253,10 +260,8 @@ function criarFiltro({ client, modelo = MODELO_FILTRO_PADRAO, esforco = "medium"
   };
 }
 
-// CAPEX_FILTRO=0 desliga o filtro (a fila volta a ir direto para o agente).
-function filtroLigado() {
-  return !/^(0|false|no|off)$/i.test(process.env.CAPEX_FILTRO?.trim() || "");
-}
+// CAPEX_FILTRO=0 desliga o filtro (a fila vai direto para o Enriquecimento).
+const filtroLigado = fases.filtro2Ligado;
 
 /** Filtro do .env: CLAUDE_API_KEY e CLAUDE_FILTER_MODEL. Sem chave ou desligado, null. */
 function filtroPadrao() {
@@ -267,10 +272,8 @@ function filtroPadrao() {
   return client ? criarFiltro({ client, modelo: config.claudeFilterModel }) : null;
 }
 
-/** Condição SQL (alias e) para o agente: só o que o filtro manteve, se ele estiver ligado. */
-function condicaoAgente() {
-  return filtroLigado() ? "(e.filtro->>'decisao' = 'manter')" : "true";
-}
+/** Condição SQL (alias e) para o agente: só o que passou por todas as fases ligadas. */
+const condicaoAgente = fases.condicaoPronta;
 
 // ---------------------------------------------------------------------------
 // Banco
@@ -283,7 +286,7 @@ async function filaDoFiltro(db, grupoId, limite = 400) {
   const { rows } = await db.query(
     `select e.id, e.titulo, e.veiculo, e.data_original, e.extracao
        from capex_radar.evidencias e
-      where e.grupo_id = $1 and ${painel.FILTRO_SITUACAO.revisar} and ${SEM_FILTRO}
+      where e.grupo_id = $1 and ${painel.FILTRO_SITUACAO.funil} and ${SEM_FILTRO}
       order by e.data_original nulls last, e.criado_em
       limit $2`,
     [grupoId, limite],
@@ -295,7 +298,7 @@ async function contarFila(db, grupoIds) {
   const { rows } = await db.query(
     `select e.grupo_id, count(*)::int as n
        from capex_radar.evidencias e
-      where e.grupo_id = any($1::uuid[]) and ${painel.FILTRO_SITUACAO.revisar} and ${SEM_FILTRO}
+      where e.grupo_id = any($1::uuid[]) and ${painel.FILTRO_SITUACAO.funil} and ${SEM_FILTRO}
       group by e.grupo_id`,
     [grupoIds],
   );
@@ -412,6 +415,10 @@ async function filtrarGrupo({ db, grupo, filtro, limite = 400, simular = false, 
 module.exports = {
   ATOR_FILTRO,
   VERSAO_FILTRO,
+  ROTULO,
+  JANELA_MANTIDAS_DIAS,
+  LIMITE_MANTIDAS,
+  dia,
   MODELO_FILTRO_PADRAO,
   MOTIVOS,
   PROMPT,

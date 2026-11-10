@@ -384,6 +384,9 @@ body.is-loading main.container { opacity: .6; transition: opacity .15s; }
 .news-card__title a { color: var(--ink); }
 .news-card__reading { margin: 0 0 4px; font-weight: 650; font-size: 14px; }
 .news-card__why, .news-card__hint { margin: 0 0 4px; color: var(--muted); font-size: 13px; }
+.news-card__enriched { margin: 8px 0 4px; padding: 8px 10px; border-left: 3px solid var(--line); font-size: 13px; line-height: 1.45; }
+.news-card__enriched p { margin: 0 0 4px; }
+.news-card__enriched p:last-child { margin-bottom: 0; }
 .news-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .news-card__actions form { margin: 0; }
 .news-card__discard { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-left: auto !important; }
