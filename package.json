@@ -17,7 +17,8 @@
     "capex:carga-empresas": "node scripts/capex-carga-empresas.js",
     "capex:coletar": "node scripts/capex-coletar.js",
     "capex:filtrar": "node scripts/capex-filtrar.js",
-    "capex:processar": "node scripts/capex-processar.js"
+    "capex:processar": "node scripts/capex-processar.js",
+    "capex:avaliar-projetos": "node scripts/capex-avaliar-projetos.js"
   },
   "keywords": [],
   "author": "",

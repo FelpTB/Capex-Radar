@@ -105,3 +105,37 @@ npm run capex:processar -- --grupo Bracell --limite 5
 ## Efeito nas notícias já guardadas
 
 As notícias que o Filtro 2 manteve antes desta mudança saem de "A revisar" e vão para "Em processamento". Elas só voltam depois do Enriquecimento e do Filtro 3. O botão "Processar" faz isso.
+
+## Avaliação dos projetos da carteira
+
+Os projetos que já estavam na carteira nasceram, muitas vezes, só da manchete. Por isso eles passam por uma avaliação própria, em [`src/capex-avaliacao-projetos.js`](../../src/capex-avaliacao-projetos.js), com a migração [`sql/025`](../../sql/025_capex_radar_avaliacao_projetos.sql).
+
+**Antes de avaliar.** As notícias aceitas dos projetos que ainda não têm enriquecimento passam pelo Enriquecimento.
+
+**Avaliação.** O modelo (`CLAUDE_FILTER3_MODEL`, Sonnet 5.5, esforço médio) lê uma empresa por vez. Recebe todos os projetos não descartados dela, cada um com até 8 notícias enriquecidas.
+
+| Decisão | O que acontece |
+| --- | --- |
+| `valido` | O projeto continua. As correções preenchem os campos vazios: objeto, UF, município (só se for da mesma UF), valor e data do anúncio. O estágio é atualizado quando as notícias mostram outro. O título e o status não mudam; o título sugerido fica só registrado. |
+| `invalido` | O status vira `descartado`. O motivo vem da lista do Filtro 3, sem `repetida`. |
+| `duplicado` | O mesmo empreendimento de outro projeto válido do grupo. As notícias aceitas também são ligadas ao projeto que fica, e o duplicado vai para `descartado`. |
+
+**Regras que não dependem do modelo.**
+- `invalido` sem motivo válido continua `valido`.
+- `duplicado` precisa apontar para outro projeto da lista que tenha ficado `valido`. A cadeia de duplicados é seguida; se não chegar a um projeto válido, o projeto continua `valido`.
+
+**Registro e desfazer.** A decisão fica em `projetos.avaliacao`, com o status anterior. Na Carteira, o card de um projeto descartado mostra a decisão e a justificativa. A página do projeto tem o botão **Desfazer descarte**, que devolve o status anterior. O desfazer não apaga os vínculos copiados para o projeto que ficou.
+
+**Linha de comando.**
+- Contar projetos e notícias sem enriquecimento:
+  ```bash
+  npm run capex:avaliar-projetos -- --contar
+  ```
+- Simular em uma empresa. Grava o enriquecimento que faltar, mas não muda nenhum projeto:
+  ```bash
+  npm run capex:avaliar-projetos -- --grupo Bracell --simular
+  ```
+- Avaliar e aplicar em todas as empresas. As já avaliadas são puladas; `--refazer` reavalia:
+  ```bash
+  npm run capex:avaliar-projetos
+  ```

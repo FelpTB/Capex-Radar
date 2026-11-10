@@ -16,6 +16,7 @@ const { ESTAGIOS, iaPadrao } = require("./capex-ia");
 const filtroCapex = require("./capex-filtro");
 const enriquecimento = require("./capex-enriquecimento");
 const filtroFinal = require("./capex-filtro-final");
+const avaliacaoProjetos = require("./capex-avaliacao-projetos");
 const triagem = require("./capex-triagem-jobs");
 const agente = require("./capex-agente");
 const { esc, money, badge, selectOptions, layout } = require("./html");
@@ -531,6 +532,17 @@ function listaCurtaNoticias(noticias, guardadas = new Set()) {
 
 const STATUS_ROTULO = { ativo: "Ativo", em_revisao: "Em revisão", descartado: "Descartado" };
 
+const AVALIACAO_ROTULO = { valido: "válido", invalido: "inválido", duplicado: "duplicado" };
+
+// Uma linha com o que a avaliação da carteira decidiu sobre o projeto.
+function linhaAvaliacao(av, { comDuplicado = true } = {}) {
+  if (!av) return "";
+  const motivo = av.motivo ? ` (${avaliacaoProjetos.MOTIVOS[av.motivo] || av.motivo})` : "";
+  const duplicado = comDuplicado && av.duplicado_de ? ` de <a href="/monitoramento/projetos/${esc(av.duplicado_de.id)}">${esc(av.duplicado_de.titulo)}</a>` : "";
+  const desfeita = av.desfeita_em ? " · descarte desfeito" : "";
+  return `<p class="project-card__review muted">Avaliação: <strong>${esc(AVALIACAO_ROTULO[av.decisao] || av.decisao)}</strong>${duplicado}${esc(motivo)}${desfeita} — ${esc(av.justificativa || "")}</p>`;
+}
+
 // Faixas de valor estimado (R$). "sem" pega os projetos sem valor informado.
 const FAIXAS_VALOR = {
   sem: { rotulo: "Sem valor informado", teste: (v) => v == null },
@@ -600,6 +612,7 @@ function cardProjeto(p) {
         </div>
         <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
         <p class="project-card__company">${esc(p.grupo)} · ${esc(p.matriz_razao_social)}</p>
+        ${p.avaliacao && p.avaliacao.decisao !== "valido" ? linhaAvaliacao(p.avaliacao) : ""}
         <dl class="facts">
           <div><dt>Local</dt><dd>${esc(localProjeto(p))}</dd></div>
           <div><dt>Valor</dt><dd>${esc(money(p.valor_estimado_brl))}</dd></div>
@@ -696,6 +709,14 @@ function paginaProjeto({ projeto, timeline, notice }) {
       <div class="detail-grid">
         <section><h2>Linha do tempo</h2>${projeto.objeto ? `<p>${esc(projeto.objeto)}</p>` : ""}<div class="evidence-list">${itens}</div></section>
         <aside>
+          ${projeto.avaliacao ? `<section class="form-card compact">
+            <h2>Avaliação da carteira</h2>
+            ${linhaAvaliacao(projeto.avaliacao)}
+            ${Object.keys(projeto.avaliacao.aplicado || {}).length ? `<p class="muted">Campos corrigidos: ${esc(Object.keys(projeto.avaliacao.aplicado).join(", "))}.</p>` : ""}
+            ${projeto.status === "descartado" && !projeto.avaliacao.desfeita_em ? `<form method="post" action="/monitoramento/projetos/${projeto.id}/restaurar">
+              <button class="button button--secondary" type="submit">Desfazer descarte</button>
+            </form>` : ""}
+          </section>` : ""}
           <form class="form-card compact" method="post" action="/monitoramento/projetos/${projeto.id}/excluir" onsubmit="return confirm('Excluir este projeto e as ${timeline.length} evidência(s) dele? A ação não pode ser desfeita.')">
             <h2>Excluir projeto</h2>
             <p class="muted">Apaga o projeto, os vínculos e as notícias que só pertenciam a ele.</p>
@@ -1005,6 +1026,13 @@ function registrarMonitoramento(app) {
     const dados = await painel.obterProjeto(uuid.parse(req.params.id));
     if (!dados) return res.status(404).send("Projeto não encontrado");
     res.send(paginaProjeto({ ...dados, notice: aviso(req) }));
+  });
+
+  app.post("/monitoramento/projetos/:id/restaurar", async (req, res) => {
+    const id = uuid.parse(req.params.id);
+    const p = await avaliacaoProjetos.restaurarProjeto(id);
+    const msg = p ? `Projeto "${p.titulo}" voltou para a carteira.` : "O projeto não estava descartado pela avaliação.";
+    res.redirect(`/monitoramento/projetos/${id}?message=${encodeURIComponent(msg)}`);
   });
 
   app.post("/monitoramento/projetos/:id/excluir", async (req, res) => {

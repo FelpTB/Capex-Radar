@@ -233,16 +233,15 @@ async function gravar(db, grupo, noticia, leitura, enriquecedor, uso) {
 }
 
 /**
- * Enriquece a fila de um grupo, PARALELO notícias por vez.
- * Notícia com erro fica na fila e volta na próxima rodada.
+ * Enriquece uma lista de notícias de um grupo, PARALELO por vez.
+ * Notícia com erro fica sem enriquecimento e volta na próxima rodada.
  */
-async function enriquecerGrupo({ db, grupo, enriquecedor, limite = 400, onProgresso = () => {} }) {
+async function enriquecerLista({ db, grupo, enriquecedor, noticias, onProgresso = () => {} }) {
   const resumo = { grupo: grupo.nome, lidas: 0, enriquecidas: 0, sem_materia: 0, erros: 0, buscas: 0 };
-  const fila = await filaDoEnriquecimento(db, grupo.id, limite);
   let proxima = 0;
   async function trabalhador() {
-    while (proxima < fila.length) {
-      const noticia = fila[proxima];
+    while (proxima < noticias.length) {
+      const noticia = noticias[proxima];
       proxima += 1;
       try {
         const { json, buscas, leituras } = await enriquecedor.enriquecer(montarEntrada(grupo, noticia));
@@ -256,11 +255,17 @@ async function enriquecerGrupo({ db, grupo, enriquecedor, limite = 400, onProgre
         resumo.ultimo_erro = String(error.message).slice(0, 300);
       }
       resumo.lidas += 1;
-      onProgresso(resumo.lidas, fila.length);
+      onProgresso(resumo.lidas, noticias.length);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(PARALELO, fila.length) }, trabalhador));
+  await Promise.all(Array.from({ length: Math.min(PARALELO, noticias.length) }, trabalhador));
   return resumo;
+}
+
+/** Enriquece a fila do funil de um grupo (o que passou pelo Filtro 2). */
+async function enriquecerGrupo({ db, grupo, enriquecedor, limite = 400, onProgresso = () => {} }) {
+  const noticias = await filaDoEnriquecimento(db, grupo.id, limite);
+  return enriquecerLista({ db, grupo, enriquecedor, noticias, onProgresso });
 }
 
 module.exports = {
@@ -275,5 +280,6 @@ module.exports = {
   enriquecedorPadrao,
   filaDoEnriquecimento,
   contarFila,
+  enriquecerLista,
   enriquecerGrupo,
 };

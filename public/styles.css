@@ -78,6 +78,7 @@ h2 { letter-spacing: -.5px; }
 .project-card__top, .card-actions { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
 .project-card h2 { margin: 22px 0 4px; }
 .project-card__company { margin-top: 0; color: var(--muted); }
+.project-card__review { margin: 4px 0 8px; font-size: 13px; line-height: 1.4; }
 .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
 .facts dt { color: var(--muted); font-size: 12px; }
 .facts dd { margin: 4px 0 0; font-weight: 650; }
