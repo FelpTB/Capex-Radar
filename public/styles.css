@@ -127,6 +127,7 @@ table.table-compact { min-width: 760px; }
 .badge--danger { color: var(--red); background: var(--red-soft); }
 .badge--info { color: var(--blue); background: var(--blue-soft); }
 .badge--neutral { color: var(--muted); background: var(--bg); }
+.tag-linha-tempo { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .5px; color: #fff; background: var(--green); }
 .source-filters {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px; align-items: end; margin-bottom: 18px; padding: 16px;

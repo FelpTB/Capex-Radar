@@ -535,8 +535,14 @@ const STATUS_ROTULO = { ativo: "Ativo", em_revisao: "Em revisão", descartado: "
 // Processamento do projeto: fontes secundárias consultadas e linha do tempo montada.
 const PROCESSAMENTO = {
   processado: { rotulo: "Com fontes secundárias e linha do tempo", teste: (p) => Boolean(p.secundarias && p.linha_tempo) },
+  linha_tempo: { rotulo: "Com linha do tempo montada", teste: (p) => temLinhaDoTempo(p) },
   pendente: { rotulo: "Ainda não processados", teste: (p) => !(p.secundarias && p.linha_tempo) },
 };
+
+// Linha do tempo montada com pelo menos um marco.
+function temLinhaDoTempo(p) {
+  return Boolean(p.linha_tempo && (p.linha_tempo.marcos || []).length);
+}
 
 const STATUS_ORDEM = ["ativo", "em_revisao", "descartado"];
 
@@ -623,6 +629,7 @@ function cardProjeto(p) {
         <div class="project-card__top">
           ${badge(ESTAGIO_ROTULO[p.estagio] || p.estagio, p.estagio === "cancelado" ? "danger" : p.estagio === "operacao" ? "success" : "info")}
           ${p.status && p.status !== "ativo" ? badge(STATUS_ROTULO[p.status] || p.status, p.status === "descartado" ? "danger" : "warning") : ""}
+          ${temLinhaDoTempo(p) ? `<span class="tag-linha-tempo" title="Linha do tempo montada a partir das notícias e fontes oficiais">◷ linha do tempo</span>` : ""}
           <span class="muted">${esc(NICHOS[p.nicho] || p.nicho)}</span>
         </div>
         <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
