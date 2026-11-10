@@ -217,7 +217,7 @@ app.get("/projetos", async (req, res) => {
 
   res.send(layout({
     title: "Projetos",
-    active: "projetos",
+    active: "mvp",
     body: `
       ${notice}
       <section class="page-heading">
@@ -301,7 +301,7 @@ app.get("/prospeccao", async (req, res) => {
 
   res.send(layout({
     title: "Prospecção",
-    active: "projetos",
+    active: "mvp",
     body: `
       <section class="page-heading">
         <div><p class="eyebrow">Descoberta automática</p><h1>Explorar fontes</h1><p>No início, a leitura automática das fontes fixas e a busca de portais no Google acontecem uma vez por semana. Não há cota diária de modelo. Manchete e corpo do Google ficam de fora do banco. O botão abaixo dispara uma rodada na hora.</p></div>
@@ -825,7 +825,7 @@ app.get("/projetos/novo", async (_req, res) => {
 
   res.send(layout({
     title: "Novo projeto",
-    active: "projetos",
+    active: "mvp",
     scripts: `<script src="/project-form.js" defer></script>`,
     body: `
       <section class="page-heading"><div><p class="eyebrow">Prospecção assistida</p><h1>Novo projeto</h1><p>Cole a notícia, revise a extração do Claude e confirme.</p></div></section>
@@ -994,7 +994,7 @@ app.get("/projetos/:id", async (req, res) => {
 
   res.send(layout({
     title: project.nome,
-    active: "projetos",
+    active: "mvp",
     body: `
       ${notice}
       <section class="project-hero">

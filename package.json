@@ -16,7 +16,8 @@
     "docs:doe": "node scripts/docs-doe.js",
     "capex:carga-empresas": "node scripts/capex-carga-empresas.js",
     "capex:coletar": "node scripts/capex-coletar.js",
-    "capex:filtrar": "node scripts/capex-filtrar.js"
+    "capex:filtrar": "node scripts/capex-filtrar.js",
+    "capex:processar": "node scripts/capex-processar.js"
   },
   "keywords": [],
   "author": "",

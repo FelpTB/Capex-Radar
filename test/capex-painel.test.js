@@ -45,15 +45,16 @@ test("formulário do projeto: valor com ponto, campos vazios viram null, UF mai�
 
 test("página de monitoramento: card com título, ações e botões de triagem", () => {
   const html = paginaMonitoramento({
-    grupos: [{ ...GRUPO, total: 3, nao_triadas: 2, revisar: 1, vinculadas: 0, descartadas: 0, projetos: 0, ultima_coleta: null }],
+    grupos: [{ ...GRUPO, total: 4, nao_triadas: 2, processando: 1, revisar: 1, vinculadas: 0, descartadas: 0, projetos: 0, ultima_coleta: null }],
     noticias: [{ id: "n1", titulo: "<b>Bracell</b> investe", veiculo: "Valor", data_original: "2025-02-21T08:00:00Z", triagem: "novo_projeto", grupo: "Bracell", grupo_id: GRUPO.id, extracao: { capex: true, objeto: "fábrica" } }],
     filtros: { grupo: null, situacao: "revisar" },
     totalProjetos: 0,
     notice: "",
   });
   assert.match(html, /&lt;b&gt;Bracell&lt;\/b&gt; investe/);
-  assert.match(html, /class="button js-triar" type="button" data-grupo="">Triar 2 sem triagem/);
-  assert.match(html, /data-grupo="2b1c3d4e-0000-4000-8000-000000000001">Triar 2</);
+  assert.match(html, /class="button js-triar" type="button" data-grupo="">Processar 3 no funil/);
+  assert.match(html, /data-grupo="2b1c3d4e-0000-4000-8000-000000000001">Processar 3</);
+  assert.match(html, /data-stat="processando">1</);
   assert.match(html, /possível projeto/);
   assert.match(html, /action="\/monitoramento\/noticias\/n1\/aprovar"/);
   assert.match(html, /action="\/monitoramento\/noticias\/n1\/descartar"/);
@@ -70,6 +71,26 @@ test("card descartado mostra o motivo e o desfazer; vínculo sugerido muda o bot
   const sugerido = cardNoticia({ id: "n3", titulo: "y", triagem: "pendente", extracao: { capex: true }, sugerido_projeto_id: "p1", sugerido_projeto: "Fábrica MS", sugerido_confianca: 80, grupo: "Bracell", grupo_id: GRUPO.id });
   assert.match(sugerido, /Aceitar vínculo/);
   assert.match(sugerido, /Mesmo projeto que <strong>Fábrica MS<\/strong> \(80%\)/);
+});
+
+test("card mostra o perfil enriquecido, a matéria original e o Filtro 3", () => {
+  const html = cardNoticia({
+    id: "n4", titulo: "Bracell investe", triagem: "novo_projeto", grupo: "Bracell", grupo_id: GRUPO.id,
+    extracao: { capex: true, objeto: "fábrica", uf: "SP" },
+    enriquecimento: {
+      encontrou: true, url_original: "https://valor.globo.com/x", veiculo_original: "Valor",
+      resumo: "A Bracell vai construir uma fábrica de tissue em Lençóis Paulista.",
+      perfil: { objeto: "fábrica de tissue", uf: "SP", municipio: "Lençóis Paulista", valor_brl: 1500000000, obra: "por_fazer", construtora: "Método" },
+    },
+    filtro_final: { decisao: "manter", justificativa: "obra nova do grupo" },
+  });
+  assert.match(html, /fábrica de tissue · Lençóis Paulista \/ SP/);
+  assert.match(html, /href="https:\/\/valor.globo.com\/x"[^>]*>matéria original \(Valor\)/);
+  assert.match(html, /obra: por fazer · construtora: Método/);
+  assert.match(html, /Filtro 3: obra nova do grupo/);
+  const semMateria = cardNoticia({ id: "n5", titulo: "x", triagem: "novo_projeto", grupo: "Bracell", grupo_id: GRUPO.id, extracao: { capex: true }, enriquecimento: { encontrou: false, perfil: {} }, em_processamento: true });
+  assert.match(semMateria, /matéria original não encontrada/);
+  assert.match(semMateria, /em processamento/);
 });
 
 test("explica por que uma janela de busca veio vazia ou com erro", () => {

@@ -14,6 +14,8 @@ const { buscaDoGrupo } = require("./capex-busca");
 const { googleNewsUrl } = require("./news-queries");
 const { ESTAGIOS, iaPadrao } = require("./capex-ia");
 const filtroCapex = require("./capex-filtro");
+const enriquecimento = require("./capex-enriquecimento");
+const filtroFinal = require("./capex-filtro-final");
 const triagem = require("./capex-triagem-jobs");
 const agente = require("./capex-agente");
 const { esc, money, badge, selectOptions, layout } = require("./html");
@@ -47,6 +49,14 @@ const MOTIVOS_DESCARTE = [
 
 const SCRIPT = '<script src="/monitoramento.js" defer></script>';
 
+const OBRA_ROTULO = {
+  por_fazer: "por fazer",
+  em_andamento: "em andamento",
+  concluida: "concluída",
+  sem_obra: "sem obra",
+  incerto: "incerta",
+};
+
 function dia(valor) {
   if (!valor) return "—";
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(new Date(valor));
@@ -61,6 +71,7 @@ function diaHora(valor) {
 function situacaoNoticia(noticia) {
   if (noticia.triagem === "vinculada") return { rotulo: "vinculada", tipo: "success" };
   if (noticia.triagem === "descartada") return { rotulo: "descartada", tipo: "neutral" };
+  if (noticia.em_processamento) return { rotulo: "em processamento", tipo: "neutral" };
   if (noticia.sugerido_projeto_id) return { rotulo: "vínculo sugerido", tipo: "info" };
   if (noticia.triagem === "novo_projeto") return { rotulo: "possível projeto", tipo: "warning" };
   if (noticia.extracao) return { rotulo: "a revisar", tipo: "warning" };
@@ -132,9 +143,35 @@ function acoesCard(noticia) {
   </div>`;
 }
 
+// O que o Enriquecimento achou no texto da matéria, e o veredito do Filtro 3.
+function blocoEnriquecimento(noticia) {
+  const en = noticia.enriquecimento;
+  const f3 = noticia.filtro_final;
+  if (!en && !f3) return "";
+  const original = en?.url_original
+    ? `<a href="${esc(en.url_original)}" target="_blank" rel="noopener">matéria original${en.veiculo_original ? ` (${esc(en.veiculo_original)})` : ""} ↗</a>`
+    : en ? '<span class="muted">matéria original não encontrada</span>' : "";
+  const p = en?.perfil || {};
+  const extras = [
+    p.obra ? `obra: ${OBRA_ROTULO[p.obra] || p.obra}` : null,
+    p.capacidade, p.empregos ? `${p.empregos} empregos` : null,
+    p.previsao_operacao ? `operação: ${p.previsao_operacao}` : null,
+    p.construtora ? `construtora: ${p.construtora}` : null,
+    p.financiamento ? `financiamento: ${p.financiamento}` : null,
+  ].filter(Boolean).join(" · ");
+  const veredito = f3?.justificativa && noticia.triagem !== "descartada" ? `<p class="news-card__why">Filtro 3: ${esc(f3.justificativa)}</p>` : "";
+  return `<div class="news-card__enriched">
+    ${en?.resumo ? `<p>${esc(en.resumo)}</p>` : ""}
+    ${extras ? `<p class="muted">${esc(extras)}</p>` : ""}
+    ${en?.observacao ? `<p class="news-card__why">Atenção: ${esc(en.observacao)}</p>` : ""}
+    ${original ? `<p>${original}</p>` : ""}
+    ${veredito}
+  </div>`;
+}
+
 function cardNoticia(noticia) {
   const situacao = situacaoNoticia(noticia);
-  const ex = noticia.extracao;
+  const ex = noticia.extracao ? painel.leituraDaNoticia(noticia) : null;
   const leitura = ex?.capex ? resumoExtracao(ex) : "";
   const motivoIa = ex?.motivo && noticia.triagem !== "descartada" ? ex.motivo : "";
   const sugestao = noticia.sugerido_projeto
@@ -154,13 +191,14 @@ function cardNoticia(noticia) {
     <h3 class="news-card__title">${titulo}</h3>
     ${leitura ? `<p class="news-card__reading">${esc(leitura)}</p>` : ""}
     ${motivoIa ? `<p class="news-card__why">IA: ${esc(motivoIa)}</p>` : ""}
+    ${blocoEnriquecimento(noticia)}
     ${sugestao}
     ${linhaAgente(noticia)}
     ${acoesCard(noticia)}
   </article>`;
 }
 
-function barraTriagem(job, rotulo = "Triagem da IA") {
+function barraTriagem(job, rotulo = "Funil de notícias") {
   const ativo = job && job.status === "rodando";
   return `<section class="triage-progress${ativo ? "" : " is-hidden"}" id="triagem-progresso" data-job="${ativo ? job.id : ""}" aria-live="polite">
     <div class="triage-progress__head">
@@ -172,14 +210,16 @@ function barraTriagem(job, rotulo = "Triagem da IA") {
 }
 
 function linhaGrupo(grupo) {
-  const triar = grupo.nao_triadas
-    ? `<button class="button button--small button--secondary js-triar" type="button" data-grupo="${grupo.id}">Triar ${grupo.nao_triadas}</button>`
+  const naFila = grupo.nao_triadas + (grupo.processando || 0);
+  const triar = naFila
+    ? `<button class="button button--small button--secondary js-triar" type="button" data-grupo="${grupo.id}">Processar ${naFila}</button>`
     : "";
   return `<tr>
     <td><strong><a href="/monitoramento?${esc(new URLSearchParams({ grupo: grupo.id }).toString())}">${esc(grupo.nome)}</a></strong></td>
     <td>${esc(NICHOS[grupo.nicho] || grupo.nicho)}</td>
     <td>${grupo.total}</td>
     <td>${grupo.nao_triadas}</td>
+    <td>${grupo.processando || 0}</td>
     <td>${grupo.revisar ? `<strong>${grupo.revisar}</strong>` : 0}</td>
     <td>${grupo.projetos}</td>
     <td><a href="/monitoramento/buscas?${esc(new URLSearchParams({ grupo: grupo.id }).toString())}">${esc(dia(grupo.ultima_coleta))}</a></td>
@@ -189,7 +229,7 @@ function linhaGrupo(grupo) {
 
 function contagens(grupos) {
   const soma = (campo) => grupos.reduce((total, g) => total + g[campo], 0);
-  return { total: soma("total"), revisar: soma("revisar"), nao_triadas: soma("nao_triadas") };
+  return { total: soma("total"), revisar: soma("revisar"), nao_triadas: soma("nao_triadas"), processando: soma("processando") };
 }
 
 function paginaMonitoramento({ grupos, noticias, filtros, totalProjetos, notice, job = null }) {
@@ -199,8 +239,9 @@ function paginaMonitoramento({ grupos, noticias, filtros, totalProjetos, notice,
   const listagem = noticias.length
     ? noticias.map(cardNoticia).join("")
     : `<div class="empty"><h2>Nenhuma notícia neste filtro</h2><p>Troque a empresa ou a situação acima.</p></div>`;
-  const triarTodas = c.nao_triadas
-    ? `<button class="button js-triar" type="button" data-grupo="">Triar ${c.nao_triadas} sem triagem</button>`
+  const naFila = c.nao_triadas + (c.processando || 0);
+  const triarTodas = naFila
+    ? `<button class="button js-triar" type="button" data-grupo="">Processar ${naFila} no funil</button>`
     : "";
   return layout({
     title: "Monitoramento",
@@ -212,7 +253,7 @@ function paginaMonitoramento({ grupos, noticias, filtros, totalProjetos, notice,
         <div>
           <p class="eyebrow">Teste de monitoramento · ${grupos.length} empresas</p>
           <h1>Monitoramento</h1>
-          <p>Aprove ou descarte direto no card. A IA sugere; a decisão é sua.</p>
+          <p>Captação, Filtro 1, Filtro 2, Enriquecimento e Filtro 3 rodam antes; aqui chega só o que passou por todos. Aprove ou descarte direto no card.</p>
         </div>
         ${triarTodas}
       </section>
@@ -222,6 +263,7 @@ function paginaMonitoramento({ grupos, noticias, filtros, totalProjetos, notice,
         <div><strong data-stat="total">${c.total}</strong><span>Notícias coletadas</span></div>
         <div><strong data-stat="revisar">${c.revisar}</strong><span>A revisar</span></div>
         <div><strong data-stat="nao_triadas">${c.nao_triadas}</strong><span>Sem triagem da IA</span></div>
+        <div><strong data-stat="processando">${c.processando || 0}</strong><span>Em processamento</span></div>
         <div><strong data-stat="projetos">${totalProjetos}</strong><span>Projetos na carteira</span></div>
       </section>
       <form class="source-filters js-filtros" method="get" action="/monitoramento">
@@ -235,7 +277,7 @@ function paginaMonitoramento({ grupos, noticias, filtros, totalProjetos, notice,
         <h2>Empresas</h2>
         <p>A data da última coleta leva ao histórico de buscas da empresa.</p>
         <div class="table-wrap"><table class="table-compact">
-          <thead><tr><th>Empresa</th><th>Nicho</th><th>Notícias</th><th>Sem triagem</th><th>A revisar</th><th>Projetos</th><th>Última coleta</th><th></th></tr></thead>
+          <thead><tr><th>Empresa</th><th>Nicho</th><th>Notícias</th><th>Sem triagem</th><th>Em processamento</th><th>A revisar</th><th>Projetos</th><th>Última coleta</th><th></th></tr></thead>
           <tbody>${grupos.map(linhaGrupo).join("")}</tbody>
         </table></div>
       </section>`,
@@ -610,7 +652,7 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
   else cards = `<div class="empty"><h2>Nenhum projeto ainda</h2><p>Aprove uma notícia na lista para criar o primeiro.</p><a class="button" href="/monitoramento">Ver notícias</a></div>`;
   return layout({
     title: "Carteira",
-    active: "monitoramento",
+    active: "projetos",
     scripts: SCRIPT,
     body: `
       ${notice}
@@ -632,7 +674,7 @@ function paginaProjeto({ projeto, timeline, notice }) {
     </article>`).join("");
   return layout({
     title: projeto.titulo,
-    active: "monitoramento",
+    active: "projetos",
     scripts: SCRIPT,
     body: `
       ${notice}
@@ -977,8 +1019,14 @@ function registrarMonitoramento(app) {
     const ia = iaPadrao();
     if (!ia) return res.status(422).json({ ok: false, mensagem: "CLAUDE_API_KEY não configurada: a triagem precisa da IA." });
     const comAgente = req.body.modo === "agente" ? agente.agentePadrao() : null;
-    const filtro = filtroCapex.filtroPadrao();
-    res.json({ ok: true, job: await triagem.iniciarTriagem({ grupoId, ia, agente: comAgente, filtro }) });
+    res.json({ ok: true, job: await triagem.iniciarTriagem({
+      grupoId,
+      ia,
+      agente: comAgente,
+      filtro: filtroCapex.filtroPadrao(),
+      enriquecedor: enriquecimento.enriquecedorPadrao(),
+      filtroFinal: filtroFinal.filtroFinalPadrao(),
+    }) });
   });
 
   // Agente: decisões, avaliação e conjunto de treino.

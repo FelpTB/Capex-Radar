@@ -74,6 +74,9 @@
       feito = true;
       main().replaceWith(novo);
       document.title = doc.title;
+      // O destaque do menu muda entre Monitoramento e Projetos (Carteira).
+      const menu = doc.querySelector(".topbar nav");
+      if (menu) document.querySelector(".topbar nav")?.replaceWith(menu);
       depois();
     };
     if (document.startViewTransition && !document.hidden) {
@@ -223,18 +226,24 @@
     box.querySelector(".js-triagem-barra").style.width = `${job.percentual}%`;
     const ag = job.agente || {};
     const fimAgente = `Agente: ${ag.projetos_criados} projeto(s) criado(s) · ${ag.vinculadas} vinculada(s) · ${ag.descartadas} descartada(s) · ${ag.revisao_humana} para você${ag.erros ? ` · ${ag.erros} erro(s)` : ""}`;
-    const fimTriagem = `Concluída: ${job.resumo.lidas} lidas · ${job.resumo.capex} de CapEx · ${job.resumo.regras + job.resumo.ia_descartadas} descartadas${job.resumo.erros_ia ? ` · ${job.resumo.erros_ia} lote(s) com erro` : ""}`;
+    const r = job.resumo;
+    const fases = [
+      `Filtro 1: ${r.lidas} lidas, ${r.capex} seguem, ${r.regras + (r.repetidas || 0) + r.ia_descartadas} descartadas${r.repetidas ? ` (${r.repetidas} manchete(s) repetida(s))` : ""}${r.erros_ia ? `, ${r.erros_ia} lote(s) com erro` : ""}`,
+    ];
     const fi = job.filtro || {};
-    const fimFiltro = fi.ativo
-      ? ` · filtro CapEx: ${fi.mantidas} mantida(s), ${fi.descartadas} descartada(s) (${fi.repetidas} repetida(s))${fi.erros ? `, ${fi.erros} erro(s)` : ""}`
-      : "";
+    if (fi.ativo) fases.push(`Filtro 2: ${fi.mantidas} mantida(s), ${fi.descartadas} descartada(s)${fi.erros ? `, ${fi.erros} erro(s)` : ""}`);
+    const en = job.enriquecimento || {};
+    if (en.ativo) fases.push(`Enriquecimento: ${en.enriquecidas} com matéria, ${en.sem_materia} sem${en.erros ? `, ${en.erros} erro(s)` : ""}`);
+    const f3 = job.filtro_final || {};
+    if (f3.ativo) fases.push(`Filtro 3: ${f3.mantidas} para aprovação, ${f3.descartadas} descartada(s)${f3.erros ? `, ${f3.erros} erro(s)` : ""}`);
+    if (job.modo === "agente") fases.push(fimAgente);
     const texto = job.status === "rodando"
-      ? `${job.feitas} de ${job.total} notícias · ${job.grupo_atual || job.escopo}`
+      ? `${job.feitas} de ${job.total} · ${job.grupo_atual || job.escopo}`
       : job.status === "erro"
         ? `Parou com erro: ${job.erro}`
-        : job.modo === "agente" ? `${fimAgente} · triagem: ${job.resumo.lidas} lidas${fimFiltro}` : `${fimTriagem}${fimFiltro}`;
+        : `Concluído · ${fases.join(" · ")}`;
     const rotulo = box.querySelector(".triage-progress__head strong");
-    if (rotulo) rotulo.textContent = job.modo === "agente" ? "Agente" : "Triagem da IA";
+    if (rotulo) rotulo.textContent = job.modo === "agente" ? "Agente" : "Funil de notícias";
     box.querySelector(".js-triagem-texto").textContent = texto;
     box.classList.toggle("is-done", job.status !== "rodando");
     document.querySelectorAll(".js-triar").forEach((b) => { b.disabled = job.status === "rodando"; });
@@ -257,7 +266,7 @@
       mostrarProgresso(dados.job);
       if (dados.job.status !== "rodando") {
         acompanhando = null;
-        const nome = dados.job.modo === "agente" ? "O agente" : "A triagem";
+        const nome = dados.job.modo === "agente" ? "O agente" : "O funil";
         avisar(dados.job.status === "erro" ? `${nome} parou com erro.` : `${nome} terminou.`, dados.job.status === "erro" ? "erro" : "ok");
         await recarregarConteudo();
         const box = document.getElementById("triagem-progresso");
@@ -281,7 +290,7 @@
       if (!dados.ok) throw new Error(dados.mensagem);
       mostrarProgresso(dados.job);
       if (dados.job.status === "rodando") acompanhar(dados.job.id);
-      else avisar("Nada para triar.");
+      else avisar("Nada no funil para processar.");
     } catch (error) {
       avisar(error.message || "Falha ao iniciar a triagem.", "erro");
       botao.disabled = false;

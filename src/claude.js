@@ -51,4 +51,48 @@ async function pedirJson(client, { model = MODELO_PADRAO, system, user, maxToken
   return extrairJson(texto);
 }
 
-module.exports = { MODELO_PADRAO, criarCliente, extrairJson, pedirJson };
+/**
+ * Pede um objeto JSON com ferramentas do servidor (busca e leitura de páginas).
+ * A resposta pode vir em várias voltas: com stop_reason "pause_turn" o
+ * servidor parou no meio do trabalho, e a conversa segue com o que ele já fez.
+ * Devolve { json, buscas, leituras } — json é o texto do JSON ou null.
+ */
+async function pedirJsonComFerramentas(client, {
+  model, system, user, tools, maxTokens = 16000, effort = "low", maxVoltas = 4,
+}) {
+  const messages = [{ role: "user", content: user }];
+  let response;
+  const uso = { buscas: 0, leituras: 0 };
+  for (let volta = 0; volta < maxVoltas; volta += 1) {
+    response = await client.messages.create({
+      model,
+      max_tokens: maxTokens,
+      output_config: { effort },
+      system: `${system} ${INSTRUCAO_JSON}`,
+      tools,
+      messages,
+    });
+    for (const bloco of response.content || []) {
+      if (bloco.type !== "server_tool_use") continue;
+      if (bloco.name === "web_search") uso.buscas += 1;
+      if (bloco.name === "web_fetch") uso.leituras += 1;
+    }
+    if (response.stop_reason !== "pause_turn") break;
+    messages.push({ role: "assistant", content: response.content });
+  }
+  if (response.stop_reason === "refusal") {
+    throw new Error(`O Claude recusou a solicitação (${response.stop_details?.category || "sem categoria"})`);
+  }
+  if (response.stop_reason === "max_tokens") {
+    throw new Error("A resposta do Claude passou do limite de tokens");
+  }
+  if (response.stop_reason === "pause_turn") {
+    throw new Error("O Claude não terminou a pesquisa no número de voltas permitido");
+  }
+  // O JSON vem no último texto, depois das buscas.
+  const textos = (response.content || []).filter((b) => b.type === "text").map((b) => b.text);
+  const json = extrairJson(textos.join("")) || extrairJson(textos[textos.length - 1]);
+  return { json, ...uso };
+}
+
+module.exports = { MODELO_PADRAO, criarCliente, extrairJson, pedirJson, pedirJsonComFerramentas };

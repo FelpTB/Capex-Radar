@@ -5,8 +5,9 @@
 //      a fatia que chega ao teto do RSS (~100 itens) é refeita mês a mês;
 //   2. grava cada notícia em capex_radar.evidencias (título, veículo, data e
 //      link; o corpo da matéria não entra). chave_dedupe = gnews:<guid>;
-//   3. triagem: regras sem custo (o título cita a empresa e não tem exclusão)
-//      e depois a IA, que diz se a notícia fala de ativo físico do grupo;
+//   3. Filtro 1 (triagem): regras sem custo (exclusão no título), manchete
+//      quase igual a outra do grupo em poucos dias e depois a IA rápida, que
+//      diz se a manchete fala de ativo físico do grupo;
 //   4. vínculo: a IA escolhe um projeto do grupo numa lista fechada ou marca
 //      a notícia como novo_projeto. Projeto só nasce na revisão humana.
 //
@@ -111,6 +112,67 @@ function motivoDescarte(titulo, { exclusoes }) {
   const t = normalizar(titulo);
   const exclusao = (exclusoes || []).find((e) => t.includes(normalizar(e)));
   return exclusao ? `Exclusão no título: ${exclusao}` : null;
+}
+
+// Manchete quase igual: mesmas palavras (sem acento, pontuação e palavras
+// curtas), com sobreposição de pelo menos 80% e no mínimo 4 palavras.
+// Pega a mesma matéria republicada ou com o título trocado por um detalhe.
+const SIMILARIDADE_MANCHETE = 0.8;
+const DIAS_MANCHETE = 15;
+
+function palavrasManchete(titulo) {
+  return new Set(normalizar(titulo).replace(/[^a-z0-9 ]+/g, " ").split(" ").filter((p) => p.length > 2));
+}
+
+function manchetesIguais(a, b) {
+  const pa = palavrasManchete(a);
+  const pb = palavrasManchete(b);
+  if (pa.size < 4 || pb.size < 4) return normalizar(a) === normalizar(b);
+  let comuns = 0;
+  for (const p of pa) if (pb.has(p)) comuns += 1;
+  return comuns / (pa.size + pb.size - comuns) >= SIMILARIDADE_MANCHETE;
+}
+
+function pertoNoTempo(a, b, dias = DIAS_MANCHETE) {
+  if (!a || !b) return true;
+  return Math.abs(new Date(a) - new Date(b)) <= dias * 86_400_000;
+}
+
+/**
+ * Separa as manchetes quase iguais a uma anterior do grupo. `vivas` são as
+ * notícias já guardadas que não foram descartadas; a primeira da rodada
+ * também passa a valer como referência. Devolve { unicas, repetidas }, com a
+ * manchete de referência em cada repetida.
+ */
+function separarRepetidas(noticias, vivas = []) {
+  const referencias = vivas.map((v) => ({ id: v.id, titulo: v.titulo, data_original: v.data_original }));
+  const ids = new Set(noticias.map((n) => n.id));
+  const base = referencias.filter((r) => !ids.has(r.id));
+  const unicas = [];
+  const repetidas = [];
+  for (const noticia of noticias) {
+    const igual = base.find((r) => pertoNoTempo(r.data_original, noticia.data_original) && manchetesIguais(r.titulo, noticia.titulo));
+    if (igual) { repetidas.push({ noticia, igual }); continue; }
+    unicas.push(noticia);
+    base.push(noticia);
+  }
+  return { unicas, repetidas };
+}
+
+async function manchetesVivas(client, grupoId, noticias) {
+  const datas = noticias.map((n) => n.data_original).filter(Boolean).map((d) => new Date(d).getTime());
+  const desde = datas.length ? new Date(Math.min(...datas) - DIAS_MANCHETE * 86_400_000) : null;
+  const ate = datas.length ? new Date(Math.max(...datas) + DIAS_MANCHETE * 86_400_000) : null;
+  const { rows } = await client.query(
+    `select id, titulo, data_original
+       from capex_radar.evidencias
+      where grupo_id = $1 and triagem <> 'descartada' and extracao is not null
+        and ($2::timestamptz is null or data_original between $2 and $3)
+      order by data_original nulls last
+      limit 3000`,
+    [grupoId, desde, ate],
+  );
+  return rows;
 }
 
 function citaEmpresa(titulo, { termos }) {
@@ -301,9 +363,9 @@ async function triarGrupo({ client, grupo, ia, limite = 400, onProgresso = () =>
       limit $3`,
     [grupo.id, FONTE, limite],
   );
-  const resumo = { grupo: grupo.nome, lidas: pendentes.length, regras: 0, ia_descartadas: 0, capex: 0, sugeridos: 0, novos_projetos: 0, erros_ia: 0 };
+  const resumo = { grupo: grupo.nome, lidas: pendentes.length, regras: 0, repetidas: 0, ia_descartadas: 0, capex: 0, sugeridos: 0, novos_projetos: 0, erros_ia: 0 };
   const termos = separarTermos(grupo.linhas);
-  const restantes = [];
+  let restantes = [];
 
   await emTransacao(client, ATOR_TRIAGEM, async () => {
     for (const noticia of pendentes) {
@@ -318,7 +380,26 @@ async function triarGrupo({ client, grupo, ia, limite = 400, onProgresso = () =>
       resumo.regras += 1;
     }
   });
-  onProgresso(resumo.regras, pendentes.length);
+  // Manchete quase igual a outra do grupo em poucos dias: sai antes da IA.
+  if (restantes.length) {
+    const { unicas, repetidas } = separarRepetidas(restantes, await manchetesVivas(client, grupo.id, restantes));
+    if (repetidas.length) {
+      await emTransacao(client, ATOR_TRIAGEM, async () => {
+        for (const { noticia, igual } of repetidas) {
+          const motivo = `Filtro 1: manchete quase igual a “${String(igual.titulo).slice(0, 140)}”`;
+          await client.query(
+            `update capex_radar.evidencias
+                set triagem = 'descartada', triagem_motivo = $2, extracao = $3::jsonb
+              where id = $1`,
+            [noticia.id, motivo, JSON.stringify({ capex: false, motivo, etapa: "regras", repete_id: igual.id })],
+          );
+        }
+      });
+      resumo.repetidas = repetidas.length;
+      restantes = unicas;
+    }
+  }
+  onProgresso(resumo.regras + resumo.repetidas, pendentes.length);
   if (!ia || !restantes.length) return resumo;
 
   const projetos = await projetosDoGrupo(client, grupo.id);
@@ -329,7 +410,7 @@ async function triarGrupo({ client, grupo, ia, limite = 400, onProgresso = () =>
       decisoes = await ia.triar(grupo, lote);
     } catch {
       resumo.erros_ia += 1; // o lote continua pendente e volta na próxima rodada
-      onProgresso(resumo.regras + i + lote.length, pendentes.length);
+      onProgresso(resumo.regras + resumo.repetidas + i + lote.length, pendentes.length);
       continue;
     }
     for (const noticia of lote) {
@@ -378,7 +459,7 @@ async function triarGrupo({ client, grupo, ia, limite = 400, onProgresso = () =>
       if (vinculo?.projeto_id) resumo.sugeridos += 1;
       else resumo.novos_projetos += 1;
     }
-    onProgresso(resumo.regras + i + lote.length, pendentes.length);
+    onProgresso(resumo.regras + resumo.repetidas + i + lote.length, pendentes.length);
   }
   return resumo;
 }
@@ -466,6 +547,8 @@ module.exports = {
   janelas,
   janelaSemanal,
   motivoDescarte,
+  manchetesIguais,
+  separarRepetidas,
   citaEmpresa,
   carregarGrupos,
   coletarGrupo,

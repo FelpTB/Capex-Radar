@@ -30,6 +30,8 @@ function getConfig() {
       process.env.CLAUDE_MODEL?.trim() ||
       "claude-haiku-5-5",
     claudeFilterModel: process.env.CLAUDE_FILTER_MODEL?.trim() || "claude-sonnet-5-5",
+    claudeEnrichModel: process.env.CLAUDE_ENRICH_MODEL?.trim() || "claude-sonnet-5-5",
+    claudeFilter3Model: process.env.CLAUDE_FILTER3_MODEL?.trim() || "claude-sonnet-5-5",
     dadosGovToken: process.env.TOKEN_DADOS_GOV?.trim() || null,
     port: Number(process.env.PORT || 3000),
     nodeEnv,
