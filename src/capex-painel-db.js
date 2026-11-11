@@ -436,9 +436,11 @@ async function retirarDoProjeto(evidenciaId, motivo, { ator = ATOR } = {}) {
 // Projetos da carteira. Os descartados ficam fora, a não ser que sejam pedidos.
 async function carteira({ incluirDescartados = false } = {}) {
   const { rows } = await pool.query(
-    `select v.*, p.avaliacao, p.secundarias, p.linha_tempo
+    `select v.*, p.avaliacao, p.secundarias, p.linha_tempo, p.projeto_pai_id, p.relacao, p.perfil_etapa,
+            pai.titulo as pai_titulo
        from capex_radar.vw_carteira v
        join capex_radar.projetos p on p.id = v.id
+       left join capex_radar.projetos pai on pai.id = p.projeto_pai_id
       where $1 or v.status <> 'descartado'
       order by coalesce(v.ultima_evidencia_em, v.criado_em) desc`,
     [incluirDescartados],
@@ -456,9 +458,39 @@ async function obterProjeto(id) {
         order by data_original nulls last`,
       [id],
     ),
-    pool.query("select objeto, fonte_valor, avaliacao, secundarias, linha_tempo from capex_radar.projetos where id = $1", [id]),
+    pool.query(
+      `select objeto, fonte_valor, avaliacao, secundarias, linha_tempo, perfil, perfil_etapa, perfil_em,
+              projeto_pai_id, relacao
+         from capex_radar.projetos where id = $1`,
+      [id],
+    ),
   ]);
-  return { projeto: { ...rows[0], ...projeto.rows[0] }, timeline: timeline.rows };
+  const [familia, registros, retiradas] = await Promise.all([
+    pool.query(
+      `select id, titulo, relacao, status, uf, municipio, projeto_pai_id
+         from capex_radar.projetos
+        where (id = $2 or projeto_pai_id = $1) and id <> $1
+        order by titulo`,
+      [id, projeto.rows[0]?.projeto_pai_id || id],
+    ),
+    pool.query(
+      `select id, fonte_codigo, chave, data_registro, correlacao, motivo, evidencia_id, analisado_por, registro
+         from capex_radar.registros_analisados where projeto_id = $1
+        order by (correlacao = 'direta') desc, fonte_codigo, data_registro desc nulls last`,
+      [id],
+    ),
+    pool.query(
+      `select e.id, e.titulo, e.data_original, ep.descarte, ep.motivo
+         from capex_radar.evidencia_projeto ep join capex_radar.evidencias e on e.id = ep.evidencia_id
+        where ep.projeto_id = $1 and ep.situacao = 'rejeitado' and ep.descarte is not null
+        order by e.data_original`,
+      [id],
+    ),
+  ]);
+  const p = { ...rows[0], ...projeto.rows[0] };
+  const pai = familia.rows.find((x) => String(x.id) === String(p.projeto_pai_id)) || null;
+  const filhos = familia.rows.filter((x) => String(x.projeto_pai_id) === String(id));
+  return { projeto: p, timeline: timeline.rows, pai, filhos, registros: registros.rows, retiradas: retiradas.rows };
 }
 
 /**

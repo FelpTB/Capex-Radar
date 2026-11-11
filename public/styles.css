@@ -479,3 +479,12 @@ details.js-janela[open] { min-width: 380px; }
   .project-row__name, .mini-timeline { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) { .project-row { grid-template-columns: 1fr; } }
+.project-row__parent { margin: 4px 0 0; font-size: 13px; }
+.project-family, .project-profile, .raw-records, .removed-evidence {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; margin: 18px 0;
+}
+.project-family ul, .removed-evidence ul, .project-profile ul { margin: 8px 0 0; padding-left: 18px; }
+.project-family li, .removed-evidence li { margin: 4px 0; }
+.raw-record { border-top: 1px solid var(--line); padding: 8px 0; }
+.raw-record summary { cursor: pointer; line-height: 1.5; }
+.raw-record pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; background: var(--bg); padding: 10px; border-radius: 8px; max-height: 320px; overflow: auto; }

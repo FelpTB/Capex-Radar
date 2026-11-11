@@ -656,6 +656,7 @@ function cardProjeto(p) {
       <article class="project-row">
         <div class="project-row__name">
           <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
+          ${p.pai_titulo ? `<p class="project-row__parent muted">↳ ${esc(RELACAO_ROTULO[p.relacao] || "ligado")} de <a href="/monitoramento/projetos/${p.projeto_pai_id}">${esc(p.pai_titulo)}</a></p>` : ""}
           ${p.avaliacao && p.avaliacao.decisao !== "valido" ? linhaAvaliacao(p.avaliacao) : ""}
         </div>
         <div class="project-row__field"><span>Empresa</span><strong>${esc(p.grupo)}</strong></div>
@@ -751,7 +752,85 @@ function blocoLinhaDoTempo(projeto, timeline) {
   </section>`;
 }
 
-function paginaProjeto({ projeto, timeline, notice }) {
+const RELACAO_ROTULO = { expansao: "expansão", subprojeto: "subprojeto", localidade: "localidade" };
+const CORRELACAO_ROTULO = {
+  direta: ["correlação direta", "success"],
+  incerta: ["incerta", "warning"],
+  outro_projeto: ["outro projeto", "neutral"],
+  outro_estado: ["outro estado", "neutral"],
+  nao_avaliada: ["não avaliada", "neutral"],
+};
+const ETAPA_PERFIL_ROTULO = { inicial: "Perfil inicial", enriquecido: "Perfil enriquecido", completo: "Perfil completo" };
+const ORIGEM_ROTULO = { projeto: "cadastro", manchete: "manchete", materia: "matéria", fonte_secundaria: "fonte oficial", linha_tempo: "linha do tempo" };
+const CAMPOS_PERFIL_ROTULO = [
+  ["objeto", "Objeto"], ["tipo_ativo", "Tipo de ativo"], ["local_detalhe", "Local (detalhe)"], ["valor_texto", "Valor (como divulgado)"],
+  ["capacidade", "Capacidade"], ["empregos", "Empregos"], ["obra", "Obra"], ["inicio_obra", "Início da obra"],
+  ["previsao_operacao", "Previsão de operação"], ["construtora", "Construtora / EPC"], ["financiamento", "Financiamento"],
+];
+
+function blocoFamilia(pai, filhos) {
+  if (!pai && !filhos.length) return "";
+  const item = (x) => `<li><a href="/monitoramento/projetos/${x.id}">${esc(x.titulo)}</a> ${badge(RELACAO_ROTULO[x.relacao] || "projeto", "info")}${x.status !== "ativo" ? ` ${badge(STATUS_ROTULO[x.status] || x.status, "warning")}` : ""}</li>`;
+  return `<section class="project-family">
+    ${pai ? `<p>Este projeto é ${esc(RELACAO_ROTULO[pai.relacao_do_filho] || "ligado a")} de: <a href="/monitoramento/projetos/${pai.id}">${esc(pai.titulo)}</a></p>` : ""}
+    ${filhos.length ? `<h2>Subprojetos e localidades (${filhos.length})</h2><ul>${filhos.map(item).join("")}</ul>` : ""}
+  </section>`;
+}
+
+function blocoPerfil(projeto) {
+  const perfil = projeto.perfil;
+  if (!perfil) return "";
+  const origem = (campo) => (perfil.origem?.[campo] ? ` <span class="muted">(${esc(ORIGEM_ROTULO[perfil.origem[campo]] || perfil.origem[campo])})</span>` : "");
+  const linhas = CAMPOS_PERFIL_ROTULO
+    .filter(([campo]) => perfil[campo] != null && perfil[campo] !== "")
+    .map(([campo, rotulo]) => `<div><dt>${rotulo}</dt><dd>${esc(String(perfil[campo]))}${origem(campo)}</dd></div>`).join("");
+  const licencas = (perfil.licencas || []).map((l) => `<li>${esc(l.tipo)}${l.numero ? ` nº ${esc(l.numero)}` : ""} · ${esc(l.orgao || l.fonte)}${l.data ? ` · ${esc(dia(l.data))}` : ""}</li>`).join("");
+  return `<section class="project-profile">
+    <h2>${esc(ETAPA_PERFIL_ROTULO[projeto.perfil_etapa] || "Perfil")} <span class="muted">· atualizado em ${esc(dia(projeto.perfil_em))}</span></h2>
+    ${perfil.resumo ? `<p>${esc(perfil.resumo)}</p>` : ""}
+    ${linhas ? `<dl class="facts facts--stack">${linhas}</dl>` : ""}
+    ${licencas ? `<h3>Licenças e autorizações</h3><ul>${licencas}</ul>` : ""}
+    ${perfil.licencas_sem_diario?.length ? `<p class="project-card__review">${badge("pendência", "warning")} Notícia cita licença sem publicação de diário oficial encontrada.</p>` : ""}
+    <p class="muted">Fontes: ${perfil.fontes?.noticias || 0} notícia(s), ${perfil.fontes?.materias || 0} matéria(s) lida(s), ${perfil.fontes?.registros_oficiais || 0} registro(s) oficial(is).</p>
+  </section>`;
+}
+
+// Todo registro que o Enriquecimento 2 analisou, com o dado bruto.
+function blocoRegistros(registros) {
+  if (!registros.length) return "";
+  const contagem = {};
+  for (const r of registros) contagem[r.correlacao] = (contagem[r.correlacao] || 0) + 1;
+  const resumo = Object.entries(contagem).map(([c, n]) => `${n} ${esc(CORRELACAO_ROTULO[c]?.[0] || c)}`).join(" · ");
+  const linhas = registros.map((r) => {
+    const [rotulo, tom] = CORRELACAO_ROTULO[r.correlacao] || [r.correlacao, "neutral"];
+    const b = r.registro || {};
+    const titulo = b.titulo || b.descricao || b.empreendimento || b.assunto || b.objeto || b.tipo_licenca || r.chave;
+    const url = /^https?:\/\//.test(b.url || b.link || "") ? b.url || b.link : null;
+    return `<details class="raw-record">
+      <summary>${badge(rotulo, tom)} <strong>${esc(r.fonte_codigo)}</strong> <span class="muted">${esc(dia(r.data_registro))}</span> ${esc(String(titulo).slice(0, 160))}</summary>
+      ${r.motivo ? `<p class="muted">${esc(r.motivo)}</p>` : ""}
+      ${url ? `<p><a href="${esc(url)}" target="_blank" rel="noopener">Abrir a fonte ↗</a></p>` : ""}
+      <pre>${esc(JSON.stringify(b, null, 2))}</pre>
+    </details>`;
+  }).join("");
+  return `<section class="raw-records">
+    <h2>Dados brutos analisados <span class="muted">(${registros.length})</span></h2>
+    <p class="muted">${resumo}. Só os de correlação direta viram evidência do projeto.</p>
+    ${linhas}
+  </section>`;
+}
+
+const DESCARTE_ROTULO = { cronologia: "fora da cronologia", ampla: "notícia ampla", repetida: "repetida", outro_projeto: "outro projeto" };
+
+function blocoRetiradas(retiradas) {
+  if (!retiradas.length) return "";
+  return `<section class="removed-evidence">
+    <h2>Evidências retiradas <span class="muted">(${retiradas.length})</span></h2>
+    <ul>${retiradas.map((r) => `<li>${badge(DESCARTE_ROTULO[r.descarte] || r.descarte, "neutral")} <a href="/monitoramento/noticias/${r.id}">${esc(r.titulo)}</a> <span class="muted">${esc(dia(r.data_original))} · ${esc(r.motivo || "")}</span></li>`).join("")}</ul>
+  </section>`;
+}
+
+function paginaProjeto({ projeto, timeline, notice, pai = null, filhos = [], registros = [], retiradas = [] }) {
   const itens = timeline.map((t) => `
     <article class="evidence">
       <div>${t.primaria ? badge("primária", "info") : /google news/i.test(t.fonte_nome || "") || !t.fonte_nome ? badge("notícia", "success") : badge("fonte oficial", "warning")} <span class="muted">${esc(dia(t.data_original))} · ${esc(t.veiculo || t.fonte_nome || "")}</span></div>
@@ -779,6 +858,8 @@ function paginaProjeto({ projeto, timeline, notice }) {
         <div><strong>${timeline.length}</strong><span>Evidências</span></div>
         <div><strong>${esc(dia(projeto.data_anuncio))}</strong><span>Anúncio</span></div>
       </section>
+      ${blocoFamilia(pai ? { ...pai, relacao_do_filho: projeto.relacao } : null, filhos)}
+      ${blocoPerfil(projeto)}
       ${blocoLinhaDoTempo(projeto, timeline)}
       <div class="detail-grid">
         <section><h2>Evidências</h2>${projeto.objeto ? `<p>${esc(projeto.objeto)}</p>` : ""}<div class="evidence-list">${itens}</div></section>
@@ -797,7 +878,9 @@ function paginaProjeto({ projeto, timeline, notice }) {
             <button class="button button--danger" type="submit">Excluir projeto</button>
           </form>
         </aside>
-      </div>`,
+      </div>
+      ${blocoRetiradas(retiradas)}
+      ${blocoRegistros(registros)}`,
   });
 }
 
