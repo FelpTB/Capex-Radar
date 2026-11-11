@@ -623,29 +623,45 @@ function filtrarCarteira(projetos, f) {
   return lista.sort((a, b) => chave(a) - chave(b));
 }
 
+// Data de marco da linha do tempo ("2025", "2025-03" ou "2025-03-10") no formato brasileiro.
+function dataMarco(data) {
+  return data ? String(data).split("-").reverse().join("/") : "sem data";
+}
+
+const tomEstagio = (estagio) => (estagio === "cancelado" ? "danger" : estagio === "operacao" ? "success" : "info");
+
+// Linha do tempo resumida do card: um ponto por marco e, em destaque, a data
+// mais recente e o estágio do projeto. Sem marcos, usa a última evidência.
+function linhaDoTempoCard(p) {
+  const marcos = (temLinhaDoTempo(p) ? p.linha_tempo.marcos : [])
+    .filter((m) => m.data)
+    .sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  const ultimo = marcos[marcos.length - 1];
+  const data = ultimo ? dataMarco(ultimo.data) : dia(p.ultima_evidencia_em);
+  const origem = ultimo ? (MARCO_ROTULO[ultimo.tipo] || ultimo.tipo) : "Última evidência";
+  const pontos = (marcos.length ? marcos : [{}]).slice(-8).map((m, i, lista) =>
+    `<span class="mini-timeline__dot${i === lista.length - 1 ? " is-last" : ""}" title="${esc(m.data ? `${dataMarco(m.data)} · ${MARCO_ROTULO[m.tipo] || m.tipo}` : "")}"></span>`).join("");
+  return `
+        <div class="mini-timeline">
+          <div class="mini-timeline__track">${pontos}</div>
+          <div class="mini-timeline__info">
+            <span><strong>${esc(data)}</strong> <span class="muted">${esc(origem)}</span></span>
+            <span>${badge(ESTAGIO_ROTULO[p.estagio] || p.estagio || "—", tomEstagio(p.estagio))}${p.status && p.status !== "ativo" ? ` ${badge(STATUS_ROTULO[p.status] || p.status, p.status === "descartado" ? "danger" : "warning")}` : ""}</span>
+          </div>
+        </div>`;
+}
+
 function cardProjeto(p) {
   return `
-      <article class="project-card">
-        <div class="project-card__top">
-          ${badge(ESTAGIO_ROTULO[p.estagio] || p.estagio, p.estagio === "cancelado" ? "danger" : p.estagio === "operacao" ? "success" : "info")}
-          ${p.status && p.status !== "ativo" ? badge(STATUS_ROTULO[p.status] || p.status, p.status === "descartado" ? "danger" : "warning") : ""}
-          ${temLinhaDoTempo(p) ? `<span class="tag-linha-tempo" title="Linha do tempo montada a partir das notícias e fontes oficiais">◷ linha do tempo</span>` : ""}
-          <span class="muted">${esc(NICHOS[p.nicho] || p.nicho)}</span>
+      <article class="project-row">
+        <div class="project-row__name">
+          <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
+          ${p.avaliacao && p.avaliacao.decisao !== "valido" ? linhaAvaliacao(p.avaliacao) : ""}
         </div>
-        <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
-        <p class="project-card__company">${esc(p.grupo)} · ${esc(p.matriz_razao_social)}</p>
-        ${p.avaliacao && p.avaliacao.decisao !== "valido" ? linhaAvaliacao(p.avaliacao) : ""}
-        ${PROCESSAMENTO.processado.teste(p) ? `<p class="project-card__review muted">${badge("fontes secundárias", "success")} ${p.secundarias.gravadas || 0} registro(s) oficial(is) · linha do tempo com ${(p.linha_tempo.marcos || []).length} marco(s)</p>` : ""}
-        <dl class="facts">
-          <div><dt>Local</dt><dd>${esc(localProjeto(p))}</dd></div>
-          <div><dt>Valor</dt><dd>${esc(money(p.valor_estimado_brl))}</dd></div>
-          <div><dt>Evidências</dt><dd>${p.n_evidencias || 0}</dd></div>
-          <div><dt>Anúncio</dt><dd>${esc(dia(dataDoAnuncio(p)))}</dd></div>
-        </dl>
-        <div class="card-actions">
-          <span class="muted">Última evidência: ${esc(dia(p.ultima_evidencia_em))}</span>
-          <a href="/monitoramento/projetos/${p.id}">Linha do tempo →</a>
-        </div>
+        <div class="project-row__field"><span>Empresa</span><strong>${esc(p.grupo)}</strong></div>
+        <div class="project-row__field"><span>Local</span><strong>${esc(localProjeto(p))}</strong></div>
+        <div class="project-row__field project-row__field--valor"><span>Valor</span><strong>${esc(money(p.valor_estimado_brl))}</strong></div>
+        ${linhaDoTempoCard(p)}
       </article>`;
 }
 
@@ -691,7 +707,7 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
       const doStatus = visiveis.filter((p) => p.status === status);
       if (!doStatus.length) return "";
       return `<section class="project-status-group"><h2>${esc(STATUS_ROTULO[status])} <span class="muted">(${doStatus.length})</span></h2>
-        <div class="project-grid">${doStatus.map(cardProjeto).join("")}</div></section>`;
+        <div class="project-list">${doStatus.map(cardProjeto).join("")}</div></section>`;
     }).join("");
   }
   else if (projetos.length) cards = `<div class="empty"><h2>Nenhum projeto neste filtro</h2><p>Troque ou limpe os filtros acima.</p><a class="button" href="/monitoramento/carteira">Limpar filtros</a></div>`;

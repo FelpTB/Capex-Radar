@@ -183,7 +183,7 @@ test("carteira separa os processados e agrupa por status; projeto mostra a linha
   assert.deepEqual(ids({ processamento: "pendente", status: "todos" }), ["p2", "p3"]);
   const html = paginaCarteira({ projetos: lista, filtros: filtrosCarteira({ status: "todos" }) });
   assert.ok(html.indexOf("Ativo <span") < html.indexOf("Em revisão <span") && html.indexOf("Em revisão <span") < html.indexOf("Descartado <span"));
-  assert.match(html, /linha do tempo com 1 marco/);
+  assert.match(html, /<strong>01\/03\/2024<\/strong> <span class="muted">Licença<\/span>/);
   assert.match(html, /<select name="processamento">/);
   const pagina = paginaProjeto({ projeto: { ...processado, matriz_cnpj: "1", flag_validacao: "A_VALIDAR" }, timeline: [{ evidencia_id: "e1", titulo: "CNO", fonte_nome: "CNO dados abertos (RFB)", data_original: "2024-03-01" }], notice: "" });
   assert.match(pagina, /Linha do tempo do projeto/);
@@ -198,5 +198,5 @@ test("local do projeto diz quando é só a sede da matriz", () => {
   assert.equal(localProjeto({ uf: "SC", municipio: "CHAPECO", local_origem: "matriz" }), "Sede: CHAPECO / SC");
   assert.equal(localProjeto({ uf: null, municipio: null }), "—");
   const html = paginaCarteira({ projetos: [{ ...PROJETOS[0], uf: "SC", municipio: "CHAPECO", local_origem: "matriz" }] });
-  assert.match(html, /<dd>Sede: CHAPECO \/ SC<\/dd>/);
+  assert.match(html, /<span>Local<\/span><strong>Sede: CHAPECO \/ SC<\/strong>/);
 });
