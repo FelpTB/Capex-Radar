@@ -134,6 +134,7 @@ async function identifyProjectCompany(text, project = null) {
   if (!candidates.length) return emptyDecision;
 
   const raw = await pedirJson(client, {
+    etapa: "identifyProjectCompany",
     model: config.claudeDecisionModel,
     system:
           "Você decide qual opção é a empresa diretamente ligada ao projeto CapEx. " +
@@ -202,6 +203,7 @@ async function chooseListedCnpj(text, project, groups) {
   if (!client) throw new Error(SEM_CHAVE);
 
   const raw = await pedirJson(client, {
+    etapa: "chooseListedCnpj",
     model: config.claudeDecisionModel,
     system:
       "Escolha o CNPJ da empresa deste projeto. Use a notícia inteira: atividade, local, " +
@@ -266,6 +268,7 @@ async function extractProjects(text, options = {}) {
   }
 
   const raw = await pedirJson(client, {
+    etapa: "extractProjects",
     model: config.claudeModel,
     system:
           "Uma notícia pode descrever mais de um projeto CapEx. " +
@@ -342,6 +345,7 @@ const statusReadingSchema = z.object({
 async function interpretProjectStatus(project, evidencias) {
   if (!client) throw new Error(SEM_CHAVE);
   const raw = await pedirJson(client, {
+    etapa: "interpretProjectStatus",
     model: config.claudeDecisionModel,
     system:
           "Você atualiza o status de um projeto CapEx somente com as evidências já anotadas. " +
@@ -386,6 +390,7 @@ const summarySchema = z.object({ resumo: z.string().min(1) });
 async function summarizeOfficialAct({ titulo, orgao, data, texto, empresa }) {
   if (!client) return null;
   const raw = await pedirJson(client, {
+    etapa: "summarizeOfficialAct",
     model: config.claudeDecisionModel,
     maxTokens: 1000,
     system:
@@ -413,6 +418,7 @@ const contextJudgmentSchema = z.object({
 async function judgeEvidenceContext(project, fonte, registros) {
   if (!client) throw new Error(SEM_CHAVE);
   const raw = await pedirJson(client, {
+    etapa: "judgeEvidenceContext",
     model: config.claudeDecisionModel,
     system:
           "Você decide se cada registro de uma fonte oficial tem correlação direta com um projeto CapEx específico. " +

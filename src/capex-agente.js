@@ -245,7 +245,7 @@ function criarAgente({ client, modelo }) {
   return {
     modelo,
     async decidir(entrada, correcao = null) {
-      const raw = await pedirJson(client, { model: modelo, system: PROMPT, user: mensagem(entrada, correcao), maxTokens: 1500 });
+      const raw = await pedirJson(client, { etapa: "agente", model: modelo, system: PROMPT, user: mensagem(entrada, correcao), maxTokens: 1500 });
       return lerSaida(raw);
     },
   };

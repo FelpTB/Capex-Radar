@@ -23,8 +23,15 @@ const ATOR = "ia:enriquecimento";
 const VERSAO = "enriquecimento-v1";
 const MODELO_PADRAO = "claude-sonnet-5-5";
 const PARALELO = 3;
-const MAX_BUSCAS = 3;
-const MAX_LEITURAS = 3;
+// Custo: o resultado da busca e a página lida entram como tokens de entrada,
+// e cada volta (pause_turn) reenvia a conversa inteira. Em 10/11/2026 a fila
+// da carga histórica (346 notícias, até 3 buscas e 4 voltas cada) gastou
+// ~13 mi de tokens no Sonnet. Uma busca, uma leitura curta e três voltas
+// bastam para achar a matéria pelo título.
+const MAX_BUSCAS = 1;
+const MAX_LEITURAS = 1;
+const MAX_TOKENS_PAGINA = 5000;
+const MAX_VOLTAS = 3;
 
 const NICHOS = {
   papel_celulose: "papel e celulose",
@@ -40,7 +47,7 @@ const PROMPT = `Você enriquece notícias de um radar de projetos de CapEx priva
 O QUE FAZER
 1. Ache a matéria original: busque pela manchete (entre aspas, se ajudar) e pelo veículo. Se não achar a do veículo, uma matéria de outro veículo sobre o MESMO fato serve. Leia a página com a ferramenta de leitura.
 2. Leia o texto e preencha o perfil do projeto só com o que está escrito nele. Não invente, não complete com conhecimento próprio, não junte fatos de outras épocas. O que o texto não diz fica null.
-3. Use no máximo ${MAX_BUSCAS} buscas e ${MAX_LEITURAS} leituras. Se não achar a matéria, devolva encontrou=false e preencha o perfil só com o que a manchete diz.
+3. Faça no máximo ${MAX_BUSCAS} busca e ${MAX_LEITURAS} leitura de página: busque a manchete uma vez e leia o melhor resultado. Se a busca já trouxer o texto do fato, não leia página. Se não achar a matéria, devolva encontrou=false e preencha o perfil só com o que a manchete diz.
 
 CAMPOS
 - encontrou: true se leu o texto de uma matéria sobre o fato.
@@ -139,7 +146,7 @@ function lerEnriquecimento(raw) {
 function ferramentas() {
   return [
     { type: "web_search_20260209", name: "web_search", max_uses: MAX_BUSCAS, user_location: { type: "approximate", country: "BR" } },
-    { type: "web_fetch_20260209", name: "web_fetch", max_uses: MAX_LEITURAS, max_content_tokens: 12000 },
+    { type: "web_fetch_20260209", name: "web_fetch", max_uses: MAX_LEITURAS, max_content_tokens: MAX_TOKENS_PAGINA },
   ];
 }
 
@@ -153,7 +160,9 @@ function criarEnriquecedor({ client, modelo = MODELO_PADRAO, esforco = "low" }) 
         user: JSON.stringify(entrada),
         tools: ferramentas(),
         maxTokens: 16000,
+        maxVoltas: MAX_VOLTAS,
         effort: esforco,
+        etapa: "enriquecimento",
       });
     },
   };
@@ -272,6 +281,9 @@ module.exports = {
   ATOR,
   VERSAO,
   MODELO_PADRAO,
+  MAX_BUSCAS,
+  MAX_LEITURAS,
+  MAX_VOLTAS,
   PROMPT,
   montarEntrada,
   lerEnriquecimento,

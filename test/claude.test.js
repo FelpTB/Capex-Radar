@@ -51,3 +51,31 @@ test("sem chave não há cliente", () => {
   assert.equal(criarCliente(null), null);
   assert.equal(typeof criarCliente("sk-ant-teste").messages.create, "function");
 });
+
+test("cada chamada grava os tokens com a etapa, somando as voltas", async () => {
+  const claude = require("../src/claude");
+  const linhas = [];
+  claude.definirGravadorDeUso(async (l) => { linhas.push(l); });
+  const resposta = (stop, usage) => ({ stop_reason: stop, usage, content: [{ type: "text", text: '{"ok":true}' }] });
+  const client = { messages: { create: async () => resposta("end_turn", { input_tokens: 100, output_tokens: 20 }) } };
+  await claude.pedirJson(client, { etapa: "filtro2", model: "claude-sonnet-5-5", system: "s", user: "u", thinking: null });
+  const voltas = [resposta("pause_turn", { input_tokens: 1000, output_tokens: 10, server_tool_use: { web_search_requests: 1 } }), resposta("end_turn", { input_tokens: 1500, output_tokens: 50, cache_read_input_tokens: 200 })];
+  const client2 = { messages: { create: async () => voltas.shift() } };
+  await claude.pedirJsonComFerramentas(client2, { etapa: "enriquecimento", model: "claude-sonnet-5-5", system: "s", user: "u", tools: [] });
+  await new Promise((r) => setImmediate(r));
+  assert.deepEqual(linhas.map((l) => [l.etapa, l.entrada, l.saida, l.cache_leitura, l.buscas, l.voltas]), [
+    ["filtro2", 100, 20, 0, 0, 1],
+    ["enriquecimento", 2500, 60, 200, 1, 2],
+  ]);
+  claude.definirGravadorDeUso(async () => {});
+});
+
+test("enriquecimento pede uma busca, uma leitura curta e poucas voltas", () => {
+  const enr = require("../src/capex-enriquecimento");
+  const [busca, leitura] = enr.ferramentas();
+  assert.equal(busca.max_uses, 1);
+  assert.equal(leitura.max_uses, 1);
+  assert.ok(leitura.max_content_tokens <= 5000);
+  assert.ok(enr.MAX_VOLTAS <= 3);
+  assert.equal(enr.VERSAO, "enriquecimento-v1");
+});

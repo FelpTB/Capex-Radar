@@ -187,6 +187,7 @@ function criarAvaliador({ client, modelo = MODELO_PADRAO, esforco = "medium" }) 
     modelo,
     async avaliar(entrada) {
       return pedirJson(client, {
+        etapa: "avaliacao",
         model: modelo,
         system: PROMPT,
         user: JSON.stringify(entrada),

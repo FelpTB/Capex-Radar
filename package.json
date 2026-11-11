@@ -20,7 +20,8 @@
     "capex:processar": "node scripts/capex-processar.js",
     "capex:avaliar-projetos": "node scripts/capex-avaliar-projetos.js",
     "capex:secundarias": "node scripts/capex-fontes-secundarias.js",
-    "capex:mcp": "node scripts/capex-mcp-acesso.js"
+    "capex:mcp": "node scripts/capex-mcp-acesso.js",
+    "capex:uso-ia": "node scripts/capex-uso-ia.js"
   },
   "keywords": [],
   "author": "",

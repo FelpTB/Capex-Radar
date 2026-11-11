@@ -172,7 +172,7 @@ function criarCronista({ client, modelo = MODELO_PADRAO, esforco = "medium" }) {
     modelo,
     async montar(entrada) {
       return pedirJson(client, {
-        model: modelo, system: PROMPT_LINHA, user: JSON.stringify(entrada), maxTokens: 16000, effort: esforco, thinking: null,
+        etapa: "linha_tempo", model: modelo, system: PROMPT_LINHA, user: JSON.stringify(entrada), maxTokens: 16000, effort: esforco, thinking: null,
       });
     },
   };

@@ -89,6 +89,7 @@ function criarFiltroFinal({ client, modelo = MODELO_PADRAO, esforco = "medium" }
     modelo,
     async avaliar(entrada) {
       return pedirJson(client, {
+        etapa: "filtro3",
         model: modelo,
         system: PROMPT,
         user: JSON.stringify(entrada),

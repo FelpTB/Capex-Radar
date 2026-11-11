@@ -94,7 +94,7 @@ function lerVinculo(raw, projetos) {
 
 function criarIa({ client, modelo }) {
   function perguntar(system, user) {
-    return pedirJson(client, { model: modelo, system, user: JSON.stringify(user) });
+    return pedirJson(client, { etapa: "filtro1", model: modelo, system, user: JSON.stringify(user) });
   }
 
   return {
