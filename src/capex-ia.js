@@ -26,6 +26,7 @@ const triagemSchema = z.object({
     valor_brl: z.number().nonnegative().nullable().optional(),
     estagio: z.enum(ESTAGIOS).nullable().optional(),
     data_fato: z.string().regex(/^\d{4}(-\d{2}){0,2}$/).nullable().optional(),
+    ampla: z.boolean().optional().catch(false),
   })),
 });
 
@@ -47,7 +48,10 @@ const PROMPT_TRIAGEM =
   "Use só o que está escrito; deixe null o que a manchete não diz. valor_brl só quando o valor estiver em reais " +
   "(R$ 1,2 bilhão = 1200000000). uf é a sigla do estado. estagio é um de: " + ESTAGIOS.join(", ") + ". " +
   "data_fato só quando a manchete citar a data do fato (AAAA, AAAA-MM ou AAAA-MM-DD). " +
-  'Retorne somente JSON: {"itens":[{"i","capex","motivo","objeto","uf","municipio","valor_brl","estagio","data_fato"}]}, ' +
+  "ampla=true quando a notícia é ampla demais para virar um projeto: plano ou ciclo de investimentos da empresa, " +
+  "orçamento anual, investimento espalhado por várias unidades ou estados sem um ativo e um local definidos, " +
+  "panorama do setor. Notícia ampla tem capex=false. " +
+  'Retorne somente JSON: {"itens":[{"i","capex","motivo","objeto","uf","municipio","valor_brl","estagio","data_fato","ampla"}]}, ' +
   "um elemento por item recebido, com motivo curto.";
 
 const PROMPT_VINCULO =
@@ -77,6 +81,7 @@ function lerTriagem(raw, lote) {
       valor_brl: decisao.valor_brl ?? null,
       estagio: decisao.estagio ?? null,
       data_fato: decisao.data_fato ?? null,
+      ampla: Boolean(decisao.ampla),
     });
   }
   return decisoes;

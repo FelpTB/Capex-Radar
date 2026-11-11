@@ -117,7 +117,7 @@ function filtroFinalPadrao() {
 const SEM_DECISAO = `(e.filtro_final is null or e.filtro_final->>'versao' is distinct from '${VERSAO}')`;
 
 function condicaoFila() {
-  return `${painel.FILTRO_SITUACAO.funil} and ${fases.condicaoAposEnriquecimento()} and ${SEM_DECISAO}`;
+  return `${fases.universoPosFiltro(painel.FILTRO_SITUACAO.funil)} and ${fases.condicaoAposEnriquecimento()} and ${SEM_DECISAO}`;
 }
 
 async function filaDoFiltro(db, grupoId, limite = 400) {
@@ -184,6 +184,9 @@ async function gravar(noticia, decisao, filtro) {
   };
   if (decisao.decisao === "descartar") {
     await painel.descartarNoticia(noticia.id, filtro2.motivoTexto(decisao, MOTIVOS), { ator: ATOR, rotulo: ROTULO });
+    // Fluxo v2: a notícia já foi alocada no Perfil inicial. Sai do projeto, e o
+    // projeto em revisão que ficar sem notícia é descartado.
+    await painel.retirarDoProjeto(noticia.id, filtro2.motivoTexto(decisao, MOTIVOS), { ator: ATOR });
   }
   await painel.emTransacao((client) => client.query(
     "update capex_radar.evidencias set filtro_final = $2::jsonb where id = $1",

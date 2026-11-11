@@ -41,6 +41,7 @@ const MOTIVOS = {
 };
 
 const DECISOES = ["criar_projeto", "vincular", "descartar"];
+const RELACOES = ["expansao", "subprojeto", "localidade"];
 const SITUACOES_OBRA = ["anunciado", "em_construcao", "concluido", "incerto"];
 
 const PROMPT = `Você é o analista de triagem de um radar de projetos de investimento (CapEx) privados no Brasil.
@@ -69,10 +70,16 @@ Motivos válidos: ${Object.entries(MOTIVOS).map(([codigo, m]) => `${codigo} (${m
 
 Confiança (0 a 100): a probabilidade de a decisão estar certa. A falta de município, valor ou detalhe da obra NÃO reduz a confiança quando as regras de presunção resolvem o caso. Abaixo de 60 só quando a decisão ficou perto de outra opção.
 
+SUBPROJETOS E LOCALIDADES. Quando o projeto novo nasce de um projeto cadastrado, ligue-o ao original com projeto_pai_id (id da lista) e relacao:
+- expansao: nova fase ou ampliação posterior da MESMA planta já cadastrada (a primeira obra já foi anunciada ou feita);
+- subprojeto: obra de apoio ligada à planta cadastrada: ETA, ETE, subestação ou linha de transmissão, ramal ferroviário, terminal, viveiro, captação de água;
+- localidade: a mesma obra do projeto cadastrado em outro município ou estado.
+Se a notícia anuncia a mesma obra em VÁRIOS locais ao mesmo tempo (ex.: "três CDs em SP, MG e PR"), preencha projeto.localidades com um item por local ({"uf","municipio"}): o radar cria o projeto principal e um projeto por localidade.
+
 Para criar_projeto, preencha projeto: titulo curto do ativo, sem o nome do grupo (ex.: "fábrica de celulose em Inocência", "ampliação das unidades no RS"), objeto, uf (sigla), municipio, valor_brl (número em reais, R$ 1,2 bilhão = 1200000000), estagio (um de: ${ESTAGIOS.join(", ")}) e data_fato (AAAA-MM-DD, AAAA-MM ou AAAA). Use as manchetes próximas do mesmo anúncio para completar município e valor. Deixe null o que nenhuma fonte diz. Nas outras decisões, projeto é null.
 
 Responda somente com JSON neste formato:
-{"analise":{"investimento":true,"gera_obra":true,"situacao":"anunciado","no_brasil":true,"mesmo_projeto_id":null},"decisao":"criar_projeto","motivo":"obra_nova","confianca":80,"justificativa":"uma ou duas frases citando o trecho que decide","projeto":{"titulo":"...","objeto":"...","uf":"MS","municipio":"...","valor_brl":null,"estagio":"anuncio","data_fato":null}}`;
+{"analise":{"investimento":true,"gera_obra":true,"situacao":"anunciado","no_brasil":true,"mesmo_projeto_id":null},"decisao":"criar_projeto","motivo":"obra_nova","confianca":80,"justificativa":"uma ou duas frases citando o trecho que decide","projeto":{"titulo":"...","objeto":"...","uf":"MS","municipio":"...","valor_brl":null,"estagio":"anuncio","data_fato":null,"projeto_pai_id":null,"relacao":null,"localidades":[]}}`;
 
 const textoOpcional = z.string().trim().min(1).nullable().optional().catch(null);
 
@@ -97,6 +104,12 @@ const saidaSchema = z.object({
     valor_brl: z.number().nonnegative().nullable().optional().catch(null),
     estagio: z.enum(ESTAGIOS).nullable().optional().catch(null),
     data_fato: z.string().regex(/^\d{4}(-\d{2}){0,2}$/).nullable().optional().catch(null),
+    projeto_pai_id: z.string().nullable().optional().catch(null),
+    relacao: z.enum(RELACOES).nullable().optional().catch(null),
+    localidades: z.array(z.object({
+      uf: z.string().trim().length(2).transform((uf) => uf.toUpperCase()),
+      municipio: textoOpcional,
+    })).max(12).optional().catch([]),
   }).nullable().optional().catch(null).default(null),
 });
 
@@ -375,8 +388,15 @@ async function registrar(db, dados) {
   return linha.id;
 }
 
+/** Pai só vale se for um projeto da lista mostrada ao modelo e vier com a relação. */
+function paiValido(p, projetos) {
+  if (!p?.projeto_pai_id || !p.relacao) return {};
+  const pai = projetos.find((x) => String(x.id) === String(p.projeto_pai_id));
+  return pai ? { projeto_pai_id: pai.id, relacao: p.relacao } : {};
+}
+
 /** Executa a decisão final. Devolve o projeto criado ou ligado. */
-async function executarAcao({ grupo, noticia, saida, alvo, matriz, agente }) {
+async function executarAcao({ grupo, noticia, saida, alvo, matriz, agente, projetos = [] }) {
   const vinculo = { confianca: saida.confianca, motivo: saida.justificativa.slice(0, 300), modelo: agente.modelo };
   if (alvo.acao === "vinculada") {
     await painel.vincularNoticia(noticia.id, alvo.projeto_id, { ator: ATOR_AGENTE, origem: "ia", vinculo });
@@ -403,8 +423,28 @@ async function executarAcao({ grupo, noticia, saida, alvo, matriz, agente }) {
     valor_estimado_brl: p.valor_brl ?? ex.valor_brl ?? null,
     estagio: p.estagio || (saida.analise.situacao === "em_construcao" ? "mobilizacao" : "anuncio"),
     data_anuncio: dataFato || dia(noticia.data_original),
+    ...paiValido(p, projetos),
   }, { ator: ATOR_AGENTE, origem: "ia", status: "em_revisao", vinculo });
-  return { projeto_id: projeto.id, projeto: { ...projeto, uf, municipio, objeto: p.objeto, valor_estimado_brl: p.valor_brl ?? null } };
+  // Mesma obra em vários locais: um projeto filho por localidade (item 5).
+  const filhos = [];
+  const locais = (p.localidades || []).filter((l, i, todos) => todos.findIndex((x) => x.uf === l.uf && (x.municipio || "") === (l.municipio || "")) === i);
+  if (locais.length >= 2) {
+    for (const l of locais) {
+      const filho = await painel.criarProjetoDaNoticia(noticia.id, {
+        titulo: `${grupo.nome} — ${p.titulo} (${l.municipio ? `${l.municipio}/` : ""}${l.uf})`.slice(0, 200),
+        matriz_cnpj: matriz,
+        uf: l.uf,
+        municipio: l.municipio || null,
+        objeto: p.objeto || ex.objeto || null,
+        estagio: p.estagio || "anuncio",
+        data_anuncio: dataFato || dia(noticia.data_original),
+        projeto_pai_id: projeto.id,
+        relacao: "localidade",
+      }, { ator: ATOR_AGENTE, origem: "ia", status: "em_revisao", vinculo });
+      filhos.push(filho);
+    }
+  }
+  return { projeto_id: projeto.id, filhos, projeto: { ...projeto, uf, municipio, objeto: p.objeto, valor_estimado_brl: p.valor_brl ?? null } };
 }
 
 /**
@@ -441,7 +481,7 @@ async function decidirGrupo({ db, grupo, agente, limite = 400, onProgresso = () 
     let projetoId = alvo.projeto_id || null;
     if (acao !== "revisao_humana") {
       try {
-        const r = await executarAcao({ grupo, noticia, saida, alvo, matriz, agente });
+        const r = await executarAcao({ grupo, noticia, saida, alvo, matriz, agente, projetos });
         projetoId = r.projeto_id || null;
         const situacaoNova = acao === "descartada"
           ? `descartada: Agente: ${MOTIVOS[saida.motivo].rotulo}`
@@ -647,6 +687,8 @@ async function exportarTreino(db, { incluirPendentes = false } = {}) {
 }
 
 module.exports = {
+  RELACOES,
+  paiValido,
   ATOR_AGENTE,
   VERSAO_PROMPT,
   MOTIVOS,

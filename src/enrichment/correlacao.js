@@ -53,17 +53,28 @@ async function judgeAll(project, codigo, candidates, judge) {
 }
 
 // Separa as linhas com correlação direta com o projeto. Sem modelo, só o município da ficha passa.
-async function correlateLines(project, codigo, lines, { judge = null } = {}) {
-  const resumo = { avaliadas: 0, diretas: 0, outro_estado: 0, outro_projeto: 0, incerta: 0, nao_avaliadas: 0, metodo: judge ? "contexto" : "municipio" };
+// onAnalise(linha, correlacao, motivo) recebe cada registro analisado, aceito
+// ou não (Enriquecimento 2 grava todos em registros_analisados). Com
+// semJulgamento, nenhum registro é aceito: todos saem como nao_avaliada, para
+// o julgamento ser feito fora (Claude Code) e aplicado depois.
+async function correlateLines(project, codigo, lines, { judge = null, onAnalise = null, semJulgamento = false } = {}) {
+  const resumo = { avaliadas: 0, diretas: 0, outro_estado: 0, outro_projeto: 0, incerta: 0, nao_avaliadas: 0, metodo: semJulgamento ? "externo" : judge ? "contexto" : "municipio" };
+  const analisar = (line, correlacao, motivo) => { if (onAnalise) onAnalise(line, correlacao, motivo); };
   const items = lines.map((line) => ({ line, gate: localGate(line, project) }));
   const candidates = [];
   for (const item of items) {
-    if (item.gate === "outro_estado") resumo.outro_estado += 1;
+    if (item.gate === "outro_estado") { resumo.outro_estado += 1; analisar(item.line, "outro_estado", "UF do registro diferente da UF do projeto."); }
     else candidates.push(item);
   }
   candidates.sort((a, b) => Number(b.gate === "mesmo_municipio") - Number(a.gate === "mesmo_municipio"));
+  if (semJulgamento) {
+    for (const item of candidates) analisar(item.line, "nao_avaliada", `Local: ${item.gate}`);
+    resumo.nao_avaliadas = candidates.length;
+    return { kept: [], resumo };
+  }
   const avaliados = candidates.slice(0, MAX_AVALIADOS);
   resumo.nao_avaliadas = candidates.length - avaliados.length;
+  for (const item of candidates.slice(MAX_AVALIADOS)) analisar(item.line, "nao_avaliada", "Fora do limite de registros lidos por fonte.");
   resumo.avaliadas = avaliados.length;
 
   let verdicts = new Map();
@@ -80,6 +91,7 @@ async function correlateLines(project, codigo, lines, { judge = null } = {}) {
       ? { correlacao: item.gate === "mesmo_municipio" ? "direta" : "incerta", motivo: "Sem leitura do contexto; vale o município da ficha." }
       : { correlacao: "incerta", motivo: "O modelo não avaliou o registro." });
     resumo[verdict.correlacao] = (resumo[verdict.correlacao] || 0) + 1;
+    analisar(item.line, verdict.correlacao, verdict.motivo || null);
     if (verdict.correlacao !== "direta") continue;
     const { contexto, ...line } = item.line;
     kept.push({ ...line, correlacao: verdict.motivo });

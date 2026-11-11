@@ -269,7 +269,73 @@ async function gravarRegistros(projeto, codigo, linhas, fonte, modeloCorrelacao)
  * correlação direta. O CNO é lido uma vez para todos (arquivo local).
  * deps permite trocar a coleta nos testes.
  */
-async function consultarFontes(db, projetos, { log = () => {}, deps = null } = {}) {
+const CORRELACOES = ["direta", "incerta", "outro_projeto", "outro_estado", "nao_avaliada"];
+
+/**
+ * Grava os registros analisados de um projeto (item 2 do Enriquecimento 2):
+ * todos, aceitos ou não, com o dado bruto. A chave é a mesma da evidência,
+ * então o registro aceito aponta para a evidência criada.
+ */
+async function gravarAnalisados(db, projetoId, analises, analisadoPor) {
+  let n = 0;
+  for (const a of analises) {
+    const { contexto: _c, rank: _r, correlacao: _x, ...bruto } = a.linha || {};
+    const chave = chaveDoRegistro(a.codigo, a.linha);
+    const correlacao = CORRELACOES.includes(a.correlacao) ? a.correlacao : "incerta";
+    const r = await db.query(
+      `insert into capex_radar.registros_analisados
+         (projeto_id, fonte_codigo, chave, registro, data_registro, correlacao, motivo, evidencia_id, analisado_por)
+       values ($1, $2, $3, $4::jsonb, $5, $6, $7,
+               (select id from capex_radar.evidencias where chave_dedupe = $3), $8)
+       on conflict (projeto_id, chave) do update set
+         registro = excluded.registro, data_registro = excluded.data_registro,
+         correlacao = excluded.correlacao, motivo = excluded.motivo,
+         evidencia_id = excluded.evidencia_id, analisado_por = excluded.analisado_por, em = now()`,
+      [projetoId, a.codigo, chave, JSON.stringify({ ...bruto, ...(a.linha?.contexto ? { contexto: String(a.linha.contexto).slice(0, 3000) } : {}) }),
+        dataDoRegistro(a.linha), correlacao, a.motivo ? String(a.motivo).slice(0, 500) : null, analisadoPor],
+    );
+    n += r.rowCount;
+  }
+  return n;
+}
+
+/**
+ * Aplica um julgamento feito fora do Radar (Claude Code) aos registros
+ * analisados de um projeto: vereditos = [{ chave, correlacao, motivo }].
+ * O que ficar 'direta' vira evidência ligada ao projeto.
+ */
+async function aplicarJulgamento(db, projeto, vereditos, { ator = "usuario:claude-code" } = {}) {
+  const fontes = await nomesDasFontes(db);
+  const resultado = { atualizados: 0, evidencias: 0 };
+  for (const v of vereditos) {
+    if (!CORRELACOES.includes(v.correlacao)) throw new Error(`Correlação inválida: ${v.correlacao}`);
+    const { rows: [reg] } = await db.query(
+      "select id, fonte_codigo, registro from capex_radar.registros_analisados where projeto_id = $1 and chave = $2",
+      [projeto.id, v.chave],
+    );
+    if (!reg) continue;
+    if (v.correlacao === "direta") {
+      resultado.evidencias += await gravarRegistros(projeto, reg.fonte_codigo, [{ ...reg.registro, correlacao: v.motivo || "correlação direta" }], fontes.get(reg.fonte_codigo), "claude-code");
+    }
+    await db.query(
+      `update capex_radar.registros_analisados
+          set correlacao = $3, motivo = $4, analisado_por = $5, em = now(),
+              evidencia_id = coalesce(evidencia_id, (select id from capex_radar.evidencias where chave_dedupe = $2))
+        where projeto_id = $1 and chave = $2`,
+      [projeto.id, v.chave, v.correlacao, v.motivo ? String(v.motivo).slice(0, 500) : null, ator],
+    );
+    resultado.atualizados += 1;
+  }
+  return resultado;
+}
+
+/**
+ * Consulta as fontes secundárias de uma lista de projetos, grava todos os
+ * registros analisados e cria evidência para os de correlação direta.
+ * Com semJulgamento, nada é aceito: os registros ficam 'nao_avaliada' para o
+ * julgamento externo (aplicarJulgamento). deps troca a coleta nos testes.
+ */
+async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJulgamento = false } = {}) {
   const coleta = deps || require("./enrichment/run");
   const { correlateLines } = deps?.correlateLines ? deps : require("./enrichment/correlacao");
   const { judgeEvidenceContext } = deps?.judgeEvidenceContext ? deps : require("./ai");
@@ -287,15 +353,20 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null } = {
   for (const [k, projeto] of projetos.entries()) {
     const mvp = paraColeta[k];
     const relatorio = [];
+    const analises = [];
+    const onAnalise = (codigo, linha, correlacao, motivo) => analises.push({ codigo, linha, correlacao, motivo });
     try {
-      const consulta = await coleta.consultViableSources(mvp, { dryRun: true, skipCno: true });
+      const consulta = await coleta.consultViableSources(mvp, { dryRun: true, skipCno: true, semJulgamento, onAnalise });
       relatorio.push(...consulta.relatorio);
     } catch (error) {
       log(`${projeto.titulo}: erro na coleta (${error.message})`);
     }
     const hit = cno.get(projeto.id);
     if (hit?.amostra?.length) {
-      const { kept, resumo } = await correlateLines(mvp, "SEC-CNO", hit.amostra, { judge: judgeEvidenceContext });
+      const { kept, resumo } = await correlateLines(mvp, "SEC-CNO", hit.amostra, {
+        judge: judgeEvidenceContext, semJulgamento,
+        onAnalise: (linha, correlacao, motivo) => onAnalise("SEC-CNO", linha, correlacao, motivo),
+      });
       relatorio.push({ codigo: "SEC-CNO", correlacao: resumo, linhas: kept });
     }
     let gravadas = 0;
@@ -303,11 +374,14 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null } = {
       if (!r.linhas?.length) continue;
       gravadas += await gravarRegistros(projeto, r.codigo, r.linhas, fontes.get(r.codigo), modeloCorrelacao);
     }
+    const analisados = await gravarAnalisados(db, projeto.id, analises, semJulgamento ? "pendente" : ATOR);
     const registro = {
       versao: VERSAO,
       em: new Date().toISOString(),
       fontes: relatorio.map((r) => ({ codigo: r.codigo, avaliadas: r.correlacao?.avaliadas || 0, diretas: r.linhas?.length || 0 })),
       gravadas,
+      analisados,
+      julgamento: semJulgamento ? "pendente" : "modelo",
     };
     await painel.emTransacao((client) => client.query(
       "update capex_radar.projetos set secundarias = $2::jsonb where id = $1",
@@ -317,6 +391,83 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null } = {
     resultados.push({ projeto: projeto.titulo, ...registro });
   }
   return resultados;
+}
+
+// ---------------------------------------------------------------------------
+// Cronologia (Enriquecimento 2)
+// ---------------------------------------------------------------------------
+
+// Folga para datas imprecisas: a notícia pode sair dias antes do anúncio
+// oficial, e notícias sobre a inauguração aparecem nos meses seguintes.
+const FOLGA_ANTES_DIAS = 30;
+const FOLGA_DEPOIS_DIAS = 180;
+
+// "2025" vira o primeiro ou o último dia do ano, conforme o limite.
+function dataDoMarco(data, limite) {
+  if (!data) return null;
+  const s = String(data);
+  if (/^\d{4}$/.test(s)) return limite === "inicio" ? `${s}-01-01` : `${s}-12-31`;
+  if (/^\d{4}-\d{2}$/.test(s)) {
+    if (limite === "inicio") return `${s}-01`;
+    const [a, m] = s.split("-").map(Number);
+    return new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10);
+  }
+  return dia(s);
+}
+
+function somarDias(data, dias) {
+  const d = new Date(`${data}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Janela do projeto: do anúncio à conclusão. O anúncio é o menor entre
+ * data_anuncio e o marco de anúncio; a conclusão é data_fim ou o marco de
+ * operação. Sem anúncio conhecido, não há janela.
+ */
+function janelaDoProjeto(projeto) {
+  const marcos = projeto.linha_tempo?.marcos || [];
+  const anuncios = [dia(projeto.data_anuncio), ...marcos.filter((m) => m.tipo === "anuncio").map((m) => dataDoMarco(m.data, "inicio"))].filter(Boolean).sort();
+  const conclusoes = [dia(projeto.data_fim), ...marcos.filter((m) => m.tipo === "operacao").map((m) => dataDoMarco(m.data, "fim"))].filter(Boolean).sort();
+  return { anuncio: anuncios[0] || null, conclusao: conclusoes[0] || null };
+}
+
+/**
+ * Evidências fora da cronologia: antes do anúncio ou depois da conclusão
+ * (com folga). Nunca tira todas: se todas caírem fora, a janela está errada.
+ */
+function foraDaCronologia(projeto, evidencias) {
+  const { anuncio, conclusao } = janelaDoProjeto(projeto);
+  if (!anuncio && !conclusao) return [];
+  const antes = anuncio ? somarDias(anuncio, -FOLGA_ANTES_DIAS) : null;
+  const depois = conclusao ? somarDias(conclusao, FOLGA_DEPOIS_DIAS) : null;
+  const fora = [];
+  for (const e of evidencias) {
+    const d = dia(e.data_original);
+    if (!d) continue;
+    if (antes && d < antes) fora.push({ id: String(e.id), data: d, motivo: `Cronologia: evidência de ${d}, antes do anúncio (${anuncio})` });
+    else if (depois && d > depois) fora.push({ id: String(e.id), data: d, motivo: `Cronologia: evidência de ${d}, depois da conclusão (${conclusao})` });
+  }
+  return fora.length >= evidencias.length ? [] : fora;
+}
+
+/** Tira do projeto as evidências fora da cronologia (vínculo rejeitado, reversível). */
+async function aplicarCronologia(projetoId, fora, ator = ATOR) {
+  if (!fora.length) return 0;
+  return painel.emTransacao(async (client) => {
+    let n = 0;
+    for (const f of fora) {
+      const r = await client.query(
+        `update capex_radar.evidencia_projeto
+            set situacao = 'rejeitado', descarte = 'cronologia', motivo = $3, revisado_por = $4, revisado_em = now()
+          where projeto_id = $1 and evidencia_id = $2 and situacao = 'aceito'`,
+        [projetoId, f.id, f.motivo.slice(0, 300), ator],
+      );
+      n += r.rowCount;
+    }
+    return n;
+  }, ator);
 }
 
 // Todo projeto com evidência aceita tem linha do tempo com pelo menos um marco.
@@ -395,6 +546,60 @@ async function montarLinhaProvisoria(db, projeto) {
   return registro;
 }
 
+// ---------------------------------------------------------------------------
+// Enriquecimento 2: fontes secundárias, linha do tempo, cronologia e perfil
+// completo de um projeto. Repetido de tempos em tempos (scheduler.js).
+// ---------------------------------------------------------------------------
+
+const DIAS_ENRIQUECIMENTO2 = 30;
+
+/** Projetos vivos sem Enriquecimento 2 ou com o último há mais de 30 dias; pais antes dos filhos. */
+async function projetosParaEnriquecimento2(db, limite = 1) {
+  const { rows } = await db.query(
+    `select v.*, p.objeto, p.secundarias, p.linha_tempo, p.data_fim, p.projeto_pai_id
+       from capex_radar.vw_carteira v
+       join capex_radar.projetos p on p.id = v.id
+      where v.status <> 'descartado'
+        and (p.secundarias is null or (p.secundarias->>'em')::timestamptz < now() - make_interval(days => $2))
+      order by p.secundarias is not null, p.projeto_pai_id is not null, v.valor_estimado_brl desc nulls last
+      limit $1`,
+    [limite, DIAS_ENRIQUECIMENTO2],
+  );
+  return rows;
+}
+
+async function recarregarProjeto(db, id) {
+  const { rows: [p] } = await db.query(
+    `select v.*, p.objeto, p.secundarias, p.linha_tempo, p.data_fim
+       from capex_radar.vw_carteira v join capex_radar.projetos p on p.id = v.id where v.id = $1`,
+    [id],
+  );
+  return p;
+}
+
+/**
+ * Enriquecimento 2 de um projeto: consulta as fontes secundárias (grava todos
+ * os registros analisados), monta a linha do tempo, tira as evidências fora
+ * da cronologia (e refaz a linha, se tirou alguma) e grava o perfil completo.
+ */
+async function enriquecimento2(db, projeto, { cronista = null, semJulgamento = false, log = () => {}, deps = null } = {}) {
+  const perfis = require("./capex-perfil");
+  const [fontes] = await consultarFontes(db, [projeto], { log, deps, semJulgamento });
+  let atual = await recarregarProjeto(db, projeto.id);
+  let linha = null;
+  if (cronista) {
+    linha = await montarLinhaDoTempo(db, atual, cronista).catch(async () => montarLinhaProvisoria(db, atual));
+    atual = await recarregarProjeto(db, projeto.id);
+  }
+  const fora = foraDaCronologia(atual, await evidenciasDoProjeto(db, projeto.id));
+  const retiradas = await aplicarCronologia(projeto.id, fora);
+  if (retiradas && cronista) {
+    linha = await montarLinhaDoTempo(db, atual, cronista).catch(async () => montarLinhaProvisoria(db, atual));
+  }
+  const perfil = await painel.emTransacao((client) => perfis.montarPerfil(client, projeto.id), ATOR);
+  return { fontes, linha_tempo: linha ? linha.marcos.length : null, fora_da_cronologia: retiradas, perfil: perfil?.etapa };
+}
+
 /** Monta e grava a linha do tempo de um projeto; o estágio só avança. */
 async function montarLinhaDoTempo(db, projeto, cronista) {
   const evidencias = await evidenciasDoProjeto(db, projeto.id);
@@ -431,6 +636,13 @@ module.exports = {
   evidenciasDoProjeto,
   consultarFontes,
   montarLinhaDoTempo,
+  gravarAnalisados,
+  aplicarJulgamento,
+  projetosParaEnriquecimento2,
+  enriquecimento2,
+  janelaDoProjeto,
+  foraDaCronologia,
+  aplicarCronologia,
   marcosMinimos,
   montarLinhaProvisoria,
   projetosSemLinhaDoTempo,

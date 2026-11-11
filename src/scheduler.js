@@ -9,6 +9,8 @@ const capexAgente = require("./capex-agente");
 const capexFiltro = require("./capex-filtro");
 const capexEnriquecimento = require("./capex-enriquecimento");
 const capexFiltroFinal = require("./capex-filtro-final");
+const capexFases = require("./capex-fases");
+const capexPerfil = require("./capex-perfil");
 const capexSecundarias = require("./capex-fontes-secundarias");
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -73,12 +75,46 @@ async function runDoePdfSync() {
 // empresas, uma vez por semana. A carga histórica roda à parte (npm run capex:coletar).
 // A semana vence por grupo: se o app reiniciar no meio da rodada, o próximo
 // ciclo coleta só os grupos que faltaram.
+// Enriquecimento 2 (capex-fases.js): um projeto por ciclo, os que nunca
+// passaram ou passaram há mais de 30 dias. Desligado por padrão: liga com
+// CAPEX_ENRIQUECIMENTO2=1 (usa a API para julgar os registros e montar a
+// linha do tempo; sem crédito, só o município da ficha decide).
+async function runEnriquecimento2() {
+  if (!/^(1|true|yes|on)$/i.test(process.env.CAPEX_ENRIQUECIMENTO2?.trim() || "")) return null;
+  const [projeto] = await capexSecundarias.projetosParaEnriquecimento2(db.pool, 1);
+  if (!projeto) return null;
+  const r = await capexSecundarias.enriquecimento2(db.pool, projeto, { cronista: capexSecundarias.cronistaPadrao() });
+  return { projeto: projeto.titulo, ...r };
+}
+
 async function runLinhasDoTempo() {
   if (/^(0|false|no|off)$/i.test(process.env.CAPEX_LINHA_TEMPO?.trim() || "")) return null;
   const cronista = capexSecundarias.cronistaPadrao();
   if (!cronista) return null;
   const r = await capexSecundarias.atualizarLinhasDoTempo(db.pool, cronista, { limite: LINHA_TEMPO_POR_CICLO });
   return r.pendentes ? r : null;
+}
+
+/** Remonta o perfil dos projetos vivos de um grupo (Perfil inicial/enriquecido/completo). */
+async function atualizarPerfisDoGrupo(client, grupo) {
+  const { rows } = await client.query(
+    "select id from capex_radar.projetos where grupo_id = $1 and status <> 'descartado'",
+    [grupo.id],
+  );
+  const etapas = { grupo: grupo.nome, inicial: 0, enriquecido: 0, completo: 0, erros: 0 };
+  for (const { id } of rows) {
+    try {
+      await client.query("begin");
+      await client.query("select set_config('capex_radar.ator', 'sistema:perfil', true)");
+      const r = await capexPerfil.montarPerfil(client, id);
+      await client.query("commit");
+      if (r) etapas[r.etapa] += 1;
+    } catch {
+      await client.query("rollback").catch(() => {});
+      etapas.erros += 1;
+    }
+  }
+  return etapas;
 }
 
 async function runCapexWeekly() {
@@ -97,25 +133,27 @@ async function runCapexWeekly() {
     // (CAPEX_FILTRO, CAPEX_ENRIQUECIMENTO, CAPEX_FILTRO_FINAL = 0) não roda.
     const coletados = new Set(resultado.coleta.map((c) => c.grupo));
     const daRodada = grupos.filter((g) => coletados.has(g.nome));
-    const fases = [
-      ["filtro", capexFiltro.filtroPadrao(), (grupo, filtro) => capexFiltro.filtrarGrupo({ db: client, grupo, filtro })],
-      ["enriquecimento", capexEnriquecimento.enriquecedorPadrao(), (grupo, enriquecedor) => capexEnriquecimento.enriquecerGrupo({ db: client, grupo, enriquecedor })],
-      ["filtro_final", capexFiltroFinal.filtroFinalPadrao(), (grupo, filtro) => capexFiltroFinal.filtrarGrupo({ db: client, grupo, filtro })],
-    ];
-    for (const [chave, modelo, rodar] of fases) {
+    // Fluxo (capex-fases.js). v2: Filtro 1 → Perfil inicial (agente) →
+    // Enriquecimento → Perfil enriquecido → Filtro 2. v1: o agente no fim.
+    // Fase desligada no .env (CAPEX_FILTRO, CAPEX_ENRIQUECIMENTO,
+    // CAPEX_FILTRO_FINAL = 0) ou sem chave não roda. CAPEX_AGENTE_AUTO=0 deixa
+    // a alocação para a revisão na tela.
+    const agente = /^(0|false|no|off)$/i.test(process.env.CAPEX_AGENTE_AUTO?.trim() || "") ? null : capexAgente.agentePadrao();
+    const filtro1 = ["filtro", capexFiltro.filtroPadrao(), (grupo, filtro) => capexFiltro.filtrarGrupo({ db: client, grupo, filtro })];
+    const perfilInicial = ["agente", agente, (grupo, a) => capexAgente.decidirGrupo({ db: client, grupo, agente: a })];
+    const enriquecimento = ["enriquecimento", capexEnriquecimento.enriquecedorPadrao(), (grupo, enriquecedor) => capexEnriquecimento.enriquecerGrupo({ db: client, grupo, enriquecedor })];
+    const filtro2 = ["filtro_final", capexFiltroFinal.filtroFinalPadrao(), (grupo, filtro) => capexFiltroFinal.filtrarGrupo({ db: client, grupo, filtro })];
+    const ordem = capexFases.fluxoV2()
+      ? [filtro1, perfilInicial, ["perfil", true, (grupo) => atualizarPerfisDoGrupo(client, grupo)], enriquecimento, filtro2]
+      : [filtro1, enriquecimento, filtro2, perfilInicial];
+    for (const [chave, modelo, rodar] of ordem) {
       if (!modelo) continue;
       resultado[chave] = [];
       for (const grupo of daRodada) resultado[chave].push(await rodar(grupo, modelo));
     }
-    // Triagem automática: o agente decide a fila das empresas coletadas.
-    // CAPEX_AGENTE_AUTO=0 desliga e deixa tudo para a revisão na tela.
-    const agente = /^(0|false|no|off)$/i.test(process.env.CAPEX_AGENTE_AUTO?.trim() || "") ? null : capexAgente.agentePadrao();
-    if (agente) {
-      resultado.agente = [];
-      for (const grupo of daRodada) {
-        resultado.agente.push(await capexAgente.decidirGrupo({ db: client, grupo, agente }));
-      }
-    }
+    // Perfil enriquecido (ou completo, se já passou pelo Enriquecimento 2).
+    resultado.perfis = [];
+    for (const grupo of daRodada) resultado.perfis.push(await atualizarPerfisDoGrupo(client, grupo));
     return resultado;
   } finally {
     client.release();
@@ -148,6 +186,7 @@ function summarize(summary) {
     parts.push(`diários em PDF: ${lidas} edições, ${paginas} páginas`);
   }
   if (summary.capex) parts.push(`monitoramento: ${capexColetor.resumoTexto(summary.capex)}`);
+  if (summary.enriquecimento2) parts.push(`enriquecimento 2: ${summary.enriquecimento2.projeto} (${summary.enriquecimento2.fora_da_cronologia} fora da cronologia, perfil ${summary.enriquecimento2.perfil})`);
   if (summary.linhaTempo) parts.push(`linha do tempo: ${summary.linhaTempo.montadas} projeto(s) montado(s)${summary.linhaTempo.erros ? `, ${summary.linhaTempo.erros} com erro` : ""}`);
   return parts.join(" · ") || "ciclo em dia";
 }
@@ -177,6 +216,12 @@ async function tick() {
       if (capex) summary.capex = capex;
     } catch (error) {
       console.error(`Monitoramento capex_radar: ${error.message}`);
+    }
+    try {
+      const e2 = await runEnriquecimento2();
+      if (e2) summary.enriquecimento2 = e2;
+    } catch (error) {
+      console.error(`Enriquecimento 2: ${error.message}`);
     }
     try {
       const linhaTempo = await runLinhasDoTempo();
@@ -221,6 +266,7 @@ module.exports = {
   isDue,
   runScheduledScan,
   runLinhasDoTempo,
+  runEnriquecimento2,
   summarize,
   tick,
   startScheduler,

@@ -314,13 +314,15 @@ async function criarProjetoDaNoticia(evidenciaId, dados, { ator = ATOR, origem =
     const { rows: [projeto] } = await client.query(
       `insert into capex_radar.projetos
          (titulo, grupo_id, matriz_cnpj, filial_cnpj, uf, municipio, objeto,
-          valor_estimado_brl, fonte_valor, estagio, data_anuncio, evidencia_primaria_id, status)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          valor_estimado_brl, fonte_valor, estagio, data_anuncio, evidencia_primaria_id, status,
+          projeto_pai_id, relacao)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        returning id, titulo`,
       [dados.titulo, noticia.grupo_id, dados.matriz_cnpj, dados.filial_cnpj || null,
         dados.uf || null, dados.municipio || null, dados.objeto || null,
         dados.valor_estimado_brl ?? null, dados.valor_estimado_brl ? "noticia" : null,
-        dados.estagio, dados.data_anuncio || null, evidenciaId, status],
+        dados.estagio, dados.data_anuncio || null, evidenciaId, status,
+        dados.projeto_pai_id || null, dados.projeto_pai_id ? dados.relacao || null : null],
     );
     await client.query(
       `insert into capex_radar.evidencia_projeto
@@ -397,6 +399,37 @@ async function descartarNoticia(evidenciaId, motivo, { ator = ATOR, rotulo = "Re
       [evidenciaId, ator],
     );
     if (ehHumano(ator)) await rotularPelaRevisao(client, evidenciaId, "descartar", motivo || null, ator);
+  }, ator);
+}
+
+/**
+ * Tira a notícia dos projetos em que estava aceita (Filtro 2 do fluxo v2).
+ * Projeto em revisão que fica sem nenhuma notícia aceita é descartado.
+ */
+async function retirarDoProjeto(evidenciaId, motivo, { ator = ATOR } = {}) {
+  return emTransacao(async (client) => {
+    const { rows } = await client.query(
+      `update capex_radar.evidencia_projeto
+          set situacao = 'rejeitado', motivo = $2, revisado_por = $3, revisado_em = now()
+        where evidencia_id = $1 and situacao = 'aceito'
+        returning projeto_id`,
+      [evidenciaId, String(motivo || "").slice(0, 300) || null, ator],
+    );
+    const vazios = [];
+    for (const { projeto_id: id } of rows) {
+      const r = await client.query(
+        `update capex_radar.projetos p
+            set status = 'descartado', atualizado_em = now(),
+                avaliacao = coalesce(p.avaliacao, '{}'::jsonb) || jsonb_build_object(
+                  'status_anterior', p.status, 'motivo', $2::text, 'por', $3::text, 'em', now())
+          where p.id = $1 and p.status = 'em_revisao'
+            and not exists (select 1 from capex_radar.evidencia_projeto ep where ep.projeto_id = p.id and ep.situacao = 'aceito')
+          returning p.id`,
+        [id, `Filtro 2: ${motivo || "notícia retirada"}`, ator],
+      );
+      if (r.rowCount) vazios.push(id);
+    }
+    return { projetos: rows.map((r) => r.projeto_id), descartados: vazios };
   }, ator);
 }
 
@@ -516,6 +549,7 @@ async function alterarStatusProjeto(id, status, { ator = ATOR, motivo = null } =
 }
 
 module.exports = {
+  retirarDoProjeto,
   ATOR,
   CAMPOS_EDITAVEIS,
   atualizarProjeto,

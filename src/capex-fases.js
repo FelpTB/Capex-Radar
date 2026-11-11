@@ -1,19 +1,32 @@
-// Fases do módulo de captação de notícias (capex_radar).
+// Fluxo do capex_radar (sql/030, docs em src/capex-perfil.js).
 //
-//   1. Captação      capex-coletor.js    Google News RSS, o máximo possível.
-//   2. Filtro 1      capex-coletor.js    regras, manchetes quase iguais e
-//                    + capex-ia.js       triagem rápida da manchete (Haiku).
-//   3. Filtro 2      capex-filtro.js     definição rígida de CapEx e repetição
-//                                        do mesmo fato (Sonnet).
-//   4. Enriquecimento capex-enriquecimento.js  acha a matéria original, lê o
-//                                        texto e monta o perfil do projeto.
-//   5. Filtro 3      capex-filtro-final.js  relê o perfil enriquecido e tira o
-//                                        que não faz sentido para o radar.
-//   6. Aprovação humana (tela): só chega aqui o que passou por todas as fases.
+//   1. Captação          capex-coletor.js    Google News RSS: título, veículo,
+//                                            data e link de cada notícia.
+//   2. Filtro 1          capex-coletor.js    regras (exclusões, manchete quase
+//                        + capex-ia.js       igual, valor e local repetidos,
+//                        + capex-filtro.js   sem local nem empresa, notícia
+//                                            ampla), leitura da manchete
+//                                            (Haiku) e definição de CapEx e
+//                                            repetição do fato (Sonnet).
+//   3. Perfil inicial    capex-agente.js     aloca cada notícia num projeto:
+//                        + capex-perfil.js   cria (em revisão) ou vincula, e
+//                                            monta o perfil inicial.
+//   4. Enriquecimento    capex-enriquecimento.js  acha e lê a matéria original
+//                                            (fontes primárias).
+//   5. Perfil enriquecido capex-perfil.js    o texto das matérias completa o
+//                                            perfil.
+//   6. Filtro 2          capex-filtro-final.js  relê o perfil enriquecido e
+//                                            tira o que não faz sentido.
+//   7. Enriquecimento 2  capex-fontes-secundarias.js  fontes secundárias
+//                                            (registros brutos, diários para
+//                                            licenças), cronologia e linha do
+//                                            tempo; repetido de tempos em tempos.
+//   8. Perfil completo   capex-perfil.js     perfil final com as fontes
+//                                            secundárias.
 //
-// Cada fase de IA depois da triagem pode ser desligada no .env
-// (CAPEX_FILTRO=0, CAPEX_ENRIQUECIMENTO=0, CAPEX_FILTRO_FINAL=0). A fase
-// desligada sai da conta: a próxima lê direto o que a anterior manteve.
+// Cada fase de IA pode ser desligada no .env (CAPEX_FILTRO=0,
+// CAPEX_ENRIQUECIMENTO=0, CAPEX_FILTRO_FINAL=0). CAPEX_FLUXO=v1 volta à ordem
+// antiga (Enriquecimento e Filtro 3 antes do agente).
 //
 // Este módulo só lê o ambiente e monta condições SQL (alias e de
 // capex_radar.evidencias); não depende dos outros, para não criar ciclos.
@@ -26,6 +39,7 @@ function ligado(nome) {
 const filtro2Ligado = () => ligado("CAPEX_FILTRO");
 const enriquecimentoLigado = () => ligado("CAPEX_ENRIQUECIMENTO");
 const filtro3Ligado = () => ligado("CAPEX_FILTRO_FINAL");
+const fluxoV2 = () => (process.env.CAPEX_FLUXO?.trim() || "v2") !== "v1";
 
 // Notícia ainda no funil: triada como possível CapEx e sem decisão final
 // (nem vinculada, nem descartada). Era a antiga fila "A revisar".
@@ -35,6 +49,12 @@ const NO_FUNIL = `(e.triagem = 'novo_projeto' or (e.triagem = 'pendente' and e.e
 const PASSOU_FILTRO2 = "(e.filtro->>'decisao' = 'manter')";
 const ENRIQUECIDA = "(e.enriquecimento is not null)";
 const PASSOU_FILTRO3 = "(e.filtro_final->>'decisao' = 'manter')";
+
+// Notícia já alocada num projeto vivo pelo Perfil inicial (fluxo v2): segue
+// para o Enriquecimento e o Filtro 2 mesmo fora do funil.
+const LIGADA_A_PROJETO = `(exists (select 1 from capex_radar.evidencia_projeto lp
+                               join capex_radar.projetos pp on pp.id = lp.projeto_id
+                              where lp.evidencia_id = e.id and lp.situacao = 'aceito' and pp.status <> 'descartado'))`;
 
 function juntar(partes) {
   return partes.length ? `(${partes.join(" and ")})` : "true";
@@ -62,7 +82,21 @@ function condicaoPronta() {
   ]);
 }
 
+/** Entrada do Perfil inicial (agente): no fluxo v2, logo depois do Filtro 1. */
+function condicaoPerfilInicial() {
+  return fluxoV2() ? condicaoAposFiltro2() : condicaoPronta();
+}
+
+/** Onde o Enriquecimento e o Filtro 2 procuram notícias: funil e, no v2, notícias já alocadas. */
+function universoPosFiltro(funil) {
+  return fluxoV2() ? `(${funil} or ${LIGADA_A_PROJETO})` : funil;
+}
+
 module.exports = {
+  LIGADA_A_PROJETO,
+  fluxoV2,
+  condicaoPerfilInicial,
+  universoPosFiltro,
   NO_FUNIL,
   filtro2Ligado,
   enriquecimentoLigado,

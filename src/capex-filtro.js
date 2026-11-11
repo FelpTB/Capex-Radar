@@ -274,7 +274,7 @@ function filtroPadrao() {
 }
 
 /** Condição SQL (alias e) para o agente: só o que passou por todas as fases ligadas. */
-const condicaoAgente = fases.condicaoPronta;
+const condicaoAgente = fases.condicaoPerfilInicial;
 
 // ---------------------------------------------------------------------------
 // Banco

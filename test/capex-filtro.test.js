@@ -84,11 +84,16 @@ test("pede ao modelo do filtro com esforço médio", async () => {
   assert.deepEqual(chamadas[0].output_config, { effort: "medium" });
 });
 
-test("o agente só lê o que passou por todas as fases ligadas", () => {
-  const antes = { f: process.env.CAPEX_FILTRO, e: process.env.CAPEX_ENRIQUECIMENTO, f3: process.env.CAPEX_FILTRO_FINAL };
-  delete process.env.CAPEX_FILTRO; delete process.env.CAPEX_ENRIQUECIMENTO; delete process.env.CAPEX_FILTRO_FINAL;
+test("fluxo v2: o Perfil inicial (agente) lê logo depois do Filtro 1; v1 espera todas as fases", () => {
+  const nomes = ["CAPEX_FILTRO", "CAPEX_ENRIQUECIMENTO", "CAPEX_FILTRO_FINAL", "CAPEX_FLUXO"];
+  const antes = Object.fromEntries(nomes.map((k) => [k, process.env[k]]));
+  for (const k of nomes) delete process.env[k];
+  const v2 = condicaoAgente();
+  assert.match(v2, /e\.filtro->>'decisao' = 'manter'/);
+  assert.doesNotMatch(v2, /enriquecimento/);
+  assert.doesNotMatch(v2, /filtro_final/);
+  process.env.CAPEX_FLUXO = "v1";
   const todas = condicaoAgente();
-  assert.match(todas, /e\.filtro->>'decisao' = 'manter'/);
   assert.match(todas, /e\.enriquecimento is not null/);
   assert.match(todas, /e\.filtro_final->>'decisao' = 'manter'/);
   process.env.CAPEX_FILTRO = "0";
@@ -96,7 +101,7 @@ test("o agente só lê o que passou por todas as fases ligadas", () => {
   process.env.CAPEX_ENRIQUECIMENTO = "0";
   process.env.CAPEX_FILTRO_FINAL = "off";
   assert.equal(condicaoAgente(), "true");
-  for (const [k, v] of Object.entries({ CAPEX_FILTRO: antes.f, CAPEX_ENRIQUECIMENTO: antes.e, CAPEX_FILTRO_FINAL: antes.f3 })) {
+  for (const [k, v] of Object.entries(antes)) {
     if (v === undefined) delete process.env[k]; else process.env[k] = v;
   }
 });

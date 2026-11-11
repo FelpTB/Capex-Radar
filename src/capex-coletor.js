@@ -159,6 +159,69 @@ function separarRepetidas(noticias, vivas = []) {
   return { unicas, repetidas };
 }
 
+// Notícia ampla: plano ou ciclo de investimentos, orçamento do ano, valor
+// espalhado pelo país. Só sai quando a leitura da manchete também não achou
+// um local (sem UF): "investe R$ 2 bi no MS" é específica o bastante.
+const PADROES_AMPLA = [
+  /\bplano de investimentos?\b/,
+  /\bciclo de investimentos?\b/,
+  /\bcapex (de|para|em) (r\$|us\$|20\d\d)/,
+  /\binvestimentos? (previstos?|programados?) (para|em|ate) 20\d\d\b/,
+  /\b(no|pelo) (brasil|pais) (ate|em) 20\d\d\b/,
+  /\bem (todo o|varios) (brasil|pais|estados)\b/,
+  /\borcamento (de|para) 20\d\d\b/,
+  /\b(guidance|projecao) de investimentos?\b/,
+];
+
+function noticiaAmpla(titulo, decisao = {}) {
+  if (decisao.ampla) return true;
+  if (decisao.uf) return false;
+  const t = normalizar(titulo);
+  return PADROES_AMPLA.some((re) => re.test(t));
+}
+
+// Valor quase igual (até 2% de diferença) na mesma UF, dentro de 60 dias:
+// é o mesmo anúncio contado de novo.
+const DIAS_VALOR = 60;
+const TOLERANCIA_VALOR = 0.02;
+
+function valorRepetido(noticia, decisao, vivas = []) {
+  const valor = Number(decisao.valor_brl);
+  if (!valor) return null;
+  return vivas.find((v) => v.id !== noticia.id
+    && v.valor_brl && Math.abs(Number(v.valor_brl) - valor) / Math.max(Number(v.valor_brl), valor) <= TOLERANCIA_VALOR
+    && (v.uf || null) === (decisao.uf || null)
+    && pertoNoTempo(v.data_original, noticia.data_original, DIAS_VALOR)) || null;
+}
+
+/**
+ * Regras do Filtro 1 depois da leitura da manchete. Devolve
+ * { motivo, repete_id? } quando a notícia sai, ou null.
+ *   - ampla: plano de investimentos, sem ativo e local definidos;
+ *   - sem local nem empresa: a manchete não traz UF/município e não cita o grupo;
+ *   - valor repetido: mesmo valor e mesma UF de outra notícia viva do grupo.
+ */
+function regraPosLeitura(noticia, decisao, vivas = []) {
+  if (!decisao?.capex) return null;
+  if (noticiaAmpla(noticia.titulo, decisao)) return { motivo: "Filtro 1: notícia ampla (plano ou ciclo de investimentos, sem ativo e local definidos)" };
+  if (!decisao.uf && !decisao.municipio && !noticia.cita_empresa) return { motivo: "Filtro 1: sem local e sem a empresa na manchete" };
+  const igual = valorRepetido(noticia, decisao, vivas);
+  if (igual) return { motivo: `Filtro 1: mesmo valor e local de “${String(igual.titulo).slice(0, 140)}”`, repete_id: igual.id };
+  return null;
+}
+
+async function valoresVivos(client, grupoId) {
+  const { rows } = await client.query(
+    `select id, titulo, data_original, (extracao->>'valor_brl')::numeric as valor_brl, extracao->>'uf' as uf
+       from capex_radar.evidencias
+      where grupo_id = $1 and triagem <> 'descartada' and extracao->>'valor_brl' is not null
+      order by data_original nulls last
+      limit 3000`,
+    [grupoId],
+  );
+  return rows;
+}
+
 async function manchetesVivas(client, grupoId, noticias) {
   const datas = noticias.map((n) => n.data_original).filter(Boolean).map((d) => new Date(d).getTime());
   const desde = datas.length ? new Date(Math.min(...datas) - DIAS_MANCHETE * 86_400_000) : null;
@@ -403,6 +466,7 @@ async function triarGrupo({ client, grupo, ia, limite = 400, onProgresso = () =>
   if (!ia || !restantes.length) return resumo;
 
   const projetos = await projetosDoGrupo(client, grupo.id);
+  const vivas = await valoresVivos(client, grupo.id);
   for (let i = 0; i < restantes.length; i += LOTE_IA) {
     const lote = restantes.slice(i, i + LOTE_IA);
     let decisoes;
@@ -416,6 +480,18 @@ async function triarGrupo({ client, grupo, ia, limite = 400, onProgresso = () =>
     for (const noticia of lote) {
       const decisao = decisoes.get(noticia.id);
       if (!decisao) continue; // sem resposta: fica para a próxima rodada
+      const regra = regraPosLeitura(noticia, decisao, vivas);
+      if (regra) {
+        await emTransacao(client, ATOR_TRIAGEM, () => client.query(
+          `update capex_radar.evidencias
+              set triagem = 'descartada', triagem_motivo = $2, extracao = $3::jsonb, modelo_triagem = $4
+            where id = $1`,
+          [noticia.id, regra.motivo, JSON.stringify({ ...decisao, capex: false, motivo: regra.motivo, etapa: "regras", repete_id: regra.repete_id || null, cita_empresa: noticia.cita_empresa }), ia.modelo],
+        ));
+        resumo.regras += 1;
+        continue;
+      }
+      if (decisao.valor_brl) vivas.push({ id: noticia.id, titulo: noticia.titulo, data_original: noticia.data_original, valor_brl: decisao.valor_brl, uf: decisao.uf || null });
       if (!decisao.capex) {
         await emTransacao(client, ATOR_TRIAGEM, () => client.query(
           `update capex_radar.evidencias
@@ -549,6 +625,9 @@ module.exports = {
   motivoDescarte,
   manchetesIguais,
   separarRepetidas,
+  noticiaAmpla,
+  valorRepetido,
+  regraPosLeitura,
   citaEmpresa,
   carregarGrupos,
   coletarGrupo,

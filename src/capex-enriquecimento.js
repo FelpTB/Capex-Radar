@@ -184,7 +184,7 @@ function enriquecedorPadrao() {
 const SEM_ENRIQUECIMENTO = `(e.enriquecimento is null or e.enriquecimento->>'versao' is distinct from '${VERSAO}')`;
 
 function condicaoFila() {
-  return `${painel.FILTRO_SITUACAO.funil} and ${fases.condicaoAposFiltro2()} and ${SEM_ENRIQUECIMENTO}`;
+  return `${fases.universoPosFiltro(painel.FILTRO_SITUACAO.funil)} and ${fases.condicaoAposFiltro2()} and ${SEM_ENRIQUECIMENTO}`;
 }
 
 async function filaDoEnriquecimento(db, grupoId, limite = 400) {
