@@ -399,8 +399,14 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
 
 // Folga para datas imprecisas: a notícia pode sair dias antes do anúncio
 // oficial, e notícias sobre a inauguração aparecem nos meses seguintes.
+// Registro oficial tem folga maior: licença, matrícula da obra (CNO) e
+// financiamento costumam vir antes da notícia, e a licença de operação depois
+// da inauguração. Se o registro é mesmo do projeto, quem decide é o
+// julgamento do conteúdo.
 const FOLGA_ANTES_DIAS = 30;
 const FOLGA_DEPOIS_DIAS = 180;
+const FOLGA_REGISTRO_ANTES_DIAS = 730;
+const FOLGA_REGISTRO_DEPOIS_DIAS = 365;
 
 // "2025" vira o primeiro ou o último dia do ano, conforme o limite.
 function dataDoMarco(data, limite) {
@@ -440,12 +446,14 @@ function janelaDoProjeto(projeto) {
 function foraDaCronologia(projeto, evidencias) {
   const { anuncio, conclusao } = janelaDoProjeto(projeto);
   if (!anuncio && !conclusao) return [];
-  const antes = anuncio ? somarDias(anuncio, -FOLGA_ANTES_DIAS) : null;
-  const depois = conclusao ? somarDias(conclusao, FOLGA_DEPOIS_DIAS) : null;
   const fora = [];
   for (const e of evidencias) {
     const d = dia(e.data_original);
     if (!d) continue;
+    const registro = e.fonte_codigo && e.fonte_codigo !== "gnews_rss";
+    const antes = anuncio ? somarDias(anuncio, -(registro ? FOLGA_REGISTRO_ANTES_DIAS : FOLGA_ANTES_DIAS)) : null;
+    const depois = conclusao && (!anuncio || conclusao >= anuncio)
+      ? somarDias(conclusao, registro ? FOLGA_REGISTRO_DEPOIS_DIAS : FOLGA_DEPOIS_DIAS) : null;
     if (antes && d < antes) fora.push({ id: String(e.id), data: d, motivo: `Cronologia: evidência de ${d}, antes do anúncio (${anuncio})` });
     else if (depois && d > depois) fora.push({ id: String(e.id), data: d, motivo: `Cronologia: evidência de ${d}, depois da conclusão (${conclusao})` });
   }

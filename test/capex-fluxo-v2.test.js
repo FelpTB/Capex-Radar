@@ -70,6 +70,13 @@ test("cronologia: tira evidência antes do anúncio ou depois da conclusão, nun
     { id: 4, data_original: "2026-03-01" },
   ]);
   assert.deepEqual(fora.map((f) => f.id), ["1", "4"]);
+  // Registro oficial: licença um ano antes do anúncio fica; dez anos antes sai.
+  const registros = sec.foraDaCronologia(projeto, [
+    { id: 5, fonte_codigo: "SEC-SISLIC", data_original: "2023-06-01" },
+    { id: 6, fonte_codigo: "SEC-BNDES", data_original: "2014-01-01" },
+    { id: 7, fonte_codigo: "gnews_rss", data_original: "2024-06-01" },
+  ]);
+  assert.deepEqual(registros.map((f) => f.id), ["6"]);
   assert.deepEqual(sec.foraDaCronologia(projeto, [{ id: 1, data_original: "2020-01-01" }]), []);
   assert.deepEqual(sec.foraDaCronologia({}, [{ id: 1, data_original: "2020-01-01" }]), []);
 });

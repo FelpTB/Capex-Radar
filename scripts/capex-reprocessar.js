@@ -18,7 +18,10 @@
 //   npm run capex:reprocessar -- dossie --saida <pasta> [--projeto <id>]
 //   npm run capex:reprocessar -- coletar [--projeto <id>] [--limite N]
 //   npm run capex:reprocessar -- registros --saida <pasta> [--projeto <id>]
+//   npm run capex:reprocessar -- registros-empresa --saida <pasta> [--empresa <nome>]
+//   npm run capex:reprocessar -- julgar --arquivo <atribuicoes.json> [--empresa <nome>] [--automaticos <arquivo>]
 //   npm run capex:reprocessar -- aplicar --arquivo <decisoes.json> [--seco]
+// "correcoes": { "uf", "municipio", "valor_brl", "objeto" } corrige o cadastro do projeto.
 //
 // Arquivo de decisões (um objeto ou uma lista de objetos):
 // {
@@ -284,6 +287,19 @@ async function aplicarUma(d, { seco }) {
   // Passo 1: Filtro 1, pai e subprojetos.
   const passo1 = await painel.emTransacao(async (client) => {
     const removidas = await aplicarFiltro1(client, projeto.id, d.filtro1 || []);
+    // Correções de cadastro apontadas pela leitura das matérias (local, valor, objeto).
+    const c = d.correcoes || {};
+    if (Object.keys(c).length) {
+      await client.query(
+        `update capex_radar.projetos
+            set uf = coalesce($2, uf), municipio = coalesce($3, municipio),
+                valor_estimado_brl = coalesce($4, valor_estimado_brl), objeto = coalesce($5, objeto),
+                fonte_valor = case when $4::numeric is null then fonte_valor else 'noticia' end,
+                atualizado_em = now()
+          where id = $1`,
+        [projeto.id, /^[A-Z]{2}$/.test(c.uf || "") ? c.uf : null, c.municipio || null, c.valor_brl ?? null, c.objeto || null],
+      );
+    }
     if (d.pai?.projeto_id) {
       await client.query("update capex_radar.projetos set projeto_pai_id = $2, relacao = $3 where id = $1", [projeto.id, d.pai.projeto_id, d.pai.relacao]);
     }
@@ -307,8 +323,9 @@ async function aplicarUma(d, { seco }) {
     const linha = await gravarLinha(projeto.id, d.linha_tempo, atuais);
     r.marcos = linha.marcos.length;
   }
+  // Cronologia só com a linha do tempo nova (a antiga pode ter datas erradas).
   const [recarregado] = await projetosAtivos(projeto.id);
-  const fora = sec.foraDaCronologia(recarregado, atuais);
+  const fora = d.linha_tempo ? sec.foraDaCronologia(recarregado, atuais) : [];
   r.fora_da_cronologia = await sec.aplicarCronologia(projeto.id, fora, ATOR);
   if (r.fora_da_cronologia && d.linha_tempo) {
     const restantes = await sec.evidenciasDoProjeto(pool, projeto.id);
@@ -337,8 +354,9 @@ async function aplicar(args) {
 
 async function main() {
   const args = argumentos(process.argv.slice(2));
-  const comandos = { dossie, coletar, registros, aplicar };
-  if (!comandos[args.comando]) throw new Error("Comandos: dossie, coletar, registros, aplicar");
+  const empresa = require("./capex-reprocessar-empresa").criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR });
+  const comandos = { dossie, coletar, registros, "registros-empresa": empresa.registrosEmpresa, julgar: empresa.julgar, aplicar };
+  if (!comandos[args.comando]) throw new Error(`Comandos: ${Object.keys(comandos).join(", ")}`);
   await comandos[args.comando](args);
 }
 
