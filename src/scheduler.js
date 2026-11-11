@@ -9,6 +9,7 @@ const capexAgente = require("./capex-agente");
 const capexFiltro = require("./capex-filtro");
 const capexEnriquecimento = require("./capex-enriquecimento");
 const capexFiltroFinal = require("./capex-filtro-final");
+const capexSecundarias = require("./capex-fontes-secundarias");
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const SCAN_MS = WEEK_MS;
@@ -19,6 +20,9 @@ const DOE_PDF_DIAS = 7;
 const TICK_MS = 60 * 1000;
 const FIXA_RUN_LIMIT = 80;
 const PROVA_RUN_LIMIT = 40;
+// Linhas do tempo montadas por ciclo (um por minuto): projeto novo, sem
+// marcos ou com evidência nova. CAPEX_LINHA_TEMPO=0 desliga.
+const LINHA_TEMPO_POR_CICLO = 3;
 
 function isDue(lastAt, intervalMs, now = Date.now()) {
   if (!lastAt) return true;
@@ -69,6 +73,14 @@ async function runDoePdfSync() {
 // empresas, uma vez por semana. A carga histórica roda à parte (npm run capex:coletar).
 // A semana vence por grupo: se o app reiniciar no meio da rodada, o próximo
 // ciclo coleta só os grupos que faltaram.
+async function runLinhasDoTempo() {
+  if (/^(0|false|no|off)$/i.test(process.env.CAPEX_LINHA_TEMPO?.trim() || "")) return null;
+  const cronista = capexSecundarias.cronistaPadrao();
+  if (!cronista) return null;
+  const r = await capexSecundarias.atualizarLinhasDoTempo(db.pool, cronista, { limite: LINHA_TEMPO_POR_CICLO });
+  return r.pendentes ? r : null;
+}
+
 async function runCapexWeekly() {
   const client = await db.pool.connect();
   try {
@@ -136,6 +148,7 @@ function summarize(summary) {
     parts.push(`diários em PDF: ${lidas} edições, ${paginas} páginas`);
   }
   if (summary.capex) parts.push(`monitoramento: ${capexColetor.resumoTexto(summary.capex)}`);
+  if (summary.linhaTempo) parts.push(`linha do tempo: ${summary.linhaTempo.montadas} projeto(s) montado(s)${summary.linhaTempo.erros ? `, ${summary.linhaTempo.erros} com erro` : ""}`);
   return parts.join(" · ") || "ciclo em dia";
 }
 
@@ -164,6 +177,12 @@ async function tick() {
       if (capex) summary.capex = capex;
     } catch (error) {
       console.error(`Monitoramento capex_radar: ${error.message}`);
+    }
+    try {
+      const linhaTempo = await runLinhasDoTempo();
+      if (linhaTempo) summary.linhaTempo = linhaTempo;
+    } catch (error) {
+      console.error(`Linha do tempo: ${error.message}`);
     }
     if (Object.keys(summary).length) {
       const text = summarize(summary);
@@ -201,6 +220,7 @@ module.exports = {
   doePdfDue,
   isDue,
   runScheduledScan,
+  runLinhasDoTempo,
   summarize,
   tick,
   startScheduler,

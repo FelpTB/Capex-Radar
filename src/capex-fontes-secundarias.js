@@ -319,11 +319,88 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null } = {
   return resultados;
 }
 
+// Todo projeto com evidência aceita tem linha do tempo com pelo menos um marco.
+// Se o modelo não devolver marco nenhum, cada evidência com data vira um marco.
+function marcosMinimos(evidencias) {
+  const comData = evidencias.filter((e) => dia(e.data_original));
+  const base = comData.length ? comData : evidencias.slice(0, 1);
+  return base.slice(0, 12).map((e, i) => ({
+    data: dia(e.data_original),
+    marco: String(e.titulo || "Evidência do projeto").slice(0, 400),
+    tipo: i === 0 ? "anuncio" : "outro",
+    evidencias: [String(e.id)],
+  }));
+}
+
+/**
+ * Projetos (de qualquer status) com evidência aceita e linha do tempo
+ * faltando, sem marcos ou montada com outro número de evidências.
+ */
+async function projetosSemLinhaDoTempo(db, limite = 200) {
+  const { rows } = await db.query(
+    `with n as (
+       select projeto_id, count(*)::int as n
+         from capex_radar.evidencia_projeto where situacao = 'aceito' group by projeto_id
+     )
+     select v.*, p.objeto, p.secundarias, p.linha_tempo, n.n as n_aceitas
+       from capex_radar.vw_carteira v
+       join capex_radar.projetos p on p.id = v.id
+       join n on n.projeto_id = p.id
+      where p.linha_tempo is null
+         or jsonb_array_length(coalesce(p.linha_tempo->'marcos', '[]'::jsonb)) = 0
+         or coalesce((p.linha_tempo->>'evidencias')::int, -1) <> least(n.n, 60)
+         or (coalesce((p.linha_tempo->>'provisoria')::boolean, false)
+             and (p.linha_tempo->>'em')::timestamptz < now() - interval '1 day')
+      order by (p.status = 'descartado'), p.linha_tempo is not null, v.valor_estimado_brl desc nulls last
+      limit $1`,
+    [limite],
+  );
+  return rows;
+}
+
+/** Monta a linha do tempo dos projetos pendentes. Erro num projeto não para os outros. */
+async function atualizarLinhasDoTempo(db, cronista, { limite = 200, log = () => {} } = {}) {
+  const projetos = await projetosSemLinhaDoTempo(db, limite);
+  const resultado = { pendentes: projetos.length, montadas: 0, erros: 0 };
+  for (const p of projetos) {
+    try {
+      const r = await montarLinhaDoTempo(db, p, cronista);
+      if (r) resultado.montadas += 1;
+      log(`${p.titulo}: ${r ? `${r.marcos.length} marco(s) de ${r.evidencias} evidência(s)${r.estagio_mudou ? `, estágio ${r.estagio_mudou}` : ""}` : "sem evidências"}`);
+    } catch (error) {
+      // Sem o modelo (crédito, rede...), grava a linha provisória com as
+      // evidências; ela é refeita pelo modelo um dia depois.
+      resultado.erros += 1;
+      const provisoria = await montarLinhaProvisoria(db, p).catch(() => null);
+      if (provisoria) resultado.provisorias = (resultado.provisorias || 0) + 1;
+      log(`${p.titulo}: erro no modelo (${String(error.message).slice(0, 160)})${provisoria ? `; linha provisória com ${provisoria.marcos.length} marco(s)` : ""}`);
+    }
+  }
+  return resultado;
+}
+
+/** Linha do tempo sem modelo: um marco por evidência com data. Não mexe no estágio. */
+async function montarLinhaProvisoria(db, projeto) {
+  const evidencias = await evidenciasDoProjeto(db, projeto.id);
+  if (!evidencias.length) return null;
+  const registro = {
+    versao: VERSAO_LINHA, modelo: null, provisoria: true,
+    resumo: "", estagio: null, marcos: marcosMinimos(evidencias),
+    evidencias: evidencias.length, em: new Date().toISOString(),
+  };
+  await painel.emTransacao((client) => client.query(
+    "update capex_radar.projetos set linha_tempo = $2::jsonb, atualizado_em = now() where id = $1",
+    [projeto.id, JSON.stringify(registro)],
+  ), ATOR);
+  return registro;
+}
+
 /** Monta e grava a linha do tempo de um projeto; o estágio só avança. */
 async function montarLinhaDoTempo(db, projeto, cronista) {
   const evidencias = await evidenciasDoProjeto(db, projeto.id);
   if (!evidencias.length) return null;
   const linha = lerLinhaDoTempo(await cronista.montar(entradaLinha(projeto, evidencias)), evidencias);
+  if (!linha.marcos.length) linha.marcos = marcosMinimos(evidencias);
   const registro = { versao: VERSAO_LINHA, modelo: cronista.modelo, ...linha, evidencias: evidencias.length, em: new Date().toISOString() };
   const muda = avancaEstagio(projeto.estagio, linha.estagio);
   await painel.emTransacao((client) => client.query(
@@ -354,4 +431,8 @@ module.exports = {
   evidenciasDoProjeto,
   consultarFontes,
   montarLinhaDoTempo,
+  marcosMinimos,
+  montarLinhaProvisoria,
+  projetosSemLinhaDoTempo,
+  atualizarLinhasDoTempo,
 };

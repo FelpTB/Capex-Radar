@@ -5,6 +5,9 @@
 //   npm run capex:secundarias                        os 20 maiores por valor (ativos e em revisão)
 //   npm run capex:secundarias -- --limite 5          os 5 maiores
 //   npm run capex:secundarias -- --so linha          refaz só a linha do tempo
+//   npm run capex:secundarias -- --pendentes         monta a linha do tempo de todo projeto
+//                                                    com evidência que ainda não tem uma
+//                                                    (ou cujas evidências mudaram)
 //
 // As consultas usam as bases carregadas no banco (enr_*), o CNO local
 // (pasta cno/) e os diários e portais ao vivo. A correlação de cada registro
@@ -21,6 +24,7 @@ function argumentos(argv) {
     if (chave === "--listar") args.listar = true;
     else if (chave === "--limite") args.limite = Number(argv[++i]);
     else if (chave === "--so") args.so = argv[++i];
+    else if (chave === "--pendentes") args.pendentes = true;
     else throw new Error(`Argumento desconhecido: ${chave}`);
   }
   if (args.so && !["fontes", "linha"].includes(args.so)) throw new Error("--so aceita fontes ou linha");
@@ -36,6 +40,17 @@ async function main() {
   });
   await client.connect();
   try {
+    if (args.pendentes) {
+      const pendentes = await sec.projetosSemLinhaDoTempo(client, 1000);
+      console.log(`${pendentes.length} projeto(s) com evidência sem linha do tempo em dia.`);
+      if (args.listar || !pendentes.length) return;
+      const anthropic = criarCliente(config.claudeApiKey);
+      if (!anthropic) throw new Error("CLAUDE_API_KEY não configurada.");
+      const cronista = sec.criarCronista({ client: anthropic, modelo: config.claudeFilter3Model });
+      const r = await sec.atualizarLinhasDoTempo(client, cronista, { limite: 1000, log: (m) => console.log(`  ${m}`) });
+      console.log(`Montadas: ${r.montadas}. Com erro no modelo: ${r.erros} (provisórias gravadas: ${r.provisorias || 0}).`);
+      return;
+    }
     const projetos = await sec.maioresProjetos(client, args.limite);
     for (const [i, p] of projetos.entries()) {
       const valor = p.valor_estimado_brl == null ? "sem valor" : `R$ ${(Number(p.valor_estimado_brl) / 1e6).toLocaleString("pt-BR")} mi`;

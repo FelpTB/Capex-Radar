@@ -48,3 +48,30 @@ test("entrada da linha do tempo separa notícia de registro oficial", () => {
   assert.equal(e.evidencias[1].registro, "registro");
   assert.equal(e.projeto.valor_brl, 10);
 });
+
+test("sem marcos do modelo, cada evidência com data vira um marco", () => {
+  const evidencias = [
+    { id: 7, titulo: "Empresa anuncia fábrica", data_original: "2025-02-10T12:00:00Z" },
+    { id: 8, titulo: "Sem data", data_original: null },
+    { id: 9, titulo: "Licença prévia emitida", data_original: "2025-06-01" },
+  ];
+  const marcos = sec.marcosMinimos(evidencias);
+  assert.deepEqual(marcos.map((m) => [m.data, m.tipo, m.evidencias]), [
+    ["2025-02-10", "anuncio", ["7"]],
+    ["2025-06-01", "outro", ["9"]],
+  ]);
+  const semData = sec.marcosMinimos([{ id: 1, titulo: "Notícia", data_original: null }]);
+  assert.equal(semData.length, 1);
+  assert.equal(semData[0].data, null);
+});
+
+test("pendentes: projeto com evidência sem linha do tempo, sem marcos ou com evidência nova", async () => {
+  let sql = "";
+  const db = { query: async (texto, params) => { sql = texto; assert.deepEqual(params, [5]); return { rows: [{ id: "p1" }] }; } };
+  assert.deepEqual(await sec.projetosSemLinhaDoTempo(db, 5), [{ id: "p1" }]);
+  assert.match(sql, /linha_tempo is null/);
+  assert.match(sql, /jsonb_array_length/);
+  assert.match(sql, /least\(n\.n, 60\)/);
+  assert.match(sql, /provisoria/);
+  assert.doesNotMatch(sql, /status <> 'descartado'/);
+});
