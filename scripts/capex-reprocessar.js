@@ -80,7 +80,7 @@ async function projetosAtivos(projetoId) {
 async function noticiasDoProjeto(projetoId) {
   const { rows } = await pool.query(
     `select e.id, e.titulo, e.veiculo, e.data_original, e.fonte_codigo, e.url,
-            e.extracao, e.enriquecimento, e.filtro, e.filtro_final, ep.origem
+            e.extracao, e.enriquecimento, e.filtro, e.filtro_final, ep.origem, e.texto
        from capex_radar.evidencia_projeto ep
        join capex_radar.evidencias e on e.id = ep.evidencia_id
       where ep.projeto_id = $1 and ep.situacao = 'aceito'
@@ -92,6 +92,7 @@ async function noticiasDoProjeto(projetoId) {
     data: dia(e.data_original),
     fonte: e.fonte_codigo === "gnews_rss" ? `notícia: ${e.veiculo || ""}` : `registro: ${e.fonte_codigo}`,
     titulo: e.titulo,
+    texto_registro: e.fonte_codigo !== "gnews_rss" && e.texto ? String(e.texto).slice(0, 700) : undefined,
     leitura_manchete: e.extracao ? {
       objeto: e.extracao.objeto ?? null, uf: e.extracao.uf ?? null, municipio: e.extracao.municipio ?? null,
       valor_brl: e.extracao.valor_brl ?? null, estagio: e.extracao.estagio ?? null,
@@ -140,13 +141,18 @@ async function coletar(args) {
   // Retomável: pula quem já foi coletado nesta rodada (secundarias.julgamento = pendente ou externo).
   const fila = todos.filter((p) => args.projeto || args.refazer || !["pendente", "externo"].includes(p.secundarias?.julgamento)).slice(0, limite);
   console.log(`${fila.length} projeto(s) para coletar (de ${todos.length}).`);
-  for (const [i, p] of fila.entries()) {
+  // Em lotes: o CNO (arquivo local grande) é lido uma vez por lote, não por projeto.
+  const LOTE = 10;
+  let feitos = 0;
+  for (let k = 0; k < fila.length; k += LOTE) {
+    const lote = fila.slice(k, k + LOTE);
     const inicio = Date.now();
     try {
-      const [r] = await sec.consultarFontes(pool, [p], { semJulgamento: true });
-      console.log(`${i + 1}/${fila.length} ${p.titulo}: ${r.fontes.length} fonte(s), ${r.analisados} registro(s) analisado(s) (${Math.round((Date.now() - inicio) / 1000)}s)`);
+      const resultados = await sec.consultarFontes(pool, lote, { semJulgamento: true, log: (m) => console.log(`  ${m}`) });
+      feitos += resultados.length;
+      console.log(`${feitos}/${fila.length} feitos (lote em ${Math.round((Date.now() - inicio) / 1000)}s)`);
     } catch (error) {
-      console.log(`${i + 1}/${fila.length} ${p.titulo}: erro (${error.message})`);
+      console.log(`lote ${k / LOTE + 1}: erro (${error.message})`);
     }
   }
 }
@@ -284,6 +290,8 @@ async function aplicarUma(d, { seco }) {
   if (!projeto) return { projeto_id: d.projeto_id, erros: ["projeto não encontrado"] };
   if (seco) return { projeto: projeto.titulo, ok: "validado" };
   const r = { projeto: projeto.titulo };
+  // Registros oficiais deixados fora da linha do tempo por serem de outra obra saem do projeto.
+  d.filtro1 = [...(d.filtro1 || []), ...(d.fora || []).map((id) => ({ evidencia_id: id, descarte: "outro_projeto", motivo: "Linha do tempo: registro oficial de outra obra" }))];
   // Passo 1: Filtro 1, pai e subprojetos.
   const passo1 = await painel.emTransacao(async (client) => {
     const removidas = await aplicarFiltro1(client, projeto.id, d.filtro1 || []);

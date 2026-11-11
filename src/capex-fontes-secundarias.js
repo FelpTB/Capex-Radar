@@ -435,8 +435,15 @@ function somarDias(data, dias) {
 function janelaDoProjeto(projeto) {
   const marcos = projeto.linha_tempo?.marcos || [];
   const anuncios = [dia(projeto.data_anuncio), ...marcos.filter((m) => m.tipo === "anuncio").map((m) => dataDoMarco(m.data, "inicio"))].filter(Boolean).sort();
+  // A conclusão é o ÚLTIMO marco de operação: projeto em fases (linha nova,
+  // ampliação) entra em operação mais de uma vez.
+  // Se houver marco posterior à última operação (licença de ampliação, obra
+  // nova), o projeto não está concluído.
   const conclusoes = [dia(projeto.data_fim), ...marcos.filter((m) => m.tipo === "operacao").map((m) => dataDoMarco(m.data, "fim"))].filter(Boolean).sort();
-  return { anuncio: anuncios[0] || null, conclusao: conclusoes[0] || null };
+  const ultimoMarco = marcos.map((m) => dataDoMarco(m.data, "inicio")).filter(Boolean).sort().pop() || null;
+  let conclusao = conclusoes[conclusoes.length - 1] || null;
+  if (conclusao && ultimoMarco && ultimoMarco > conclusao) conclusao = null;
+  return { anuncio: anuncios[0] || null, conclusao };
 }
 
 /**

@@ -110,17 +110,6 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
       resultado.evidencias += r.evidencias;
       resultado.atualizados += r.atualizados;
     }
-    if (args.empresa) {
-      const ids = (await projetosAtivos()).filter((p) => p.grupo === args.empresa).map((p) => p.id);
-      const r = await pool.query(
-        `update capex_radar.registros_analisados
-            set correlacao = 'outro_projeto', motivo = 'Lido no julgamento por empresa: sem ligação com este projeto',
-                analisado_por = $2, em = now()
-          where projeto_id = any($1::uuid[]) and correlacao = 'nao_avaliada'`,
-        [ids, ATOR],
-      );
-      resultado.sem_ligacao = r.rowCount;
-    }
     if (args.automaticos) {
       for (const a of JSON.parse(fs.readFileSync(args.automaticos, "utf8"))) {
         const r = await pool.query(
@@ -132,6 +121,17 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
         );
         resultado.automaticos += r.rowCount;
       }
+    }
+    if (args.empresa) {
+      const ids = (await projetosAtivos()).filter((p) => p.grupo === args.empresa).map((p) => p.id);
+      const r = await pool.query(
+        `update capex_radar.registros_analisados
+            set correlacao = 'outro_projeto', motivo = 'Lido no julgamento por empresa: sem ligação com este projeto',
+                analisado_por = $2, em = now()
+          where projeto_id = any($1::uuid[]) and correlacao = 'nao_avaliada'`,
+        [ids, ATOR],
+      );
+      resultado.sem_ligacao = r.rowCount;
     }
     console.log(JSON.stringify(resultado));
   }
