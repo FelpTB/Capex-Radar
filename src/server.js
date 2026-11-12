@@ -1129,5 +1129,5 @@ app.listen(config.port, "0.0.0.0", () => {
       : "local";
   console.log(`Radar CapEx (${where}) na porta ${config.port}`);
   if (config.schedulerEnabled) startScheduler();
-  else console.log("Agendador desligado (DISABLE_SCHEDULER).");
+  else console.log("Agendador desligado (liga com SCHEDULER_ENABLED=1).");
 });

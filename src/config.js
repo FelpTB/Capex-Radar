@@ -18,8 +18,11 @@ function getConfig() {
   }
 
   const nodeEnv = process.env.NODE_ENV || "development";
+  // Rotina automática (src/scheduler.js) desligada por padrão: só liga com
+  // SCHEDULER_ENABLED=1. DISABLE_SCHEDULER=1 continua desligando.
   const schedulerDisabled =
-    /^(1|true|yes|on)$/i.test(process.env.DISABLE_SCHEDULER?.trim() || "");
+    !/^(1|true|yes|on)$/i.test(process.env.SCHEDULER_ENABLED?.trim() || "")
+    || /^(1|true|yes|on)$/i.test(process.env.DISABLE_SCHEDULER?.trim() || "");
 
   return {
     databaseUrl,

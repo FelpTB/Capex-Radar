@@ -39,7 +39,7 @@ Regra do projeto para novas fontes: `.cursor/rules/amostra-fonte.mdc`.
    | `CLAUDE_DECISION_MODEL` | não | Opcional; default igual a `CLAUDE_MODEL` |
    | `TOKEN_DADOS_GOV` | não | Catálogo dados.gov.br |
    | `NODE_ENV` | recomendado | `production` |
-   | `DISABLE_SCHEDULER` | não | `1` para desligar ciclo semanal |
+   | `SCHEDULER_ENABLED` | não | `1` liga a rotina automática (desligada por padrão) |
 
    Não defina `PORT` no painel — o Railway injeta automaticamente.
 
