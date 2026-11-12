@@ -98,17 +98,44 @@ function perfilEnriquecido(inicial, evidencias = []) {
 }
 
 // Registro oficial de licença: campos que as bases de licenciamento usam.
+// Tipo de ato e órgão lidos no texto do diário (o registro não traz os campos).
+const LICENCA_TIPO_RE = /licen[çc]a (pr[ée]via|de instala[çc][ãa]o|de opera[çc][ãa]o|ambiental simplificada)( de amplia[çc][ãa]o)?( ?[-–] ?L[A-Z]{1,2}(-A)?)?( n[º°o.]? ?[\d./-]+)?/i;
+const SIGLA_RE = /\b(LP|LI|LO|LAS)(-A)? n[º°o.]? ?[\d./-]+/;
+const ORGAOS = [
+  [/instituto [áa]gua e terra|\bIAT\b/i, "IAT (PR)"], [/cetesb/i, "Cetesb (SP)"], [/\bsemad\b/i, "SEMAD (MG)"],
+  [/\bigam\b/i, "IGAM (MG)"], [/fepam/i, "FEPAM (RS)"], [/imasul/i, "Imasul (MS)"], [/\bcprh\b/i, "CPRH (PE)"],
+  [/\bdaee\b/i, "DAEE (SP)"], [/sp [áa]guas/i, "SP Águas"], [/\baneel\b/i, "ANEEL"], [/\bsema\b/i, "SEMA"],
+  [/\bana\b|ag[êe]ncia nacional de [áa]guas/i, "ANA"], [/\bibama\b/i, "Ibama"], [/\bsemace\b/i, "Semace (CE)"],
+];
+
+function tipoDoAto(texto) {
+  const licenca = texto.match(LICENCA_TIPO_RE)?.[0] || texto.match(SIGLA_RE)?.[0];
+  if (licenca) return licenca.replace(/\s+/g, " ").trim();
+  if (/\boutorgad[oa]\(?s?\)?\b|\boutorga\b/i.test(texto)) {
+    return /lan[çc]amento|efluente/i.test(texto) ? "Outorga de lançamento de efluentes" : "Outorga de uso de recursos hídricos";
+  }
+  if (/autoriza[çc][ãa]o ambiental/i.test(texto)) return "Autorização Ambiental";
+  if (/alvar[áa] de constru[çc][ãa]o/i.test(texto)) return "Alvará de construção";
+  if (/autoriza[çc][ãa]o.{0,40}(acesso|conex[ãa]o).{0,40}rede b[áa]sica/i.test(texto)) return "Autorização de acesso à Rede Básica";
+  return null;
+}
+
 function licencaDoRegistro(r) {
   const b = r.registro || {};
-  const tipo = b.tipo_licenca || b.especie || b.tipo || null;
+  const texto = `${b.titulo || ""} ${b.trecho || ""} ${b.contexto || ""} ${b.assunto || ""}`;
+  const tipo = b.tipo_licenca || b.modalidade_descricao || b.especie || tipoDoAto(texto) || null;
   const numero = b.numero_licenca || b.numero || b.protocolo || null;
-  const ehLicenca = /licen|outorga|autoriza|alvar/i.test(`${tipo || ""} ${r.fonte_codigo} ${b.assunto || ""} ${b.titulo || ""}`);
+  const ehLicenca = Boolean(tipo) && /licen|outorga|autoriza|alvar|\bL[PIO]\b|\bLAS\b/i.test(`${tipo} ${r.fonte_codigo}`);
   if (!ehLicenca) return null;
+  // Diário oficial não tem tipo: vale o título do ato. O órgão vem como
+  // caminho ("Executivo > ... > Cetesb"): fica o último nível.
+  const orgaoTexto = ORGAOS.find(([re]) => re.test(`${b.orgao || ""} ${texto} ${r.fonte_codigo.replace(/^SEC-/, "")}`))?.[1];
+  const orgao = orgaoTexto || String(b.orgao || b.orgao_emissor || r.fonte_codigo).split(">").pop().trim();
   return {
-    tipo: tipo ? String(tipo).slice(0, 120) : "licença",
+    tipo: String(tipo).slice(0, 120),
     numero: numero ? String(numero).slice(0, 80) : null,
-    orgao: b.orgao || b.orgao_emissor || r.fonte_codigo,
-    data: dia(r.data_registro) || null,
+    orgao: orgao.slice(0, 120),
+    data: dia(r.data_registro) || dia(b.emissao) || dia(b.data_emissao) || null,
     fonte: r.fonte_codigo,
     evidencia_id: r.evidencia_id || null,
   };
@@ -208,11 +235,14 @@ async function montarPerfil(db, projetoId) {
       where ep.projeto_id = $1 and ep.situacao = 'aceito'`,
     [projetoId],
   );
-  const { rows: registros } = await db.query(
+  const { rows: todosRegistros } = await db.query(
     `select fonte_codigo, registro, data_registro, correlacao, evidencia_id
        from capex_radar.registros_analisados where projeto_id = $1`,
     [projetoId],
   );
+  // Registro cuja evidência saiu do projeto (outra obra, cronologia) não conta.
+  const aceitas = new Set(evidencias.map((e) => String(e.id)));
+  const registrosValidos = todosRegistros.filter((r) => !r.evidencia_id || aceitas.has(String(r.evidencia_id)));
   let perfil = perfilInicial(projeto, evidencias);
   let etapa = "inicial";
   if (evidencias.some((e) => e.enriquecimento?.perfil)) {
@@ -220,10 +250,10 @@ async function montarPerfil(db, projetoId) {
     etapa = "enriquecido";
   }
   if (projeto.secundarias) {
-    perfil = perfilCompleto(perfil, { registros, linhaTempo: projeto.linha_tempo });
+    perfil = perfilCompleto(perfil, { registros: registrosValidos, linhaTempo: projeto.linha_tempo });
     etapa = "completo";
   }
-  perfil.licencas_sem_diario = licencaSemDiario(evidencias, registros);
+  perfil.licencas_sem_diario = licencaSemDiario(evidencias, registrosValidos);
   await gravarPerfil(db, projetoId, perfil, etapa);
   return { etapa, perfil };
 }

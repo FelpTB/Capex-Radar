@@ -39,6 +39,14 @@ async function main() {
     }
     devolvidas += voltar.length;
     tiradas += await sec.aplicarCronologia(p.id, novas, ATOR);
+    // A linha do tempo guarda quantas evidências leu; com o número certo, o
+    // ciclo (runLinhasDoTempo) não a refaz por achar que entrou evidência nova.
+    await painel.emTransacao((c) => c.query(
+      `update capex_radar.projetos set linha_tempo = jsonb_set(linha_tempo, '{evidencias}',
+              to_jsonb((select count(*) from capex_radar.evidencia_projeto where projeto_id = $1 and situacao = 'aceito')))
+        where id = $1`,
+      [p.id],
+    ), ATOR);
     await painel.emTransacao((c) => perfis.montarPerfil(c, p.id), ATOR);
   }
   console.log(`Devolvidas: ${devolvidas}. Tiradas: ${tiradas}.`);

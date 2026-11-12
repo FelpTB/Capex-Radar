@@ -94,3 +94,14 @@ test("Enriquecimento 2 vê todo registro analisado; sem julgamento nada é aceit
   assert.equal(r2.kept.length, 1);
   assert.deepEqual(vistos2[1], [2, "direta", "mesma obra"]);
 });
+
+test("licença lida no texto do diário e na base do IAT", () => {
+  const lo = perfis.licencaDoRegistro({ fonte_codigo: "CAPTURA-DOE-PR", data_registro: "2026-01-08", registro: { titulo: "CAPTURA-DOE-PR", trecho: "O Instituto Água e Terra torna público que concedeu à AMBEV a Licença de Operação nº 357270, para Industrial" } });
+  assert.equal(lo.tipo, "Licença de Operação nº 357270");
+  assert.equal(lo.orgao, "IAT (PR)");
+  const outorga = perfis.licencaDoRegistro({ fonte_codigo: "CAPTURA-DOE-PR", registro: { trecho: "Outorgado(s) Spal. Finalidade Processo fabril. Vazão máxima outorgada 20 m³/h" } });
+  assert.equal(outorga.tipo, "Outorga de uso de recursos hídricos");
+  const iat = perfis.licencaDoRegistro({ fonte_codigo: "SEC-IAT", registro: { modalidade_descricao: "Licença Prévia (Ampliação)", emissao: "2021-01-26" } });
+  assert.deepEqual([iat.tipo, iat.orgao, iat.data], ["Licença Prévia (Ampliação)", "IAT (PR)", "2021-01-26"]);
+  assert.equal(perfis.licencaDoRegistro({ fonte_codigo: "CAPTURA-DOE-SP", registro: { trecho: "Edital de débitos de ICMS" } }), null);
+});
