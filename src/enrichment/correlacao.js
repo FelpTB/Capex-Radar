@@ -26,6 +26,67 @@ function localGate(line, project) {
   return fold(municipio).includes(local) || line?.no_municipio ? "mesmo_municipio" : "outro_municipio";
 }
 
+// ---------------------------------------------------------------------------
+// Pré-triagem, sem modelo (análise de 9.228 registros do reprocessamento de
+// nov/2026: 124 com correlação direta, 117 deles citando o município da obra).
+//   - registro que não cita o município do projeto (nem a filial do
+//     município, nem o código IBGE) aproveitava 0,1%;
+//   - registro de mais de 2 anos antes do anúncio, 0,2% (a matrícula de obra
+//     no CNO fica de fora desta regra: a obra pode começar antes da notícia;
+//     licença prévia/de instalação e outorga têm limite de 5 anos);
+//   - ato de rotina sem ato de obra/licença (multa, débito de ICMS, pregão,
+//     ata, comunicado), 0,2%.
+// Só o que passa vai para o julgamento; o resto fica registrado com o motivo.
+// Nos dados de nov/2026 a regra corta ~92% do volume e mantém ~95% das diretas.
+// ---------------------------------------------------------------------------
+
+const ATO_OBRA = /licen[cç]a|\b(lp|li|lo|las)\b|outorga|autoriza[cç][aã]o|obra nova|acr[eé]scimo|amplia[cç][aã]o|terraplenagem|supress[aã]o|\beia\b|\brima\b|audi[eê]ncia p[uú]blica|subesta[cç]|rede b[aá]sica|financiamento|implanta[cç][aã]o|constru[cç][aã]o|incentivo|benef[ií]cio fiscal|prodepe|prodec|fundopem|desenvolve|protocolo de inten/;
+const ROTINA = /auto de infra[cç]|multa|icms|d[eé]bito|leil[aã]o|preg[aã]o|alvar[aá] sanit[aá]rio|ve[ií]culo|detran|ata d[ae] reuni|assembleia|balan[cç]o|dividendo|intima[cç]|notifica[cç]|penalidade|advert[eê]ncia|dispensa de/;
+const ANOS_ANTES = 2;
+const ANOS_ANTES_LICENCA = 5;
+const LICENCA = /licen[cç]a (pr[eé]via|de instala)|\b(lp|li)\b|outorga|\beia\b|\brima\b/;
+
+function anosDesde(data, referencia) {
+  if (!data || !referencia) return null;
+  const d = new Date(data);
+  const r = new Date(referencia);
+  if (Number.isNaN(d.getTime()) || Number.isNaN(r.getTime())) return null;
+  return (d - r) / (365.25 * 86_400_000);
+}
+
+const DATA_CAMPOS = ["data_contratacao", "data_emissao", "emissao", "data_referencia", "inicio", "data_inicio", "data_publicacao", "data", "publicado_em"];
+
+function dataDaLinha(line) {
+  for (const campo of DATA_CAMPOS) if (line?.[campo]) return String(line[campo]).slice(0, 10);
+  return null;
+}
+
+/**
+ * Devolve null quando o registro deve ser julgado, ou o motivo para não ser.
+ * project: { municipio, codigo_ibge, filial_cnpj, data_anuncio | status_em }.
+ */
+function preTriagem(line, project, codigo = "") {
+  const { contexto, url, link, rank, ...campos } = line || {};
+  const texto = fold(`${contexto || ""} ${JSON.stringify(campos)}`);
+  const digitos = JSON.stringify(campos).replace(/\D/g, "") + String(contexto || "").replace(/\D/g, "");
+  const municipio = fold(project?.municipio || "");
+  const citaMunicipio = municipio.length >= 4 && texto.includes(municipio);
+  const citaFilial = String(project?.filial_cnpj || "").length === 14 && digitos.includes(String(project.filial_cnpj));
+  const mesmoIbge = project?.codigo_ibge && line?.ibge && String(line.ibge) === String(project.codigo_ibge);
+  // Projeto sem município (só UF, várias localidades): não dá para exigir o local.
+  if (municipio.length >= 4 && !citaMunicipio && !citaFilial && !mesmoIbge && !line?.no_municipio) {
+    return "Pré-triagem: o registro não cita o município do projeto";
+  }
+  const anos = anosDesde(dataDaLinha(line), project?.data_anuncio || project?.status_em);
+  // Licença prévia/de instalação e outorga costumam sair anos antes da notícia.
+  const limite = LICENCA.test(texto) ? ANOS_ANTES_LICENCA : ANOS_ANTES;
+  if (codigo !== "SEC-CNO" && anos != null && anos < -limite) {
+    return `Pré-triagem: registro de mais de ${limite} anos antes do anúncio`;
+  }
+  if (ROTINA.test(texto) && !ATO_OBRA.test(texto)) return "Pré-triagem: ato de rotina, sem obra nem licença";
+  return null;
+}
+
 // Texto que o modelo lê: o contexto largo do diário, quando houver, e os campos do registro.
 function contextText(line) {
   const { contexto, url, link, rank, ...campos } = line || {};
@@ -57,14 +118,16 @@ async function judgeAll(project, codigo, candidates, judge) {
 // ou não (Enriquecimento 2 grava todos em registros_analisados). Com
 // semJulgamento, nenhum registro é aceito: todos saem como nao_avaliada, para
 // o julgamento ser feito fora (Claude Code) e aplicado depois.
-async function correlateLines(project, codigo, lines, { judge = null, onAnalise = null, semJulgamento = false } = {}) {
-  const resumo = { avaliadas: 0, diretas: 0, outro_estado: 0, outro_projeto: 0, incerta: 0, nao_avaliadas: 0, metodo: semJulgamento ? "externo" : judge ? "contexto" : "municipio" };
+async function correlateLines(project, codigo, lines, { judge = null, onAnalise = null, semJulgamento = false, preTriar = true } = {}) {
+  const resumo = { avaliadas: 0, diretas: 0, outro_estado: 0, pre_triagem: 0, outro_projeto: 0, incerta: 0, nao_avaliadas: 0, metodo: semJulgamento ? "externo" : judge ? "contexto" : "municipio" };
   const analisar = (line, correlacao, motivo) => { if (onAnalise) onAnalise(line, correlacao, motivo); };
   const items = lines.map((line) => ({ line, gate: localGate(line, project) }));
   const candidates = [];
   for (const item of items) {
-    if (item.gate === "outro_estado") { resumo.outro_estado += 1; analisar(item.line, "outro_estado", "UF do registro diferente da UF do projeto."); }
-    else candidates.push(item);
+    if (item.gate === "outro_estado") { resumo.outro_estado += 1; analisar(item.line, "outro_estado", "UF do registro diferente da UF do projeto."); continue; }
+    const motivo = preTriar ? preTriagem(item.line, project, codigo) : null;
+    if (motivo) { resumo.pre_triagem += 1; analisar(item.line, "outro_projeto", motivo); continue; }
+    candidates.push(item);
   }
   candidates.sort((a, b) => Number(b.gate === "mesmo_municipio") - Number(a.gate === "mesmo_municipio"));
   if (semJulgamento) {
@@ -135,4 +198,4 @@ function rebuildFound(codigo, found, kept, { since = null, limite = 8 } = {}) {
   };
 }
 
-module.exports = { MAX_AVALIADOS, contextText, correlateLines, linesOf, localGate, rebuildFound };
+module.exports = { MAX_AVALIADOS, contextText, correlateLines, linesOf, localGate, preTriagem, rebuildFound };

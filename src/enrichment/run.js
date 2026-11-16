@@ -838,8 +838,10 @@ async function correlateFound(project, codigo, found, options = {}) {
 }
 
 async function consultViableSources(project, options = {}) {
+  const excluir = new Set(options.excluir || []);
   const sources = sourcesForProject(project)
-    .filter((source) => source.codigo !== "SEC-CNO" || !options.skipCno);
+    .filter((source) => source.codigo !== "SEC-CNO" || !options.skipCno)
+    .filter((source) => !excluir.has(source.codigo));
   const gravadas = [];
   const vazias = [];
   const removidas = [];

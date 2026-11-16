@@ -36,15 +36,15 @@ test("só a linha que o contexto liga ao projeto vira evidência", async () => {
     }));
   };
   const { kept, resumo } = await correlateLines(gerdau, "SEC-SEMAD", lines, { judge });
-  assert.equal(seen.length, 3, "a linha do Paraná não chega ao modelo");
+  assert.equal(seen.length, 1, "a linha do Paraná, a de outro município e o pregão não chegam ao modelo");
   assert.equal(seen[0].local, "mesmo_municipio", "o município da ficha é avaliado primeiro");
   assert.equal(kept.length, 1);
   assert.equal(kept[0].municipio, "Ouro Preto");
   assert.equal(kept[0].contexto, undefined, "o contexto largo não vai para a evidência");
   assert.equal(kept[0].correlacao, "teste");
   assert.deepEqual(
-    { diretas: resumo.diretas, outro_estado: resumo.outro_estado, outro_projeto: resumo.outro_projeto, incerta: resumo.incerta },
-    { diretas: 1, outro_estado: 1, outro_projeto: 1, incerta: 1 },
+    { diretas: resumo.diretas, outro_estado: resumo.outro_estado, pre_triagem: resumo.pre_triagem },
+    { diretas: 1, outro_estado: 1, pre_triagem: 2 },
   );
 });
 

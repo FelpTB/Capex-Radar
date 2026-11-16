@@ -88,6 +88,9 @@ function projetoParaColeta(p) {
     empresa_nome: p.matriz_razao_social,
     status: p.estagio,
     status_em: p.data_anuncio || p.primeira_evidencia_em || null,
+    data_anuncio: p.data_anuncio || p.primeira_evidencia_em || null,
+    filial_cnpj: p.filial_cnpj || null,
+    codigo_ibge: p.codigo_ibge || null,
     leitura: p.objeto || null,
   };
 }
@@ -271,6 +274,31 @@ async function gravarRegistros(projeto, codigo, linhas, fonte, modeloCorrelacao)
  */
 const CORRELACOES = ["direta", "incerta", "outro_projeto", "outro_estado", "nao_avaliada"];
 
+// Fontes que não trouxeram nenhuma evidência com correlação direta em 117
+// projetos (nov/2026) e não falam de obra privada: títulos minerários da ANM
+// e o plano de expansão da transmissão (ONS/EPE).
+const FONTES_SEM_RETORNO = ["CAPTURA-SIGMINE", "CAPTURA-ONS-PAR"];
+
+/** Código IBGE do município do projeto (pré-triagem da IAT, que só traz o código). Grava no projeto. */
+async function garantirIbge(db, projeto) {
+  if (projeto.codigo_ibge) return projeto.codigo_ibge;
+  const { rows: [salvo] } = await db.query("select codigo_ibge from capex_radar.projetos where id = $1", [projeto.id]);
+  if (salvo?.codigo_ibge) return salvo.codigo_ibge;
+  if (!projeto.municipio || !projeto.uf) return null;
+  try {
+    const { territoryId } = require("./enrichment/atos");
+    const codigo = await territoryId(projeto.municipio, projeto.uf);
+    if (codigo) {
+      await painel.emTransacao((client) => client.query(
+        "update capex_radar.projetos set codigo_ibge = $2 where id = $1 and codigo_ibge is null", [projeto.id, codigo],
+      ), ATOR);
+    }
+    return codigo;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Grava os registros analisados de um projeto (item 2 do Enriquecimento 2):
  * todos, aceitos ou não, com o dado bruto. A chave é a mesma da evidência,
@@ -342,6 +370,7 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
   const { getConfig } = require("./config");
   const modeloCorrelacao = getConfig().claudeDecisionModel;
   const fontes = await nomesDasFontes(db);
+  for (const p of projetos) p.codigo_ibge = await garantirIbge(db, p);
   const paraColeta = projetos.map(projetoParaColeta);
   let cno = new Map();
   try {
@@ -356,7 +385,7 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
     const analises = [];
     const onAnalise = (codigo, linha, correlacao, motivo) => analises.push({ codigo, linha, correlacao, motivo });
     try {
-      const consulta = await coleta.consultViableSources(mvp, { dryRun: true, skipCno: true, semJulgamento, onAnalise });
+      const consulta = await coleta.consultViableSources(mvp, { dryRun: true, skipCno: true, semJulgamento, onAnalise, excluir: FONTES_SEM_RETORNO });
       relatorio.push(...consulta.relatorio);
     } catch (error) {
       log(`${projeto.titulo}: erro na coleta (${error.message})`);
@@ -652,6 +681,8 @@ module.exports = {
   consultarFontes,
   montarLinhaDoTempo,
   gravarAnalisados,
+  garantirIbge,
+  FONTES_SEM_RETORNO,
   aplicarJulgamento,
   projetosParaEnriquecimento2,
   enriquecimento2,

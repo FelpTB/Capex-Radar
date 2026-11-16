@@ -105,3 +105,17 @@ test("licença lida no texto do diário e na base do IAT", () => {
   assert.deepEqual([iat.tipo, iat.orgao, iat.data], ["Licença Prévia (Ampliação)", "IAT (PR)", "2021-01-26"]);
   assert.equal(perfis.licencaDoRegistro({ fonte_codigo: "CAPTURA-DOE-SP", registro: { trecho: "Edital de débitos de ICMS" } }), null);
 });
+
+test("pré-triagem: exige o município (ou filial, ou IBGE), corta o antigo e a rotina", () => {
+  const { preTriagem } = require("../src/enrichment/correlacao");
+  const projeto = { municipio: "Carambeí", codigo_ibge: "4104659", filial_cnpj: "12345678000199", data_anuncio: "2024-06-01" };
+  assert.equal(preTriagem({ trecho: "Licença de Instalação da fábrica em Carambeí", data: "2024-08-01" }, projeto), null);
+  assert.match(preTriagem({ trecho: "Licença de Operação em Ponta Grossa", data: "2024-08-01" }, projeto), /município/);
+  assert.equal(preTriagem({ trecho: "Outorga para a filial 12.345.678/0001-99", data: "2024-08-01" }, projeto), null);
+  assert.equal(preTriagem({ ibge: 4104659, titulo: "LAS", emissao: "2025-01-01" }, projeto), null);
+  assert.match(preTriagem({ trecho: "Renovação de LO em Carambeí", data: "2019-01-01" }, projeto), /2 anos/);
+  assert.equal(preTriagem({ trecho: "Licença Prévia em Carambeí", data: "2021-01-01" }, projeto), null, "licença prévia tem 5 anos");
+  assert.equal(preTriagem({ trecho: "Obra nova em Carambeí", inicio: "2019-01-01" }, projeto, "SEC-CNO"), null, "CNO não tem limite de data");
+  assert.match(preTriagem({ trecho: "Auto de infração e multa em Carambeí", data: "2024-08-01" }, projeto), /rotina/);
+  assert.equal(preTriagem({ trecho: "Licença qualquer", data: "2024-08-01" }, { uf: "MT", data_anuncio: "2024-06-01" }), null, "sem município no projeto, não exige");
+});
