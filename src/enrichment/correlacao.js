@@ -41,7 +41,7 @@ function localGate(line, project) {
 // ---------------------------------------------------------------------------
 
 const ATO_OBRA = /licen[cç]a|\b(lp|li|lo|las)\b|outorga|autoriza[cç][aã]o|obra nova|acr[eé]scimo|amplia[cç][aã]o|terraplenagem|supress[aã]o|\beia\b|\brima\b|audi[eê]ncia p[uú]blica|subesta[cç]|rede b[aá]sica|financiamento|implanta[cç][aã]o|constru[cç][aã]o|incentivo|benef[ií]cio fiscal|prodepe|prodec|fundopem|desenvolve|protocolo de inten/;
-const ROTINA = /auto de infra[cç]|multa|icms|d[eé]bito|leil[aã]o|preg[aã]o|alvar[aá] sanit[aá]rio|ve[ií]culo|detran|ata d[ae] reuni|assembleia|balan[cç]o|dividendo|intima[cç]|notifica[cç]|penalidade|advert[eê]ncia|dispensa de/;
+const ROTINA = /patrocin|maratona|evento cultural|auto de infra[cç]|multa|icms|d[eé]bito|leil[aã]o|preg[aã]o|alvar[aá] sanit[aá]rio|ve[ií]culo|detran|ata d[ae] reuni|assembleia|balan[cç]o|dividendo|intima[cç]|notifica[cç]|penalidade|advert[eê]ncia|dispensa de/;
 const ANOS_ANTES = 2;
 const ANOS_ANTES_LICENCA = 5;
 const LICENCA = /licen[cç]a (pr[eé]via|de instala)|\b(lp|li)\b|outorga|\beia\b|\brima\b/;
@@ -54,7 +54,7 @@ function anosDesde(data, referencia) {
   return (d - r) / (365.25 * 86_400_000);
 }
 
-const DATA_CAMPOS = ["data_contratacao", "data_emissao", "emissao", "data_referencia", "inicio", "data_inicio", "data_publicacao", "data", "publicado_em"];
+const DATA_CAMPOS = ["data_contratacao", "data_emissao", "emissao", "data_referencia", "inicio", "data_inicio", "data_publicacao", "data", "publicado_em", "entrada_operacao", "inicio_vigencia"];
 
 function dataDaLinha(line) {
   for (const campo of DATA_CAMPOS) if (line?.[campo]) return String(line[campo]).slice(0, 10);

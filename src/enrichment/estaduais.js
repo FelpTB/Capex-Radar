@@ -115,7 +115,7 @@ function citesCompany(text, { cnpjRoot, words }) {
 // Órgãos e seções dos diários que não publicam ato de obra (análise de nov/2026:
 // 1.824 de 5.446 atos coletados, nenhum com correlação direta). As 74 diretas
 // vieram de meio ambiente, águas, energia, desenvolvimento e prefeituras.
-const ORGAO_SEM_OBRA = /junta comercial|jucesp|sociedades? (anonimas|limitadas|por acoes)|ministerio publico|metrologia|pre-medidos|universidade|reitoria|diretoria de ensino|educacao|financas|fazenda|tributari|ativos e passivos|administracao financeira|saude|seguranca publica|policia|detran|tribunal|defensoria|procuradoria|assembleia legislativa|licita|pregao|recursos humanos|pessoal/;
+const ORGAO_SEM_OBRA = /mineracao|junta comercial|jucesp|sociedades? (anonimas|limitadas|por acoes)|ministerio publico|metrologia|pre-medidos|universidade|reitoria|diretoria de ensino|educacao|financas|fazenda|tributari|ativos e passivos|administracao financeira|saude|seguranca publica|policia|detran|tribunal|defensoria|procuradoria|assembleia legislativa|licita|pregao|recursos humanos|pessoal/;
 
 /** Ato de órgão que não publica obra (só quando o portal informa o órgão). */
 function orgaoSemObra(ato) {
