@@ -460,7 +460,7 @@ async function obterProjeto(id) {
     ),
     pool.query(
       `select objeto, fonte_valor, avaliacao, secundarias, linha_tempo, perfil, perfil_etapa, perfil_em,
-              projeto_pai_id, relacao
+              projeto_pai_id, relacao, municipio_pendencia
          from capex_radar.projetos where id = $1`,
       [id],
     ),
@@ -474,9 +474,10 @@ async function obterProjeto(id) {
       [id, projeto.rows[0]?.projeto_pai_id || id],
     ),
     pool.query(
-      `select id, fonte_codigo, chave, data_registro, correlacao, motivo, evidencia_id, analisado_por, registro
+      `select id, fonte_codigo, chave, data_registro, correlacao, motivo, evidencia_id, analisado_por, registro,
+              classe, probabilidade, revisado_por, revisado_em
          from capex_radar.registros_analisados where projeto_id = $1
-        order by (correlacao = 'direta') desc, fonte_codigo, data_registro desc nulls last`,
+        order by probabilidade desc nulls last, fonte_codigo, data_registro desc nulls last`,
       [id],
     ),
     pool.query(
@@ -490,7 +491,12 @@ async function obterProjeto(id) {
   const p = { ...rows[0], ...projeto.rows[0] };
   const pai = familia.rows.find((x) => String(x.id) === String(p.projeto_pai_id)) || null;
   const filhos = familia.rows.filter((x) => String(x.projeto_pai_id) === String(id));
-  return { projeto: p, timeline: timeline.rows, pai, filhos, registros: registros.rows, retiradas: retiradas.rows };
+  // Obras do projeto (CNO com classe provável ou certeira), cada uma com o próprio status.
+  const obras = await pool.query(
+    "select * from capex_radar.vw_obras_projeto where projeto_id = $1 order by inicio desc nulls last",
+    [id],
+  ).catch(() => ({ rows: [] }));
+  return { projeto: p, timeline: timeline.rows, pai, filhos, registros: registros.rows, retiradas: retiradas.rows, obras: obras.rows };
 }
 
 /**
@@ -538,6 +544,10 @@ async function atualizarProjeto(id, campos, { ator = ATOR } = {}) {
       [id, ...nomes.map((c) => campos[c])],
     );
     if (!projeto) throw new Error("Projeto não encontrado.");
+    // Município ou UF alterados: valida pela API de cidades (src/municipios.js).
+    if (nomes.includes("municipio") || nomes.includes("uf")) {
+      projeto.validacao_municipio = await require("./capex-perfil").validarLocalDoProjeto(client, id).catch(() => null);
+    }
     return projeto;
   }, ator);
 }

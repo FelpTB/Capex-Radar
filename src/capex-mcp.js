@@ -216,6 +216,13 @@ function ferramentas(deps = {}) {
             id: t.evidencia_id, titulo: t.titulo, url: t.url, veiculo: t.veiculo,
             data: t.data_original, fonte: t.fonte_nome, primaria: t.primaria,
           })),
+          // Obras do CNO (status de cada obra) e registros oficiais por classe.
+          obras: (r.obras || []).map((o) => ({ cno: o.cno, nome: o.nome, municipio: o.municipio, area: o.area, inicio: o.inicio, status: o.situacao_descricao, desde: o.data_situacao, classe: o.classe })),
+          registros: (r.registros || []).filter((x) => x.classe && x.classe !== "muito_improvavel").map((x) => ({
+            registro_id: x.id, fonte: x.fonte_codigo, data: x.data_registro, classe: x.classe, probabilidade: x.probabilidade,
+            titulo: String(x.registro?.titulo || x.registro?.nome || x.registro?.descricao || "").slice(0, 160), motivo: x.motivo, revisado_por: x.revisado_por,
+          })),
+          descartados: (r.registros || []).filter((x) => x.classe === "muito_improvavel").length,
         };
       },
     },
@@ -346,6 +353,22 @@ function ferramentas(deps = {}) {
       async executar(a, ctx) {
         await p.descartarNoticia(a.id, a.motivo, { ator: ctx.ator });
         return { ok: true, id: a.id };
+      },
+    },
+    {
+      nome: "classificar_registro",
+      titulo: "Trocar a classe de um registro oficial",
+      edicao: true,
+      descricao: "Revisão humana da correlação de um registro oficial (CNO, diário, BNDES...) com o projeto. Classes: certeira (75-100%) e provavel (60-74%) ligam o registro à linha do tempo; incerta (50-59%) e improvavel (30-49%) ficam como possibilidade no perfil; muito_improvavel (0-29%) é descartado. Os ids vêm de obter_projeto (registros).",
+      entrada: {
+        registro_id: z.number().int().positive().describe("registro_id de obter_projeto"),
+        classe: z.enum(["certeira", "provavel", "incerta", "improvavel", "muito_improvavel"]),
+        motivo: z.string().min(3).max(300),
+      },
+      async executar(a, ctx) {
+        const r = await require("./capex-fontes-secundarias").revisarRegistro(db, a.registro_id, { classe: a.classe, motivo: a.motivo, ator: ctx.ator });
+        if (!r) throw new Error("Registro não encontrado.");
+        return { ok: true, projeto: r.titulo, classe: r.classe, probabilidade: r.probabilidade };
       },
     },
     {

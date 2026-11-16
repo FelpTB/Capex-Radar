@@ -752,6 +752,21 @@ function blocoLinhaDoTempo(projeto, timeline) {
   </section>`;
 }
 
+const classes = require("./capex-classes");
+
+// Códigos do CNO traduzidos (metadados da Receita), para os dados brutos.
+const CNO_SITUACAO = { "01": "nula", "02": "ativa", "03": "suspensa", "14": "paralisada", "15": "encerrada" };
+const CNO_QUALIFICACAO = { "0070": "proprietário do imóvel", "0057": "dono da obra", "0064": "incorporador de construção civil", "0053": "pessoa jurídica construtora", "0111": "sociedade líder de consórcio", "0109": "consórcio", "0110": "construção em nome coletivo" };
+
+function cnoLegivel(fonte, b) {
+  if (fonte !== "SEC-CNO") return b;
+  return {
+    ...b,
+    ...(b.situacao ? { situacao: `${CNO_SITUACAO[b.situacao] || b.situacao} (${b.situacao})` } : {}),
+    ...(b.qualificacao ? { qualificacao: `${CNO_QUALIFICACAO[b.qualificacao] || b.qualificacao} (${b.qualificacao})` } : {}),
+  };
+}
+
 const RELACAO_ROTULO = { expansao: "expansão", subprojeto: "subprojeto", localidade: "localidade" };
 const CORRELACAO_ROTULO = {
   direta: ["correlação direta", "success"],
@@ -796,27 +811,97 @@ function blocoPerfil(projeto) {
 }
 
 // Todo registro que o Enriquecimento 2 analisou, com o dado bruto.
+// Classe do registro (sql/031) com o formulário de revisão humana.
+function seloClasse(r) {
+  const c = classes.CLASSES[r.classe];
+  if (!c) return badge(r.correlacao === "nao_avaliada" ? "não avaliado" : (CORRELACAO_ROTULO[r.correlacao]?.[0] || r.correlacao), "neutral");
+  return `${badge(`${c.rotulo}${r.probabilidade != null ? ` · ${r.probabilidade}%` : ""}`, c.tom)}${r.revisado_por ? ` ${badge("revisado", "neutral")}` : ""}`;
+}
+
+function formClasse(r) {
+  const opcoes = classes.ORDEM.map((k) => `<option value="${k}"${k === r.classe ? " selected" : ""}>${classes.CLASSES[k].rotulo} (${classes.CLASSES[k].faixa})</option>`).join("");
+  return `<form class="inline-actions" method="post" action="/monitoramento/registros/${r.id}/classe">
+      <select name="classe">${opcoes}</select>
+      <input name="motivo" placeholder="motivo (opcional)" maxlength="300">
+      <button class="button button--small" type="submit">Trocar classe</button>
+    </form>`;
+}
+
+function linhaRegistro(r) {
+  const b = r.registro || {};
+  const titulo = b.titulo || b.nome || b.descricao || b.empreendimento || b.assunto || b.objeto || b.tipo_licenca || r.chave;
+  const url = /^https?:\/\//.test(b.url || b.link || "") ? b.url || b.link : null;
+  return `<details class="raw-record">
+      <summary>${seloClasse(r)} <strong>${esc(r.fonte_codigo)}</strong> <span class="muted">${esc(dia(r.data_registro))}</span> ${esc(String(titulo).slice(0, 160))}</summary>
+      ${r.motivo ? `<p class="muted">${esc(r.motivo)}${r.revisado_por ? ` — revisado por ${esc(r.revisado_por)} em ${esc(dia(r.revisado_em))}` : ""}</p>` : ""}
+      ${url ? `<p><a href="${esc(url)}" target="_blank" rel="noopener">Abrir a fonte ↗</a></p>` : ""}
+      ${formClasse(r)}
+      <pre>${esc(JSON.stringify(cnoLegivel(r.fonte_codigo, b), null, 2))}</pre>
+    </details>`;
+}
+
+// Status do projeto (visão geral: estágio e situação na carteira) e status
+// de cada obra do projeto (matrículas do CNO ligadas a ele).
+const OBRA_TOM = { ativa: "info", encerrada: "success", paralisada: "danger", suspensa: "warning", nula: "neutral" };
+
+function resumoObras(obras) {
+  if (!obras.length) return "nenhuma obra matriculada no CNO ligada ao projeto";
+  const n = {};
+  for (const o of obras) n[o.situacao_descricao || "?"] = (n[o.situacao_descricao || "?"] || 0) + 1;
+  return Object.entries(n).map(([s, q]) => `${q} ${s}`).join(", ");
+}
+
+function blocoStatus(projeto, obras) {
+  const pend = projeto.municipio_pendencia;
+  const linhas = obras.map((o) => `<tr>
+      <td>${badge(o.situacao_descricao || "—", OBRA_TOM[o.situacao_descricao] || "neutral")}</td>
+      <td><strong>${esc(o.nome || "—")}</strong><br><span class="muted">CNO ${esc(o.cno)} · ${esc(o.municipio || "")}/${esc(o.uf || "")}${o.responsavel ? ` · ${esc(o.responsavel)}` : ""}${o.qualificacao ? ` (${esc(CNO_QUALIFICACAO[o.qualificacao] || o.qualificacao)})` : ""}</span></td>
+      <td>${o.area ? `${Number(o.area).toLocaleString("pt-BR")} m²` : "—"}</td>
+      <td>${esc(dia(o.inicio))}</td>
+      <td>${esc(dia(o.data_situacao))}</td>
+      <td>${seloClasse(o)}</td>
+    </tr>`).join("");
+  return `<section class="project-status">
+    <div class="status-row">
+      <div><span class="muted">Status do projeto</span><strong>${esc(ESTAGIO_ROTULO[projeto.estagio] || projeto.estagio)}</strong><span class="muted">${esc(STATUS_ROTULO[projeto.status] || projeto.status)} na carteira</span></div>
+      <div><span class="muted">Status das obras</span><strong>${esc(resumoObras(obras))}</strong></div>
+    </div>
+    ${pend ? `<p class="project-card__review">${badge("revisar município", "warning")} ${esc(pend.motivo || "")}${pend.sugestoes?.length ? ` Sugestões: ${esc(pend.sugestoes.join(", "))}.` : ""}</p>` : ""}
+    ${obras.length ? `<h3>Obras do projeto (${obras.length})</h3>
+    <div class="table-scroll"><table class="table-compact">
+      <thead><tr><th>Status da obra</th><th>Obra</th><th>Área</th><th>Início</th><th>Situação desde</th><th>Correlação</th></tr></thead>
+      <tbody>${linhas}</tbody>
+    </table></div>` : ""}
+  </section>`;
+}
+
+// Possibilidades: incertas e improváveis, destacadas para revisão (acima da linha do tempo).
+function blocoPossibilidades(registros) {
+  const lista = registros.filter((r) => classes.ehPossibilidade(r.classe));
+  if (!lista.length) return "";
+  return `<section class="raw-records possibilities">
+    <h2>Possibilidades <span class="muted">(${lista.length})</span></h2>
+    <p class="muted">Registros oficiais que podem ser deste projeto (incertos ou improváveis). Revise e troque a classe: provável ou certeira leva o registro para a linha do tempo.</p>
+    ${lista.map(linhaRegistro).join("")}
+  </section>`;
+}
+
+// Todo registro analisado, com o dado bruto e a classe (os descartados ficam no fim da ficha).
 function blocoRegistros(registros) {
   if (!registros.length) return "";
   const contagem = {};
-  for (const r of registros) contagem[r.correlacao] = (contagem[r.correlacao] || 0) + 1;
-  const resumo = Object.entries(contagem).map(([c, n]) => `${n} ${esc(CORRELACAO_ROTULO[c]?.[0] || c)}`).join(" · ");
-  const linhas = registros.map((r) => {
-    const [rotulo, tom] = CORRELACAO_ROTULO[r.correlacao] || [r.correlacao, "neutral"];
-    const b = r.registro || {};
-    const titulo = b.titulo || b.descricao || b.empreendimento || b.assunto || b.objeto || b.tipo_licenca || r.chave;
-    const url = /^https?:\/\//.test(b.url || b.link || "") ? b.url || b.link : null;
-    return `<details class="raw-record">
-      <summary>${badge(rotulo, tom)} <strong>${esc(r.fonte_codigo)}</strong> <span class="muted">${esc(dia(r.data_registro))}</span> ${esc(String(titulo).slice(0, 160))}</summary>
-      ${r.motivo ? `<p class="muted">${esc(r.motivo)}</p>` : ""}
-      ${url ? `<p><a href="${esc(url)}" target="_blank" rel="noopener">Abrir a fonte ↗</a></p>` : ""}
-      <pre>${esc(JSON.stringify(b, null, 2))}</pre>
-    </details>`;
-  }).join("");
+  for (const r of registros) {
+    const k = r.classe || (r.correlacao === "nao_avaliada" ? "nao_avaliada" : r.correlacao);
+    contagem[k] = (contagem[k] || 0) + 1;
+  }
+  const resumo = Object.entries(contagem).map(([c, n]) => `${n} ${esc(classes.CLASSES[c]?.rotulo.toLowerCase() || CORRELACAO_ROTULO[c]?.[0] || c)}`).join(" · ");
+  const ligados = registros.filter((r) => classes.ligaLinhaDoTempo(r.classe));
+  const descartados = registros.filter((r) => !classes.ligaLinhaDoTempo(r.classe) && !classes.ehPossibilidade(r.classe));
   return `<section class="raw-records">
     <h2>Dados brutos analisados <span class="muted">(${registros.length})</span></h2>
-    <p class="muted">${resumo}. Só os de correlação direta viram evidência do projeto.</p>
-    ${linhas}
+    <p class="muted">${resumo}. Provável e certeira viram evidência na linha do tempo; incerta e improvável aparecem em Possibilidades; o resto fica aqui. Toda classe pode ser trocada.</p>
+    ${ligados.length ? `<h3>Ligados à linha do tempo (${ligados.length})</h3>${ligados.map(linhaRegistro).join("")}` : ""}
+    ${descartados.length ? `<h3>Descartados (${descartados.length})</h3>${descartados.map(linhaRegistro).join("")}` : ""}
   </section>`;
 }
 
@@ -830,7 +915,7 @@ function blocoRetiradas(retiradas) {
   </section>`;
 }
 
-function paginaProjeto({ projeto, timeline, notice, pai = null, filhos = [], registros = [], retiradas = [] }) {
+function paginaProjeto({ projeto, timeline, notice, pai = null, filhos = [], registros = [], retiradas = [], obras = [] }) {
   const itens = timeline.map((t) => `
     <article class="evidence">
       <div>${t.primaria ? badge("primária", "info") : /google news/i.test(t.fonte_nome || "") || !t.fonte_nome ? badge("notícia", "success") : badge("fonte oficial", "warning")} <span class="muted">${esc(dia(t.data_original))} · ${esc(t.veiculo || t.fonte_nome || "")}</span></div>
@@ -859,7 +944,9 @@ function paginaProjeto({ projeto, timeline, notice, pai = null, filhos = [], reg
         <div><strong>${esc(dia(projeto.data_anuncio))}</strong><span>Anúncio</span></div>
       </section>
       ${blocoFamilia(pai ? { ...pai, relacao_do_filho: projeto.relacao } : null, filhos)}
+      ${blocoStatus(projeto, obras)}
       ${blocoPerfil(projeto)}
+      ${blocoPossibilidades(registros)}
       ${blocoLinhaDoTempo(projeto, timeline)}
       <div class="detail-grid">
         <section><h2>Evidências</h2>${projeto.objeto ? `<p>${esc(projeto.objeto)}</p>` : ""}<div class="evidence-list">${itens}</div></section>
@@ -1183,6 +1270,16 @@ function registrarMonitoramento(app) {
     const dados = await painel.obterProjeto(uuid.parse(req.params.id));
     if (!dados) return res.status(404).send("Projeto não encontrado");
     res.send(paginaProjeto({ ...dados, notice: aviso(req) }));
+  });
+
+  // Revisão humana da classe de um registro analisado (sql/031).
+  app.post("/monitoramento/registros/:id/classe", async (req, res) => {
+    const id = z.coerce.number().int().positive().parse(req.params.id);
+    const classe = z.enum(classes.ORDEM).parse(req.body?.classe);
+    const motivo = typeof req.body?.motivo === "string" && req.body.motivo.trim() ? req.body.motivo.trim().slice(0, 300) : `Revisão humana: ${classes.CLASSES[classe].rotulo}`;
+    const r = await require("./capex-fontes-secundarias").revisarRegistro(require("./db").pool, id, { classe, motivo, ator: "usuario:painel" });
+    if (!r) return res.status(404).send("Registro não encontrado");
+    res.redirect(`/monitoramento/projetos/${r.projeto_id}?message=${encodeURIComponent(`Classe trocada para ${classes.CLASSES[classe].rotulo}.`)}`);
   });
 
   app.post("/monitoramento/projetos/:id/restaurar", async (req, res) => {

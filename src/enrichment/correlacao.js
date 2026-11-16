@@ -1,4 +1,5 @@
 const { fold } = require("./resolve");
+const classes = require("../capex-classes");
 
 // Registros lidos pelo modelo por fonte. Os do município da ficha vêm antes; o resto não é avaliado.
 const MAX_AVALIADOS = 60;
@@ -118,15 +119,16 @@ async function judgeAll(project, codigo, candidates, judge) {
 // ou não (Enriquecimento 2 grava todos em registros_analisados). Com
 // semJulgamento, nenhum registro é aceito: todos saem como nao_avaliada, para
 // o julgamento ser feito fora (Claude Code) e aplicado depois.
-async function correlateLines(project, codigo, lines, { judge = null, onAnalise = null, semJulgamento = false, preTriar = true } = {}) {
+async function correlateLines(project, codigo, lines, { judge = null, onAnalise = null, semJulgamento = false, preTriar = true, municipioBasta = true } = {}) {
   const resumo = { avaliadas: 0, diretas: 0, outro_estado: 0, pre_triagem: 0, outro_projeto: 0, incerta: 0, nao_avaliadas: 0, metodo: semJulgamento ? "externo" : judge ? "contexto" : "municipio" };
-  const analisar = (line, correlacao, motivo) => { if (onAnalise) onAnalise(line, correlacao, motivo); };
+  // onAnalise(linha, correlacao, motivo, probabilidade): a probabilidade (0-100) define a classe (capex-classes.js).
+  const analisar = (line, correlacao, motivo, probabilidade = null) => { if (onAnalise) onAnalise(line, correlacao, motivo, probabilidade); };
   const items = lines.map((line) => ({ line, gate: localGate(line, project) }));
   const candidates = [];
   for (const item of items) {
-    if (item.gate === "outro_estado") { resumo.outro_estado += 1; analisar(item.line, "outro_estado", "UF do registro diferente da UF do projeto."); continue; }
+    if (item.gate === "outro_estado") { resumo.outro_estado += 1; analisar(item.line, "outro_estado", "UF do registro diferente da UF do projeto.", 0); continue; }
     const motivo = preTriar ? preTriagem(item.line, project, codigo) : null;
-    if (motivo) { resumo.pre_triagem += 1; analisar(item.line, "outro_projeto", motivo); continue; }
+    if (motivo) { resumo.pre_triagem += 1; analisar(item.line, "outro_projeto", motivo, 5); continue; }
     candidates.push(item);
   }
   candidates.sort((a, b) => Number(b.gate === "mesmo_municipio") - Number(a.gate === "mesmo_municipio"));
@@ -150,14 +152,20 @@ async function correlateLines(project, codigo, lines, { judge = null, onAnalise 
   }
   const kept = [];
   for (const item of avaliados) {
+    // Sem julgamento (modelo fora do ar): no MVP o município da ficha basta
+    // (municipioBasta); no capex_radar ele só põe o registro como
+    // possibilidade (incerta), nunca na linha do tempo.
     const verdict = verdicts.get(item) || (resumo.metodo === "municipio"
-      ? { correlacao: item.gate === "mesmo_municipio" ? "direta" : "incerta", motivo: "Sem leitura do contexto; vale o município da ficha." }
-      : { correlacao: "incerta", motivo: "O modelo não avaliou o registro." });
-    resumo[verdict.correlacao] = (resumo[verdict.correlacao] || 0) + 1;
-    analisar(item.line, verdict.correlacao, verdict.motivo || null);
-    if (verdict.correlacao !== "direta") continue;
+      ? { probabilidade: item.gate === "mesmo_municipio" ? (municipioBasta ? 80 : 55) : (municipioBasta ? 55 : 35), motivo: "Sem leitura do contexto; vale o município da ficha." }
+      : { probabilidade: 50, motivo: "O modelo não avaliou o registro." });
+    const probabilidade = verdict.probabilidade ?? classes.probabilidadeDaCorrelacao(verdict.correlacao);
+    const classe = classes.classeDe(probabilidade);
+    const correlacao = classes.correlacaoDaClasse(classe);
+    resumo[classe] = (resumo[classe] || 0) + 1;
+    analisar(item.line, correlacao, verdict.motivo || null, probabilidade);
+    if (!classes.ligaLinhaDoTempo(classe)) continue;
     const { contexto, ...line } = item.line;
-    kept.push({ ...line, correlacao: verdict.motivo });
+    kept.push({ ...line, correlacao: verdict.motivo, probabilidade });
   }
   resumo.diretas = kept.length;
   delete resumo.direta;

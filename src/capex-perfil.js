@@ -216,11 +216,50 @@ function licencaSemDiario(evidencias, registros) {
 }
 
 /**
+ * Valida o município do projeto (src/municipios.js). Grafia quase igual é
+ * corrigida; município que não existe na UF (ou mais de um no mesmo campo)
+ * fica em municipio_pendencia para revisão. Rede fora do ar não muda nada.
+ */
+async function validarLocalDoProjeto(db, projetoId) {
+  const { rows: [p] } = await db.query("select municipio, uf, codigo_ibge from capex_radar.projetos where id = $1", [projetoId]);
+  if (!p?.municipio || !p?.uf) {
+    if (p) await db.query("update capex_radar.projetos set municipio_pendencia = null where id = $1 and municipio_pendencia is not null", [projetoId]);
+    return null;
+  }
+  const { validarMunicipio } = require("./municipios");
+  const partes = String(p.municipio).split(/\s+e\s+|\s*[,;/]\s*/i).map((s) => s.trim()).filter(Boolean);
+  if (partes.length > 1) {
+    const validas = [];
+    for (const parte of partes) {
+      const v = await validarMunicipio(parte, p.uf);
+      if (v.valido) validas.push(v.nome);
+    }
+    const pendencia = { motivo: `"${p.municipio}" junta mais de um município: dividir o projeto em localidades`, sugestoes: validas, em: new Date().toISOString() };
+    await db.query("update capex_radar.projetos set municipio_pendencia = $2::jsonb where id = $1", [projetoId, JSON.stringify(pendencia)]);
+    return { valido: false, ...pendencia };
+  }
+  const v = await validarMunicipio(p.municipio, p.uf);
+  if (!v.verificado) return v;
+  if (v.valido) {
+    await db.query(
+      `update capex_radar.projetos set municipio = $2, codigo_ibge = coalesce($3, codigo_ibge), municipio_pendencia = null
+        where id = $1 and (municipio is distinct from $2 or codigo_ibge is null or municipio_pendencia is not null)`,
+      [projetoId, v.nome, v.ibge],
+    );
+    return v;
+  }
+  await db.query("update capex_radar.projetos set municipio_pendencia = $2::jsonb where id = $1",
+    [projetoId, JSON.stringify({ motivo: v.motivo, sugestoes: v.sugestoes || [], em: new Date().toISOString() })]);
+  return v;
+}
+
+/**
  * Monta o perfil do projeto até a etapa mais alta que os dados permitem:
  * completo se já passou pelo Enriquecimento 2 (fontes secundárias), senão
  * enriquecido se há matéria lida, senão inicial. Grava e devolve a etapa.
  */
 async function montarPerfil(db, projetoId) {
+  await validarLocalDoProjeto(db, projetoId).catch(() => null);
   const { rows: [projeto] } = await db.query(
     `select id, titulo, objeto, uf, municipio, valor_estimado_brl, estagio, data_anuncio, data_fim,
             secundarias, linha_tempo
@@ -236,7 +275,7 @@ async function montarPerfil(db, projetoId) {
     [projetoId],
   );
   const { rows: todosRegistros } = await db.query(
-    `select fonte_codigo, registro, data_registro, correlacao, evidencia_id
+    `select id, fonte_codigo, registro, data_registro, correlacao, evidencia_id, classe, probabilidade, motivo
        from capex_radar.registros_analisados where projeto_id = $1`,
     [projetoId],
   );
@@ -254,11 +293,25 @@ async function montarPerfil(db, projetoId) {
     etapa = "completo";
   }
   perfil.licencas_sem_diario = licencaSemDiario(evidencias, registrosValidos);
+  // Possibilidades: registros incertos ou improváveis (sql/031), para revisão.
+  perfil.possibilidades = todosRegistros
+    .filter((r) => r.classe === "incerta" || r.classe === "improvavel")
+    .sort((a, b) => (b.probabilidade || 0) - (a.probabilidade || 0))
+    .slice(0, 30)
+    .map((r) => {
+      const b = r.registro || {};
+      return {
+        registro_id: r.id, fonte: r.fonte_codigo, classe: r.classe, probabilidade: r.probabilidade,
+        data: dia(r.data_registro), titulo: String(b.titulo || b.nome || b.descricao || b.assunto || b.empreendimento || r.fonte_codigo).slice(0, 160),
+        motivo: r.motivo || null,
+      };
+    });
   await gravarPerfil(db, projetoId, perfil, etapa);
   return { etapa, perfil };
 }
 
 module.exports = {
+  validarLocalDoProjeto,
   CAMPOS,
   falaDeLicenca,
   licencaSemDiario,

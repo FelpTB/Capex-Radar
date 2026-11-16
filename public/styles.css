@@ -488,3 +488,10 @@ details.js-janela[open] { min-width: 380px; }
 .raw-record { border-top: 1px solid var(--line); padding: 8px 0; }
 .raw-record summary { cursor: pointer; line-height: 1.5; }
 .raw-record pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; background: var(--bg); padding: 10px; border-radius: 8px; max-height: 320px; overflow: auto; }
+.project-status { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; margin: 18px 0; }
+.status-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.status-row > div { display: grid; gap: 3px; }
+.status-row strong { font-size: 18px; }
+.possibilities { border-color: var(--amber); }
+.table-scroll { overflow-x: auto; }
+@media (max-width: 600px) { .status-row { grid-template-columns: 1fr; } }

@@ -131,8 +131,101 @@ function classifyRow(cells, columns, projectsByRoot) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Busca ampla (capex_radar, nov/2026): a obra nem sempre está na raiz do CNPJ
+// da matriz do projeto. Ela aparece em outra empresa do grupo (Seara na JBS,
+// Garoto na Nestlé), na construtora com a marca no nome da obra ("BRASIL AO
+// CUBO - AMBEV FABRICA DE VIDROS") ou, em galpão sob encomenda, no nome do
+// dono do imóvel ou da construtora, sem a marca (Mercado Livre em Jacareí).
+//   raiz           raiz do CNPJ de qualquer empresa do grupo (project.raizes)
+//   marca          obra no município do projeto com a marca no nome
+//   sob_encomenda  sem nada acima no município: obra grande (>= 5.000 m²) de
+//                  pessoa jurídica no município, iniciada até ~13 meses do anúncio
+// O especialista do CNO julga a probabilidade de cada uma.
+// ---------------------------------------------------------------------------
+
+const AMOSTRA_MAX = 30;
+const ENCOMENDA_MAX = 5;
+const ENCOMENDA_AREA = 5000;
+const ENCOMENDA_DIAS = 400;
+
+function chaveCidade(uf, municipio) {
+  return `${String(uf || "").trim().toUpperCase()}|${fold(municipio || "").replace(/[^a-z0-9]/g, "")}`;
+}
+
+function citaMarca(texto, marcas) {
+  const t = ` ${fold(texto).replace(/[^a-z0-9]+/g, " ")} `;
+  return (marcas || []).some((m) => m.length >= 3 && t.includes(` ${m} `));
+}
+
+function linhaDoCno(cells, columns, ni) {
+  return {
+    cno: cells[columns.cno] || null,
+    ni,
+    municipio: cells[columns.municipio] || null,
+    uf: (cells[columns.uf] || "").trim(),
+    area: cells[columns.area] || null,
+    situacao: cells[columns.situacao] || null,
+    inicio: cells[columns.inicio] || null,
+    empresa: cells[columns.empresa] || null,
+    nome: cell(cells, columns.nome),
+    qualificacao: cell(cells, columns.qualificacao),
+    papel: papelDe(cells[columns.qualificacao]),
+    cno_vinculado: cell(cells, columns.cnoVinculado),
+    data_situacao: cell(cells, columns.dataSituacao),
+  };
+}
+
+function guardar(lista, row, max) {
+  lista.push(row);
+  lista.sort((left, right) => right.rank - left.rank || String(right.inicio || "").localeCompare(String(left.inicio || "")));
+  if (lista.length > max) lista.length = max;
+}
+
+/** Uma linha do CNO contra os projetos: por raiz do grupo e, no município, por marca ou sob encomenda. */
+function classifyRowAmplo(cells, columns, { porRaiz, porCidade }) {
+  const ni = onlyDigits(cells[columns.ni] || "").padStart(14, "0");
+  const raiz = ni.slice(0, 8);
+  const daRaiz = ni !== "00000000000000" ? porRaiz.get(raiz) || [] : [];
+  const cidade = chaveCidade(cells[columns.uf], cells[columns.municipio]);
+  const daCidade = porCidade.get(cidade) || [];
+  if (!daRaiz.length && !daCidade.length) return;
+  const row = linhaDoCno(cells, columns, ni);
+  const vistos = new Set();
+  for (const project of daRaiz) {
+    vistos.add(project.id);
+    const hit = project.hits;
+    hit.total += 1;
+    const sameUf = project.uf && row.uf.toUpperCase() === project.uf.toUpperCase();
+    const city = fold(project.municipio || "");
+    const sameCity = city.length > 2 && fold(row.municipio).includes(city);
+    if (ni === onlyDigits(project.cnpj).padStart(14, "0")) hit.mesmoCnpj += 1;
+    if (sameUf) hit.noUf += 1;
+    if (sameCity) hit.noMunicipio += 1;
+    const inPeriod = Boolean(project.desde && row.inicio && row.inicio >= project.desde);
+    if (inPeriod) hit.noPeriodo += 1;
+    if (project.uf && !sameUf) continue;
+    const origem = raiz === onlyDigits(project.cnpj).padStart(14, "0").slice(0, 8) ? "raiz" : "raiz_grupo";
+    guardar(hit.amostra, { ...row, rank: (sameCity ? 4 : 0) + (sameUf ? 2 : 0) + (inPeriod ? 1 : 0), origem_cno: origem }, AMOSTRA_MAX);
+  }
+  for (const project of daCidade) {
+    if (vistos.has(project.id)) continue;
+    const hit = project.hits;
+    const area = Number(String(row.area || "").replace(",", ".")) || 0;
+    if (citaMarca(`${row.nome || ""} ${row.empresa || ""}`, project.marcas) && area >= 500) {
+      guardar(hit.amostra, { ...row, rank: 6, origem_cno: "marca" }, AMOSTRA_MAX);
+      continue;
+    }
+    // Sob encomenda: obra grande de pessoa jurídica perto da data do anúncio.
+    if (!project.anuncio || ni === "00000000000000" || area < ENCOMENDA_AREA || !row.inicio) continue;
+    const dias = Math.abs(new Date(row.inicio) - new Date(project.anuncio)) / 86_400_000;
+    if (!(dias <= ENCOMENDA_DIAS)) continue;
+    guardar(hit.encomenda, { ...row, rank: -dias, origem_cno: "sob_encomenda" }, ENCOMENDA_MAX);
+  }
+}
+
 function emptyHit() {
-  return { total: 0, mesmoCnpj: 0, noUf: 0, noMunicipio: 0, noPeriodo: 0, amostra: [] };
+  return { total: 0, mesmoCnpj: 0, noUf: 0, noMunicipio: 0, noPeriodo: 0, amostra: [], encomenda: [] };
 }
 
 function cnoNeedles(term) {
@@ -334,18 +427,36 @@ function matchCno(projects, csvPath = CSV) {
     if (!fs.existsSync(path.join(dir, name))) return Promise.reject(missingFile(name));
   }
 
-  const byRoot = new Map();
+  const porRaiz = new Map();
+  const porCidade = new Map();
   for (const project of ready) {
-    const root = project.cnpj.padStart(14, "0").slice(0, 8);
-    const list = byRoot.get(root) || [];
     const hit = byId.get(project.id);
-    list.push({ ...project, hits: hit, desde: hit.desde });
-    byRoot.set(root, list);
+    const item = { ...project, hits: hit, desde: hit.desde, anuncio: asIsoDate(project.data_anuncio || project.status_em) };
+    const raizes = new Set([project.cnpj.padStart(14, "0").slice(0, 8), ...(project.raizes || []).map((r) => onlyDigits(r).padStart(8, "0").slice(0, 8))]);
+    for (const root of raizes) {
+      if (!porRaiz.has(root)) porRaiz.set(root, []);
+      porRaiz.get(root).push(item);
+    }
+    if (project.municipio && project.uf && (project.marcas?.length || project.sobEncomenda !== false)) {
+      const k = chaveCidade(project.uf, project.municipio);
+      if (!porCidade.has(k)) porCidade.set(k, []);
+      porCidade.get(k).push(item);
+    }
   }
 
   return readCsv(csvPath, (cells, columns) => {
-    classifyRow(cells, columns, byRoot);
-  }).then(() => enrichHits(byId, dir));
+    classifyRowAmplo(cells, columns, { porRaiz, porCidade });
+  }).then(() => {
+    // Nada da empresa nem da marca no município: entram as candidatas sob encomenda.
+    for (const project of ready) {
+      const hit = byId.get(project.id);
+      const city = fold(project.municipio || "");
+      const noMunicipio = hit.amostra.some((a) => city.length > 2 && fold(a.municipio).includes(city));
+      if (!noMunicipio && hit.encomenda.length) hit.amostra.push(...hit.encomenda);
+      delete hit.encomenda;
+    }
+    return enrichHits(byId, dir);
+  });
 }
 
 module.exports = {
@@ -359,6 +470,8 @@ module.exports = {
   splitCsv,
   columnIndex,
   classifyRow,
+  classifyRowAmplo,
+  citaMarca,
   matchCno,
   namesInCno,
   cnoNeedles,

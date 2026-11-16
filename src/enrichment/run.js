@@ -830,7 +830,8 @@ async function correlateFound(project, codigo, found, options = {}) {
   const { kept, resumo } = await correlateLines(project, codigo, lines, {
     judge,
     semJulgamento: Boolean(options.semJulgamento),
-    onAnalise: options.onAnalise ? (line, correlacao, motivo) => options.onAnalise(codigo, line, correlacao, motivo) : null,
+    municipioBasta: options.municipioBasta !== false,
+    onAnalise: options.onAnalise ? (line, correlacao, motivo, probabilidade) => options.onAnalise(codigo, line, correlacao, motivo, probabilidade) : null,
   });
   return {
     found: rebuildFound(codigo, found, kept, {

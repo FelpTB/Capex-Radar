@@ -107,6 +107,48 @@ async function filiaisDoMunicipio(db, projeto) {
   return [...lista].slice(0, 4);
 }
 
+// Marcas que aparecem no nome de obras feitas por construtoras ou por outras
+// empresas do grupo (CNO). O nome do grupo e o primeiro nome de cada matriz
+// entram sozinhos; aqui ficam as marcas e empresas que não estão na tabela de
+// matrizes. Palavras genéricas não servem de marca.
+const MARCAS_EXTRAS = {
+  JBS: ["seara", "friboi", "swift"],
+  "Nestlé": ["nestle", "garoto"],
+  Heineken: ["heineken", "bavaria"],
+  Lactalis: ["lactalis", "itambe", "parmalat"],
+  "MBRF (Marfrig + BRF)": ["brf", "marfrig", "sadia", "perdigao"],
+  "Mercado Livre": ["mercado livre", "mercadolivre", "ebazar", "meli"],
+  "Coca-Cola FEMSA": ["femsa", "spal"],
+  "Solar Coca-Cola": ["solar br", "solar coca"],
+  Camil: ["camil"],
+  Piracanjuba: ["piracanjuba", "laticinios bela vista"],
+  Ambev: ["ambev"],
+  "C.Vale": ["c vale", "cvale"],
+  "M. Dias Branco": ["dias branco"],
+  "Três Corações": ["tres coracoes"],
+  "Casas Bahia": ["casas bahia"],
+};
+const PALAVRAS_GENERICAS = new Set(["mercado", "solar", "refrescos", "global", "grupo", "bebidas", "livre", "casas", "celulose", "laticinios", "moda", "magazine", "tres", "nova", "central", "energia", "logistica", "brasil", "alimentos", "industria", "comercio", "ltda", "data", "centers", "center", "coop", "cooperativa", "agroindustrial", "participacoes", "sa", "s", "a", "do", "da", "de", "the"]);
+
+const dobrarMarca = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/** Raízes de CNPJ de todas as empresas do grupo e as marcas para o CNO. */
+async function identidadeDoGrupo(db, grupoId, grupoNome) {
+  const { rows } = await db.query("select cnpj, razao_social from capex_radar.matrizes where grupo_id = $1", [grupoId]);
+  const raizes = [...new Set(rows.map((r) => String(r.cnpj).slice(0, 8)))];
+  const marcas = new Set((MARCAS_EXTRAS[grupoNome] || []).map(dobrarMarca));
+  // O nome do grupo inteiro vale como marca (JBS, Ambev), se não for genérico.
+  const inteiro = dobrarMarca(grupoNome).replace(/ data centers?$/, "");
+  if (inteiro.length >= 3 && !PALAVRAS_GENERICAS.has(inteiro) && !inteiro.includes(" ")) marcas.add(inteiro);
+  // Só a PRIMEIRA palavra do nome, e só se não for genérica ("MERCADO LIVRE" não vira "livre").
+  const primeira = (nome) => { const w = dobrarMarca(nome).split(" ")[0]; return w && w.length >= 4 && !PALAVRAS_GENERICAS.has(w) ? w : null; };
+  for (const nome of [grupoNome, ...rows.map((r) => r.razao_social)]) {
+    const w = primeira(nome);
+    if (w) marcas.add(w);
+  }
+  return { raizes, marcas: [...marcas] };
+}
+
 /** Projeto da carteira no formato que a coleta do MVP espera. */
 function projetoParaColeta(p) {
   return {
@@ -124,6 +166,8 @@ function projetoParaColeta(p) {
     codigo_ibge: p.codigo_ibge || null,
     desde_busca: desdeDaBusca(p.data_anuncio || p.primeira_evidencia_em),
     cnpjs_municipio: p.cnpjs_municipio || [],
+    raizes: p.raizes || [],
+    marcas: p.marcas || [],
     leitura: p.objeto || null,
   };
 }
@@ -134,7 +178,7 @@ function projetoParaColeta(p) {
 
 const PROMPT_LINHA = `Você monta a linha do tempo de um projeto de CapEx privado no Brasil para um radar de oportunidades de obra. Recebe o projeto e as evidências ligadas a ele: notícias (com resumo e trechos da matéria, quando houver) e registros de fontes oficiais (BNDES, licenças ambientais, Cadastro Nacional de Obras, ANEEL, diários oficiais, CVM...). Cada evidência tem um número i.
 
-Monte os MARCOS do projeto em ordem cronológica: anúncio, licença prévia/instalação/operação, financiamento, compra de terreno, contratação de construtora ou EPC, início e andamento de obra, entrada em operação, atraso, suspensão ou cancelamento. Junte num marco só as evidências que contam o mesmo fato (várias notícias do mesmo anúncio). Use só o que as evidências dizem; não invente datas. A data do marco é a do fato quando o texto a traz; senão, a da evidência mais antiga do marco (AAAA-MM-DD, AAAA-MM ou AAAA). Registro oficial sem ligação clara com este projeto não vira marco.
+Monte os MARCOS do projeto em ordem cronológica: anúncio, licença prévia/instalação/operação, financiamento, compra de terreno, contratação de construtora ou EPC, início e andamento de obra, entrada em operação, atraso, suspensão ou cancelamento. Junte num marco só as evidências que contam o mesmo fato (várias notícias do mesmo anúncio). Use só o que as evidências dizem; não invente datas. A data do marco é a do fato quando o texto a traz; senão, a da evidência mais antiga do marco (AAAA-MM-DD, AAAA-MM ou AAAA). Registro oficial sem ligação clara com este projeto não vira marco. Matrícula do Cadastro Nacional de Obras (CNO) vira marco de obra na data de início; se a situação for encerrada (15), vira também o marco \"obra encerrada no CNO\" (tipo obra) na data da situação: é a prova de que a obra terminou, mesmo sem notícia de inauguração.
 
 Depois escreva o resumo (3 a 5 frases: o que é o projeto, onde, quanto, em que pé está e qual o próximo passo esperado) e o estágio atual, um de ${ESTAGIOS.join(", ")}.
 
@@ -300,12 +344,8 @@ async function gravarRegistros(projeto, codigo, linhas, fonte, modeloCorrelacao)
   return gravadas;
 }
 
-/**
- * Consulta as fontes secundárias de uma lista de projetos e grava o que tem
- * correlação direta. O CNO é lido uma vez para todos (arquivo local).
- * deps permite trocar a coleta nos testes.
- */
 const CORRELACOES = ["direta", "incerta", "outro_projeto", "outro_estado", "nao_avaliada"];
+const classes = require("./capex-classes");
 
 // Fontes que não trouxeram nenhuma evidência com correlação direta em 117
 // projetos (nov/2026) e não falam de obra privada: títulos minerários da ANM
@@ -342,18 +382,28 @@ async function gravarAnalisados(db, projetoId, analises, analisadoPor) {
   for (const a of analises) {
     const { contexto: _c, rank: _r, correlacao: _x, ...bruto } = a.linha || {};
     const chave = chaveDoRegistro(a.codigo, a.linha);
-    const correlacao = CORRELACOES.includes(a.correlacao) ? a.correlacao : "incerta";
+    // Probabilidade do especialista (ou da correlação antiga); nao_avaliada fica sem classe.
+    const probabilidade = a.correlacao === "nao_avaliada" ? null
+      : a.probabilidade ?? classes.probabilidadeDaCorrelacao(a.correlacao);
+    const classe = classes.classeDe(probabilidade);
+    const correlacao = a.correlacao === "nao_avaliada" || a.correlacao === "outro_estado" ? a.correlacao
+      : classe ? classes.correlacaoDaClasse(classe) : (CORRELACOES.includes(a.correlacao) ? a.correlacao : "incerta");
+    // Classe dada por um humano não é sobrescrita por uma coleta nova.
     const r = await db.query(
       `insert into capex_radar.registros_analisados
-         (projeto_id, fonte_codigo, chave, registro, data_registro, correlacao, motivo, evidencia_id, analisado_por)
+         (projeto_id, fonte_codigo, chave, registro, data_registro, correlacao, motivo, evidencia_id, analisado_por, probabilidade, classe)
        values ($1, $2, $3, $4::jsonb, $5, $6, $7,
-               (select id from capex_radar.evidencias where chave_dedupe = $3), $8)
+               (select id from capex_radar.evidencias where chave_dedupe = $3), $8, $9, $10)
        on conflict (projeto_id, chave) do update set
          registro = excluded.registro, data_registro = excluded.data_registro,
-         correlacao = excluded.correlacao, motivo = excluded.motivo,
-         evidencia_id = excluded.evidencia_id, analisado_por = excluded.analisado_por, em = now()`,
+         correlacao = case when registros_analisados.revisado_por is null then excluded.correlacao else registros_analisados.correlacao end,
+         motivo = case when registros_analisados.revisado_por is null then excluded.motivo else registros_analisados.motivo end,
+         probabilidade = case when registros_analisados.revisado_por is null then excluded.probabilidade else registros_analisados.probabilidade end,
+         classe = case when registros_analisados.revisado_por is null then excluded.classe else registros_analisados.classe end,
+         evidencia_id = coalesce(excluded.evidencia_id, registros_analisados.evidencia_id),
+         analisado_por = excluded.analisado_por, em = now()`,
       [projetoId, a.codigo, chave, JSON.stringify({ ...bruto, ...(a.linha?.contexto ? { contexto: String(a.linha.contexto).slice(0, 3000) } : {}) }),
-        dataDoRegistro(a.linha), correlacao, a.motivo ? String(a.motivo).slice(0, 500) : null, analisadoPor],
+        dataDoRegistro(a.linha), correlacao, a.motivo ? String(a.motivo).slice(0, 500) : null, analisadoPor, probabilidade, classe],
     );
     n += r.rowCount;
   }
@@ -361,33 +411,84 @@ async function gravarAnalisados(db, projetoId, analises, analisadoPor) {
 }
 
 /**
+ * Dá a classe a um registro analisado do projeto e liga ou desliga a
+ * evidência: provável ou certeira vira evidência na linha do tempo; abaixo
+ * disso, a evidência (se havia) sai do projeto. v = { probabilidade | classe
+ * | correlacao, motivo }. Com humano=true, a coleta seguinte não muda a classe.
+ */
+async function classificarRegistro(db, projeto, reg, v, { ator, humano = false, fontes = null } = {}) {
+  const probabilidade = v.probabilidade != null ? Math.round(Number(v.probabilidade))
+    : v.classe ? classes.PROBABILIDADE_DA_CLASSE[v.classe]
+      : classes.probabilidadeDaCorrelacao(v.correlacao);
+  const classe = classes.classeDe(probabilidade);
+  if (!classe) throw new Error(`Classe inválida: ${JSON.stringify(v)}`);
+  let evidencias = 0;
+  if (classes.ligaLinhaDoTempo(classe)) {
+    const mapa = fontes || await nomesDasFontes(db);
+    evidencias = await gravarRegistros(projeto, reg.fonte_codigo, [{ ...reg.registro, correlacao: v.motivo || classes.CLASSES[classe].rotulo }], mapa.get(reg.fonte_codigo), humano ? "humano" : "claude-code");
+    // Evidência que tinha saído do projeto volta.
+    await painel.emTransacao((client) => client.query(
+      `update capex_radar.evidencia_projeto set situacao = 'aceito', descarte = null, motivo = $3, revisado_por = $4, revisado_em = now()
+        where projeto_id = $1 and evidencia_id = (select id from capex_radar.evidencias where chave_dedupe = $2) and situacao = 'rejeitado'`,
+      [projeto.id, reg.chave, String(v.motivo || "").slice(0, 300) || null, ator],
+    ), ator);
+  } else {
+    await painel.emTransacao((client) => client.query(
+      `update capex_radar.evidencia_projeto set situacao = 'rejeitado', descarte = 'outro_projeto', motivo = $3, revisado_por = $4, revisado_em = now()
+        where projeto_id = $1 and evidencia_id = (select id from capex_radar.evidencias where chave_dedupe = $2) and situacao = 'aceito'`,
+      [projeto.id, reg.chave, `Classe ${classes.CLASSES[classe].rotulo}: ${v.motivo || ""}`.slice(0, 300), ator],
+    ), ator);
+  }
+  await painel.emTransacao((client) => client.query(
+    `update capex_radar.registros_analisados
+        set probabilidade = $3, classe = $4, correlacao = $5, motivo = coalesce($6, motivo), analisado_por = $7, em = now(),
+            revisado_por = case when $8 then $7 else revisado_por end,
+            revisado_em = case when $8 then now() else revisado_em end,
+            evidencia_id = coalesce(evidencia_id, (select id from capex_radar.evidencias where chave_dedupe = $2))
+      where projeto_id = $1 and chave = $2`,
+    [projeto.id, reg.chave, probabilidade, classe, classes.correlacaoDaClasse(classe), v.motivo ? String(v.motivo).slice(0, 500) : null, ator, humano],
+  ), ator);
+  return { classe, probabilidade, evidencias };
+}
+
+/**
  * Aplica um julgamento feito fora do Radar (Claude Code) aos registros
- * analisados de um projeto: vereditos = [{ chave, correlacao, motivo }].
- * O que ficar 'direta' vira evidência ligada ao projeto.
+ * analisados de um projeto: vereditos = [{ chave, probabilidade | classe |
+ * correlacao, motivo }].
  */
 async function aplicarJulgamento(db, projeto, vereditos, { ator = "usuario:claude-code" } = {}) {
   const fontes = await nomesDasFontes(db);
   const resultado = { atualizados: 0, evidencias: 0 };
   for (const v of vereditos) {
-    if (!CORRELACOES.includes(v.correlacao)) throw new Error(`Correlação inválida: ${v.correlacao}`);
+    if (v.correlacao && !CORRELACOES.includes(v.correlacao)) throw new Error(`Correlação inválida: ${v.correlacao}`);
+    if (v.classe && !classes.CLASSES[v.classe]) throw new Error(`Classe inválida: ${v.classe}`);
     const { rows: [reg] } = await db.query(
-      "select id, fonte_codigo, registro from capex_radar.registros_analisados where projeto_id = $1 and chave = $2",
+      "select id, chave, fonte_codigo, registro from capex_radar.registros_analisados where projeto_id = $1 and chave = $2",
       [projeto.id, v.chave],
     );
     if (!reg) continue;
-    if (v.correlacao === "direta") {
-      resultado.evidencias += await gravarRegistros(projeto, reg.fonte_codigo, [{ ...reg.registro, correlacao: v.motivo || "correlação direta" }], fontes.get(reg.fonte_codigo), "claude-code");
-    }
-    await db.query(
-      `update capex_radar.registros_analisados
-          set correlacao = $3, motivo = $4, analisado_por = $5, em = now(),
-              evidencia_id = coalesce(evidencia_id, (select id from capex_radar.evidencias where chave_dedupe = $2))
-        where projeto_id = $1 and chave = $2`,
-      [projeto.id, v.chave, v.correlacao, v.motivo ? String(v.motivo).slice(0, 500) : null, ator],
-    );
+    const r = await classificarRegistro(db, projeto, reg, v, { ator, fontes });
+    resultado.evidencias += r.evidencias;
     resultado.atualizados += 1;
   }
   return resultado;
+}
+
+/** Revisão humana da classe de um registro analisado (ficha do projeto, MCP). */
+async function revisarRegistro(db, registroId, { classe, probabilidade, motivo, ator }) {
+  const { rows: [reg] } = await db.query(
+    "select id, chave, fonte_codigo, registro, projeto_id from capex_radar.registros_analisados where id = $1",
+    [registroId],
+  );
+  if (!reg) return null;
+  const { rows: [projeto] } = await db.query(
+    "select v.*, p.objeto from capex_radar.vw_carteira v join capex_radar.projetos p on p.id = v.id where v.id = $1",
+    [reg.projeto_id],
+  );
+  const r = await classificarRegistro(db, projeto, reg, { classe, probabilidade, motivo }, { ator, humano: true });
+  const perfis = require("./capex-perfil");
+  await painel.emTransacao((client) => perfis.montarPerfil(client, projeto.id), ator);
+  return { projeto_id: projeto.id, titulo: projeto.titulo, ...r };
 }
 
 /**
@@ -399,13 +500,14 @@ async function aplicarJulgamento(db, projeto, vereditos, { ator = "usuario:claud
 async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJulgamento = false } = {}) {
   const coleta = deps || require("./enrichment/run");
   const { correlateLines } = deps?.correlateLines ? deps : require("./enrichment/correlacao");
-  const { judgeEvidenceContext } = deps?.judgeEvidenceContext ? deps : require("./ai");
+  const judgeEvidenceContext = deps?.judgeEvidenceContext || require("./capex-especialistas").juizEspecialistaPadrao();
   const { getConfig } = require("./config");
   const modeloCorrelacao = getConfig().claudeDecisionModel;
   const fontes = await nomesDasFontes(db);
   for (const p of projetos) {
     p.codigo_ibge = await garantirIbge(db, p);
     p.cnpjs_municipio = await filiaisDoMunicipio(db, p);
+    Object.assign(p, await identidadeDoGrupo(db, p.grupo_id, p.grupo));
   }
   const paraColeta = projetos.map(projetoParaColeta);
   let cno = new Map();
@@ -419,7 +521,7 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
     const mvp = paraColeta[k];
     const relatorio = [];
     const analises = [];
-    const onAnalise = (codigo, linha, correlacao, motivo) => analises.push({ codigo, linha, correlacao, motivo });
+    const onAnalise = (codigo, linha, correlacao, motivo, probabilidade) => analises.push({ codigo, linha, correlacao, motivo, probabilidade });
     try {
       const consulta = await coleta.consultViableSources(mvp, { dryRun: true, skipCno: true, semJulgamento, onAnalise, excluir: FONTES_SEM_RETORNO });
       relatorio.push(...consulta.relatorio);
@@ -429,7 +531,7 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
     const hit = cno.get(projeto.id);
     if (hit?.amostra?.length) {
       const { kept, resumo } = await correlateLines(mvp, "SEC-CNO", hit.amostra, {
-        judge: judgeEvidenceContext, semJulgamento,
+        judge: judgeEvidenceContext, semJulgamento, municipioBasta: false,
         onAnalise: (linha, correlacao, motivo) => onAnalise("SEC-CNO", linha, correlacao, motivo),
       });
       relatorio.push({ codigo: "SEC-CNO", correlacao: resumo, linhas: kept });
@@ -709,6 +811,7 @@ module.exports = {
   projetoParaColeta,
   desdeDaBusca,
   filiaisDoMunicipio,
+  identidadeDoGrupo,
   entradaLinha,
   lerLinhaDoTempo,
   avancaEstagio,
@@ -722,6 +825,8 @@ module.exports = {
   garantirIbge,
   FONTES_SEM_RETORNO,
   aplicarJulgamento,
+  classificarRegistro,
+  revisarRegistro,
   projetosParaEnriquecimento2,
   enriquecimento2,
   janelaDoProjeto,

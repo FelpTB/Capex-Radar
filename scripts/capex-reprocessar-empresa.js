@@ -12,6 +12,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const sec = require("../src/capex-fontes-secundarias");
+const classes = require("../src/capex-classes");
+const { especialistaDe, instrucoesDoEspecialista, ESPECIALISTAS } = require("../src/capex-especialistas");
 
 // Fontes estruturadas por CNPJ: entram sempre no julgamento.
 const ESTRUTURADAS = /^SEC-(BNDES|CNO|CVM|SISLIC|SIGA|ANEEL|REIDI|ANA|ANTT|ANTAQ|IAT|SEMAD|CNPJ|ANP)/;
@@ -50,7 +52,7 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
         const texto = dobrar(`${contexto || ""} ${JSON.stringify(campos)}`);
         if (ESTRUTURADAS.test(r.fonte_codigo) || municipios.some((m) => texto.includes(m))) {
           julgar.push({
-            chave: r.chave, fonte: r.fonte_codigo, data: dia(r.data_registro),
+            chave: r.chave, fonte: r.fonte_codigo, especialista: especialistaDe(r.fonte_codigo).chave, data: dia(r.data_registro),
             campos: JSON.stringify(campos).slice(0, 900), contexto: contexto ? String(contexto).slice(0, 900) : null,
           });
         } else {
@@ -79,6 +81,9 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
       fs.writeFileSync(path.join(args.saida, `${nome}.json`), JSON.stringify(doc, null, 1));
     }
     fs.writeFileSync(path.join(args.saida, "_automaticos.json"), JSON.stringify(automaticos));
+    // Instruções de cada especialista (as mesmas do julgamento pela API), para o julgamento pelo Claude Code.
+    const exemplo = { cno: "SEC-CNO", licenca: "CAPTURA-DOE-SP", outorga: "SEC-ANA-SNIRH", financiamento: "SEC-BNDES", energia: "SEC-SIGA", cvm: "SEC-CVM-IPE", geral: "X" };
+    fs.writeFileSync(path.join(args.saida, "_especialistas.md"), Object.keys(ESPECIALISTAS).map((k) => "## Especialista: " + k + String.fromCharCode(10, 10) + instrucoesDoEspecialista(exemplo[k])).join(String.fromCharCode(10, 10)));
     console.log(JSON.stringify(resumo));
   }
 
@@ -89,7 +94,9 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
     const resultado = { projetos: 0, copiados: 0, evidencias: 0, atualizados: 0, sem_ligacao: 0, automaticos: 0 };
     const porProjeto = new Map();
     for (const a of atribuicoes) {
-      if (!["direta", "incerta"].includes(a.correlacao)) throw new Error(`correlação inválida: ${a.correlacao}`);
+      // Probabilidade (0-100) do especialista, ou classe, ou a correlação antiga (direta/incerta).
+      const valido = (a.probabilidade != null && a.probabilidade >= 0 && a.probabilidade <= 100) || classes.CLASSES[a.classe] || ["direta", "incerta"].includes(a.correlacao);
+      if (!valido) throw new Error(`julgamento inválido: ${JSON.stringify(a)}`);
       // Registro atribuído a um projeto que não o coletou (ex.: subprojeto novo): copia.
       const r = await pool.query(
         `insert into capex_radar.registros_analisados (projeto_id, fonte_codigo, chave, registro, data_registro, correlacao, motivo, analisado_por)
@@ -100,7 +107,7 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
       );
       resultado.copiados += r.rowCount;
       if (!porProjeto.has(a.projeto_id)) porProjeto.set(a.projeto_id, []);
-      porProjeto.get(a.projeto_id).push({ chave: a.chave, correlacao: a.correlacao, motivo: a.motivo });
+      porProjeto.get(a.projeto_id).push({ chave: a.chave, probabilidade: a.probabilidade, classe: a.classe, correlacao: a.correlacao, motivo: a.motivo });
     }
     resultado.projetos = porProjeto.size;
     for (const [projetoId, vereditos] of porProjeto) {
@@ -114,7 +121,7 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
       for (const a of JSON.parse(fs.readFileSync(args.automaticos, "utf8"))) {
         const r = await pool.query(
           `update capex_radar.registros_analisados
-              set correlacao = 'outro_projeto', motivo = 'Diário sem o município de nenhum projeto da empresa',
+              set correlacao = 'outro_projeto', probabilidade = 5, classe = 'muito_improvavel', motivo = 'Diário sem o município de nenhum projeto da empresa',
                   analisado_por = $3, em = now()
             where projeto_id = $1 and chave = $2 and correlacao = 'nao_avaliada'`,
           [a.projeto_id, a.chave, ATOR],
@@ -126,7 +133,7 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
       const ids = (await projetosAtivos()).filter((p) => p.grupo === args.empresa).map((p) => p.id);
       const r = await pool.query(
         `update capex_radar.registros_analisados
-            set correlacao = 'outro_projeto', motivo = 'Lido no julgamento por empresa: sem ligação com este projeto',
+            set correlacao = 'outro_projeto', probabilidade = 10, classe = 'muito_improvavel', motivo = 'Lido no julgamento por empresa: sem ligação com este projeto',
                 analisado_por = $2, em = now()
           where projeto_id = any($1::uuid[]) and correlacao = 'nao_avaliada'`,
         [ids, ATOR],
