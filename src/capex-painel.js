@@ -114,6 +114,7 @@ function abas(ativa, totalProjetos) {
     ${aba("buscas", "/monitoramento/buscas", "Buscas")}
     ${aba("carteira", "/monitoramento/carteira", `Carteira (${totalProjetos})`)}
     ${aba("agente", "/monitoramento/agente", "Agente")}
+    ${aba("fontes", "/monitoramento/fontes", "Fontes")}
   </nav>`;
 }
 
@@ -875,6 +876,66 @@ function blocoStatus(projeto, obras) {
   </section>`;
 }
 
+const pct = (n, d) => (d ? `${((100 * n) / d).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : "—");
+
+function paginaFontes({ funil, veiculos, secundarias, totalProjetos }) {
+  const etapas = [
+    ["Captadas (Google News)", funil.captadas],
+    ["Passaram o Filtro 1 (manchete com ativo físico)", funil.filtro1],
+    ["Mantidas no Filtro 2 (CapEx e fato novo)", funil.filtro2],
+    ["Matéria original lida (Enriquecimento)", funil.enriquecidas],
+    ["Mantidas no Filtro 3", funil.filtro3],
+    ["Ligadas a um projeto da carteira", funil.em_projeto],
+  ];
+  const linhasFunil = etapas.map(([rotulo, n]) => `<tr>
+      <td>${esc(rotulo)}</td><td>${n.toLocaleString("pt-BR")}</td><td>${pct(n, funil.captadas)}</td>
+    </tr>`).join("");
+  const linhasVeiculos = veiculos.map((v) => `<tr><td>${esc(v.veiculo)}</td><td>${v.captadas}</td><td>${v.filtro1}</td><td>${v.em_projeto}</td><td>${pct(v.em_projeto, v.captadas)}</td></tr>`).join("");
+  const tot = secundarias.reduce((a, r) => {
+    for (const k of ["total", "certeira", "provavel", "incerta", "improvavel", "muito_improvavel", "nao_avaliada", "revisados"]) a[k] = (a[k] || 0) + r[k];
+    return a;
+  }, {});
+  const linhasSec = secundarias.map((r) => {
+    const ligados = r.certeira + r.provavel;
+    const avaliados = r.total - r.nao_avaliada;
+    return `<tr>
+      <td><strong>${esc(r.fonte_codigo)}</strong>${r.nome ? `<br><span class="muted">${esc(r.nome)}</span>` : ""}</td>
+      <td>${r.total}</td><td>${r.certeira}</td><td>${r.provavel}</td><td>${r.incerta}</td><td>${r.improvavel}</td><td>${r.muito_improvavel}</td>
+      <td><strong>${pct(ligados, avaliados)}</strong></td><td>${r.projetos_ligados}/${r.projetos}</td><td>${r.revisados || ""}</td>
+    </tr>`;
+  }).join("");
+  return layout({
+    title: "Fontes",
+    active: "projetos",
+    body: `
+      <section class="page-heading">
+        <div><p class="eyebrow">Teste de monitoramento</p><h1>Eficiência das fontes</h1><p>Quanto do que cada fonte traz chega a um projeto. Primárias: o funil das notícias. Secundárias: os registros oficiais analisados para cada projeto, por classe de correlação.</p></div>
+      </section>
+      ${abas("fontes", totalProjetos)}
+      <section class="raw-records">
+        <h2>Fontes primárias: funil das notícias</h2>
+        <p class="muted">As etapas não são encaixadas: notícias aprovadas na revisão antes do fluxo atual não passaram por todos os filtros, e o Enriquecimento também lê notícias já ligadas a projetos.</p>
+        <div class="table-scroll"><table class="table-compact">
+          <thead><tr><th>Etapa</th><th>Notícias</th><th>Das captadas</th></tr></thead>
+          <tbody>${linhasFunil}</tbody>
+        </table></div>
+        <h3>Veículos (25 com mais notícias em projetos)</h3>
+        <div class="table-scroll"><table class="table-compact">
+          <thead><tr><th>Veículo</th><th>Captadas</th><th>Filtro 1</th><th>Em projeto</th><th>Aproveitamento</th></tr></thead>
+          <tbody>${linhasVeiculos}</tbody>
+        </table></div>
+      </section>
+      <section class="raw-records">
+        <h2>Fontes secundárias: registros por classe</h2>
+        <p class="muted">${tot.total || 0} registros analisados nos projetos ativos; ${(tot.certeira || 0) + (tot.provavel || 0)} ligados à linha do tempo (certeira ou provável), ${(tot.incerta || 0) + (tot.improvavel || 0)} possibilidades, ${tot.muito_improvavel || 0} descartados${tot.nao_avaliada ? `, ${tot.nao_avaliada} ainda sem julgamento` : ""}${tot.revisados ? `; ${tot.revisados} revisados por humano` : ""}. Aproveitamento = certeira + provável sobre os avaliados.</p>
+        <div class="table-scroll"><table class="table-compact">
+          <thead><tr><th>Fonte</th><th>Registros</th><th>Certeira</th><th>Provável</th><th>Incerta</th><th>Improvável</th><th>Muito improv.</th><th>Aproveitamento</th><th>Projetos ligados</th><th>Revisados</th></tr></thead>
+          <tbody>${linhasSec}</tbody>
+        </table></div>
+      </section>`,
+  });
+}
+
 // Possibilidades: incertas e improváveis, destacadas para revisão (acima da linha do tempo).
 function blocoPossibilidades(registros) {
   const lista = registros.filter((r) => classes.ehPossibilidade(r.classe));
@@ -1270,6 +1331,12 @@ function registrarMonitoramento(app) {
     const dados = await painel.obterProjeto(uuid.parse(req.params.id));
     if (!dados) return res.status(404).send("Projeto não encontrado");
     res.send(paginaProjeto({ ...dados, notice: aviso(req) }));
+  });
+
+  // Aba Fontes: eficiência das fontes primárias e secundárias.
+  app.get("/monitoramento/fontes", async (req, res) => {
+    const [dados, projetos] = await Promise.all([painel.eficienciaFontes(), painel.carteira()]);
+    res.send(paginaFontes({ ...dados, totalProjetos: projetos.length }));
   });
 
   // Revisão humana da classe de um registro analisado (sql/031).

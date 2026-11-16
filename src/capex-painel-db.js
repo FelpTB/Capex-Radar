@@ -433,6 +433,55 @@ async function retirarDoProjeto(evidenciaId, motivo, { ator = ATOR } = {}) {
   }, ator);
 }
 
+/**
+ * Eficiência das fontes. Primárias: o funil das notícias (captação até a
+ * ligação com um projeto) e os veículos. Secundárias: registros analisados
+ * por fonte e por classe (sql/031).
+ */
+async function eficienciaFontes() {
+  const [funil, veiculos, secundarias, nomes] = await Promise.all([
+    pool.query(`
+      select count(*)::int as captadas,
+             count(*) filter (where e.extracao->>'capex' = 'true')::int as filtro1,
+             count(*) filter (where e.filtro->>'decisao' = 'manter')::int as filtro2,
+             count(*) filter (where (e.enriquecimento->>'encontrou')::boolean)::int as enriquecidas,
+             count(*) filter (where e.filtro_final->>'decisao' = 'manter')::int as filtro3,
+             count(*) filter (where exists (select 1 from capex_radar.evidencia_projeto ep join capex_radar.projetos p on p.id = ep.projeto_id
+                                             where ep.evidencia_id = e.id and ep.situacao = 'aceito' and p.status <> 'descartado'))::int as em_projeto
+        from capex_radar.evidencias e where e.fonte_codigo = 'gnews_rss'`),
+    pool.query(`
+      select coalesce(e.veiculo, '—') as veiculo, count(*)::int as captadas,
+             count(*) filter (where e.extracao->>'capex' = 'true')::int as filtro1,
+             count(*) filter (where exists (select 1 from capex_radar.evidencia_projeto ep join capex_radar.projetos p on p.id = ep.projeto_id
+                                             where ep.evidencia_id = e.id and ep.situacao = 'aceito' and p.status <> 'descartado'))::int as em_projeto
+        from capex_radar.evidencias e where e.fonte_codigo = 'gnews_rss'
+       group by 1 order by em_projeto desc, captadas desc limit 25`),
+    pool.query(`
+      select r.fonte_codigo,
+             count(*)::int as total,
+             count(*) filter (where r.classe = 'certeira')::int as certeira,
+             count(*) filter (where r.classe = 'provavel')::int as provavel,
+             count(*) filter (where r.classe = 'incerta')::int as incerta,
+             count(*) filter (where r.classe = 'improvavel')::int as improvavel,
+             count(*) filter (where r.classe = 'muito_improvavel')::int as muito_improvavel,
+             count(*) filter (where r.classe is null)::int as nao_avaliada,
+             count(*) filter (where r.revisado_por is not null)::int as revisados,
+             count(distinct r.projeto_id) as projetos,
+             count(distinct r.projeto_id) filter (where r.classe in ('certeira', 'provavel'))::int as projetos_ligados,
+             max(r.em) as ultima
+        from capex_radar.registros_analisados r
+        join capex_radar.projetos p on p.id = r.projeto_id and p.status <> 'descartado'
+       group by 1 order by total desc`),
+    pool.query("select codigo, nome from capex_radar.fontes"),
+  ]);
+  const nome = new Map(nomes.rows.map((r) => [r.codigo, r.nome]));
+  return {
+    funil: funil.rows[0],
+    veiculos: veiculos.rows,
+    secundarias: secundarias.rows.map((r) => ({ ...r, nome: nome.get(r.fonte_codigo) || null })),
+  };
+}
+
 // Projetos da carteira. Os descartados ficam fora, a não ser que sejam pedidos.
 async function carteira({ incluirDescartados = false } = {}) {
   const { rows } = await pool.query(
@@ -591,6 +640,7 @@ async function alterarStatusProjeto(id, status, { ator = ATOR, motivo = null } =
 }
 
 module.exports = {
+  eficienciaFontes,
   retirarDoProjeto,
   ATOR,
   CAMPOS_EDITAVEIS,
