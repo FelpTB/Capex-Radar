@@ -152,13 +152,18 @@ async function querySigpub(project, cnpj, razaoSocial) {
   const term = holderTerm(razaoSocial || project.empresa_nome);
   const cnpjRoot = cnpjRootMask(cnpj);
   const words = (term || "").split(" ").filter((word) => word.length >= 3);
-  const textos = [cnpjMask(cnpj), cnpjRoot, term].filter((item) => item && item.length >= 4);
+  // Com filiais no município do projeto, busca o CNPJ delas (e o nome); sem, a matriz e a raiz.
+  const { searchTerms, desdeDe } = require("./estaduais");
+  const textos = (project?.cnpjs_municipio?.length
+    ? searchTerms(cnpj, razaoSocial || project.empresa_nome, project).buscas
+    : [cnpjMask(cnpj), cnpjRoot, term]).filter((item) => item && item.length >= 4);
   if (!textos.length) return { total: 0, linhas: [] };
   const cards = [];
   for (const slug of slugs) {
-    for (const texto of textos) cards.push(...await searchSigpub(slug, texto));
+    for (const texto of textos) cards.push(...await searchSigpub(slug, texto, { desde: desdeDe(project) }));
   }
-  const ranked = rankSigpub(cards, { municipio: project.municipio, words, cnpjRoot })
+  const { orgaoSemObra } = require("./estaduais");
+  const ranked = rankSigpub(cards.filter((card) => !orgaoSemObra(card)), { municipio: project.municipio, words, cnpjRoot })
     .map(({ associacao, codigo, ...card }) => card);
   return {
     total: ranked.length,
@@ -216,7 +221,7 @@ async function queryMetaway(project, cnpj, razaoSocial) {
   if (!texto || texto.length < 4) return { total: 0, linhas: [] };
   const url = new URL(`${base}/recurso/diario/lista`);
   url.searchParams.set("texto", texto);
-  url.searchParams.set("dataInicial", SIGPUB_DESDE);
+  url.searchParams.set("dataInicial", require("./estaduais").desdeDe(project));
   url.searchParams.set("dataFinal", new Date().toISOString().slice(0, 10));
   const response = await fetch(url, {
     headers: { "user-agent": USER_AGENT, accept: "application/json" },

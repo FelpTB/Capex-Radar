@@ -119,3 +119,24 @@ test("pré-triagem: exige o município (ou filial, ou IBGE), corta o antigo e a 
   assert.match(preTriagem({ trecho: "Auto de infração e multa em Carambeí", data: "2024-08-01" }, projeto), /rotina/);
   assert.equal(preTriagem({ trecho: "Licença qualquer", data: "2024-08-01" }, { uf: "MT", data_anuncio: "2024-06-01" }), null, "sem município no projeto, não exige");
 });
+
+test("coleta focada: janela por projeto, CNPJ da filial e órgão sem obra", () => {
+  const { searchTerms, desdeDe, orgaoSemObra } = require("../src/enrichment/estaduais");
+  const sec = require("../src/capex-fontes-secundarias");
+  // Janela: 3 anos antes do anúncio, nunca antes de 2015.
+  assert.equal(sec.desdeDaBusca("2024-06-13"), "2021-06-13");
+  assert.equal(desdeDe({ desde_busca: "2021-06-13" }), "2021-06-13");
+  assert.equal(desdeDe({ desde_busca: "2010-01-01" }), "2015-01-01");
+  assert.equal(desdeDe({}), "2015-01-01");
+  // Com filial no município, busca o CNPJ completo dela e o nome, não a raiz.
+  const comFilial = searchTerms("07526557000100", "AMBEV S.A.", { cnpjs_municipio: ["07526557011497"] });
+  assert.deepEqual(comFilial.buscas, ["07.526.557/0114-97", "ambev"]);
+  assert.equal(comFilial.cnpjRoot, "07.526.557", "a raiz continua reconhecendo a empresa no texto");
+  assert.deepEqual(searchTerms("07526557000100", "AMBEV S.A.").buscas, ["07.526.557", "ambev"]);
+  // Órgão que não publica obra sai; meio ambiente e prefeitura ficam.
+  assert.equal(orgaoSemObra({ orgao: "Atos da Jucesp > Alterações de Sociedades Anônimas" }), true);
+  assert.equal(orgaoSemObra({ orgao: "Ministério Público > Conselho Superior" }), true);
+  assert.equal(orgaoSemObra({ orgao: "Secretaria de Meio Ambiente > Companhia Ambiental do Estado de São Paulo" }), false);
+  assert.equal(orgaoSemObra({ orgao: "Prefeitura de Vinhedo" }), false);
+  assert.equal(orgaoSemObra({}), false, "sem órgão informado, não corta");
+});

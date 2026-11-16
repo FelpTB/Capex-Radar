@@ -310,9 +310,10 @@ async function queryRegistro(spec, cnpj, razaoSocial, project = {}) {
        from enr_registro
        where codigo = any($1::text[])
          and translate(lower(titulo), 'áàâãäéèêëíìîïóòôõöúùûüç', 'aaaaaeeeeiiiiooooouuuuc') like $2
-       order by (${folded("coalesce(municipio, '')")} = $3) desc, municipio
+         and ($3 = '' or ${folded("coalesce(municipio, '')")} = $3 or payload->>'ibge' = $4)
+       order by municipio
        limit 100`,
-      [spec.codigos, `%${term}%`, fold(project?.municipio || "")],
+      [spec.codigos, `%${term}%`, fold(project?.municipio || ""), String(project?.codigo_ibge || "")],
     );
     return rows.map(({ payload, ...row }) => ({
       ...row,
@@ -558,13 +559,13 @@ async function queryAntt(razaoSocial) {
 
 async function querySource(codigo, cnpj, razaoSocial, since = null, project = {}) {
   if (codigo === "CAPTURA-SIGMINE") return querySigmine(project);
-  if (codigo === "SEC-ANA-SNIRH") return queryAna(cnpj);
+  if (codigo === "SEC-ANA-SNIRH") return queryAna(cnpj, { uf: project.uf });
   if (codigo === "SEC-ANP-EP") return queryAnp(razaoSocial);
   if (codigo === "CAPTURA-REIDI") return queryReidi(cnpj, razaoSocial);
   if (codigo === "SEC-ARTESP") return queryArtesp(razaoSocial, project);
   if (codigo === "SEC-ANP-CAMPO") return queryAnpLista(codigo, razaoSocial, project, true);
   if (codigo === "SEC-ANP-PLAT" || codigo === "SEC-ANP-DUTO") return queryAnpLista(codigo, razaoSocial, project, false);
-  if (codigo === "CAPTURA-DOU") return queryDou(razaoSocial);
+  if (codigo === "CAPTURA-DOU") return queryDou(razaoSocial, { municipio: project.municipio, desde: require("./estaduais").desdeDe(project) });
   if (codigo === "CAPTURA-QD") return queryDiario(project);
   if (codigo === "CAPTURA-SIGPUB") return querySigpub(project, cnpj, razaoSocial);
   if (codigo === "CAPTURA-DOM-METAWAY") return queryMetaway(project, cnpj, razaoSocial);
@@ -583,20 +584,23 @@ async function querySource(codigo, cnpj, razaoSocial, since = null, project = {}
               count(*) filter (
                 where $2::date is not null and data_contratacao >= $2::date
               )::int as no_periodo
-       from enr_bndes where cnpj = $1`,
-      [cnpj, since],
+       from enr_bndes where cnpj = $1
+         and ($3::text is null or uf = $3)`,
+      [cnpj, since, project.uf || null],
     );
     const lines = await pool.query(
       `select numero_contrato, data_contratacao, uf, municipio, descricao,
               situacao_contrato, valor_contratado
        from enr_bndes
        where cnpj = $1
+         and ($3::text is null or uf = $3)
+         and ($4::date is null or data_contratacao >= $4::date)
        order by case
          when $2::date is not null and data_contratacao >= $2::date then 0
          else 1
        end, data_contratacao desc nulls last
        limit 100`,
-      [cnpj, since],
+      [cnpj, since, project.uf || null, project.desde_busca || null],
     );
     return { ...rows[0], linhas: lines.rows };
   }
@@ -605,12 +609,13 @@ async function querySource(codigo, cnpj, razaoSocial, since = null, project = {}
       `select protocolo, versao, assunto, data_referencia, data_entrega,
               categoria, tipo, especie, tipo_apresentacao, link
        from enr_cvm_ipe where cnpj = $1
+         and ($3::date is null or data_referencia >= $3::date)
        order by case
          when $2::date is not null and data_referencia >= $2::date then 0
          else 1
        end, data_referencia desc nulls last
        limit 12`,
-      [cnpj, since],
+      [cnpj, since, project.desde_busca || null],
     );
     const totals = await pool.query(
       `select count(*)::int as n,
@@ -664,8 +669,8 @@ async function querySource(codigo, cnpj, razaoSocial, since = null, project = {}
               latitude, longitude, municipios, sub_bacia, participacao, cnpjs, cnpj_edicao,
               entrada_operacao, inicio_vigencia, fim_vigencia, gerado_em,
               ($2::date is not null and entrada_operacao >= $2::date) as no_periodo
-       from enr_siga where $1 = any(cnpjs) order by nome`,
-      [cnpj, since],
+       from enr_siga where $1 = any(cnpjs) and ($3::text is null or uf = $3) order by nome`,
+      [cnpj, since, project.uf || null],
     );
     return rows;
   }

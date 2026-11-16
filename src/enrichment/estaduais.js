@@ -68,12 +68,35 @@ function stripHtml(value) {
   return String(value || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 }
 
-function searchTerms(cnpj, razaoSocial) {
+// Início da busca nos diários: o projeto traz a própria janela (desde_busca,
+// alguns anos antes do anúncio); sem ela, DESDE.
+function desdeDe(project) {
+  const desde = String(project?.desde_busca || "").slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(desde) && desde > DESDE ? desde : DESDE;
+}
+
+function cnpjCompleto(cnpj) {
+  const d = String(cnpj || "").replace(/\D/g, "");
+  if (d.length !== 14) return null;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+// buscas: o que vai para o campo de pesquisa do portal. Com filiais conhecidas
+// no município do projeto, busca o CNPJ completo delas (licenças e outorgas
+// citam o estabelecimento) em vez da raiz, que traz todas as unidades da
+// empresa. O nome da empresa continua na busca. cnpjRoot segue valendo para
+// reconhecer a empresa no texto (citesCompany).
+function searchTerms(cnpj, razaoSocial, project = null) {
   const term = holderTerm(razaoSocial);
+  const cnpjRoot = cnpjRootMask(cnpj);
+  const nome = term && term.length >= 4 ? term : null;
+  const filiais = (project?.cnpjs_municipio || []).map(cnpjCompleto).filter(Boolean).slice(0, 4);
+  const buscas = filiais.length ? [...filiais, nome].filter(Boolean) : [cnpjRoot, nome].filter(Boolean);
   return {
-    cnpjRoot: cnpjRootMask(cnpj),
-    term: term && term.length >= 4 ? term : null,
+    cnpjRoot,
+    term: nome,
     words: (term || "").split(" ").filter((word) => word.length >= 3),
+    buscas,
   };
 }
 
@@ -87,6 +110,17 @@ function citesCompany(text, { cnpjRoot, words }) {
   // PDF com versalete parte as palavras ("P etrobras"); sem espaços e pontuação o nome volta inteiro.
   const compact = folded.replace(/[^a-z0-9]/g, "");
   return words.every((word) => compact.includes(word));
+}
+
+// Órgãos e seções dos diários que não publicam ato de obra (análise de nov/2026:
+// 1.824 de 5.446 atos coletados, nenhum com correlação direta). As 74 diretas
+// vieram de meio ambiente, águas, energia, desenvolvimento e prefeituras.
+const ORGAO_SEM_OBRA = /junta comercial|jucesp|sociedades? (anonimas|limitadas|por acoes)|ministerio publico|metrologia|pre-medidos|universidade|reitoria|diretoria de ensino|educacao|financas|fazenda|tributari|ativos e passivos|administracao financeira|saude|seguranca publica|policia|detran|tribunal|defensoria|procuradoria|assembleia legislativa|licita|pregao|recursos humanos|pessoal/;
+
+/** Ato de órgão que não publica obra (só quando o portal informa o órgão). */
+function orgaoSemObra(ato) {
+  const orgao = fold(`${ato?.orgao || ""} ${ato?.caderno || ""}`);
+  return orgao.trim().length > 0 && ORGAO_SEM_OBRA.test(orgao);
 }
 
 const ORDEM_ATO = { ato_relevante: 0, outro: 1, compra_publica: 2 };
@@ -156,13 +190,13 @@ function doolHits(payload, query, link, terms = {}) {
 
 async function queryDool(codigo, project, cnpj, razaoSocial) {
   const spec = DOOL[codigo];
-  const terms = searchTerms(cnpj, razaoSocial);
-  const queries = [terms.cnpjRoot, terms.term].filter(Boolean).map((item) => `"${item}"`);
+  const terms = searchTerms(cnpj, razaoSocial, project);
+  const queries = terms.buscas.map((item) => `"${item}"`);
   if (!queries.length) return { total: 0, linhas: [] };
   const hits = [];
   for (const query of queries) {
     for (const pagina of [0, 1]) {
-      const url = `${spec.busca}/${pagina}/di:${DESDE}/df:${today()}/?1=1&q=${encodeURIComponent(query)}`;
+      const url = `${spec.busca}/${pagina}/di:${desdeDe(project)}/df:${today()}/?1=1&q=${encodeURIComponent(query)}`;
       const found = doolHits(await requestJson(url), query, spec.link, terms);
       hits.push(...found);
       if (found.length < 10) break;
@@ -173,14 +207,14 @@ async function queryDool(codigo, project, cnpj, razaoSocial) {
 
 // Termos em Terms[i] são combinados com OU; o filtro de citesCompany faz o E.
 async function queryDoeSp(project, cnpj, razaoSocial) {
-  const terms = searchTerms(cnpj, razaoSocial);
-  const textos = [terms.cnpjRoot, terms.term].filter(Boolean);
+  const terms = searchTerms(cnpj, razaoSocial, project);
+  const textos = terms.buscas;
   if (!textos.length) return { total: 0, linhas: [] };
   const hits = [];
   for (const texto of textos) {
     const url = new URL(DOE_SP_BUSCA);
     url.searchParams.set("Terms[0]", texto);
-    url.searchParams.set("FromDate", DESDE);
+    url.searchParams.set("FromDate", desdeDe(project));
     url.searchParams.set("ToDate", today());
     url.searchParams.set("PageNumber", "1");
     url.searchParams.set("PageSize", "100");
@@ -209,7 +243,7 @@ async function queryDoeSp(project, cnpj, razaoSocial) {
 // Conector que só traz o texto (sem trecho pronto) ganha o trecho recortado aqui.
 function rankedResult(hits, terms, project) {
   const needles = [fold(terms.cnpjRoot || ""), ...terms.words].filter(Boolean);
-  const cited = hits.filter((hit) => citesCompany(hit.texto || hit.trecho, terms));
+  const cited = hits.filter((hit) => citesCompany(hit.texto || hit.trecho, terms) && !orgaoSemObra(hit));
   const ranked = rankAtos(cited.map(({ texto, ...hit }) => {
     const trecho = hit.trecho || (texto && (snippetAround(texto, needles, 400) || texto.slice(0, 400))) || "";
     return {
@@ -247,14 +281,14 @@ function jmgLink(item, texto) {
 }
 
 async function queryJornalMg(project, cnpj, razaoSocial) {
-  const terms = searchTerms(cnpj, razaoSocial);
-  const textos = [terms.cnpjRoot, terms.term].filter(Boolean);
+  const terms = searchTerms(cnpj, razaoSocial, project);
+  const textos = terms.buscas;
   if (!textos.length) return { total: 0, linhas: [] };
   const token = await jmgToken();
   const hits = [];
   for (const texto of textos) {
     const params = new URLSearchParams({
-      DataPublicacaoInicial: DESDE,
+      DataPublicacaoInicial: desdeDe(project),
       DataPublicacaoFinal: today(),
       TextoPesquisa: texto,
       DiarioExecutivo: "true",
@@ -341,6 +375,9 @@ async function querySemad(project, razaoSocial) {
 module.exports = {
   CA,
   DESDE,
+  desdeDe,
+  cnpjCompleto,
+  orgaoSemObra,
   DOOL,
   JANELA_CONTEXTO,
   brDateToIso,

@@ -1,6 +1,6 @@
 const cheerio = require("cheerio");
 const { fold, onlyDigits } = require("./resolve");
-const { DESDE, brDateToIso, rankedResult, searchTerms, stripHtml, today } = require("./estaduais");
+const { DESDE, desdeDe, brDateToIso, rankedResult, searchTerms, stripHtml, today } = require("./estaduais");
 const { DOE_PDF_CONECTORES } = require("./doe-pdf");
 
 // Diários oficiais estaduais com busca própria (fora do motor IONEWS de estaduais.js).
@@ -43,7 +43,7 @@ function latin1Param(value) {
 }
 
 function termTexts(terms) {
-  return [terms.cnpjRoot, terms.term].filter(Boolean);
+  return terms.buscas || [terms.cnpjRoot, terms.term].filter(Boolean);
 }
 
 function isoToBr(iso) {
@@ -89,9 +89,9 @@ function amHits(payload) {
 }
 
 async function queryAm(project, cnpj, razaoSocial) {
-  const desde = DESDE.split("-").reverse().join("-");
+  const desde = desdeDe(project).split("-").reverse().join("-");
   const ate = today().split("-").reverse().join("-");
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const hits = [];
     for (const page of [1, 2, 3]) {
       const url = new URL(`${AM_BASE}/apibusca/multidiarios/busca`);
@@ -120,13 +120,13 @@ function dfHits(payload) {
 }
 
 async function queryDf(project, cnpj, razaoSocial) {
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const hits = [];
     for (const pagina of [1, 2, 3]) {
       const payload = await httpJson(`${DF_BASE}/dodf/materia/listar`, {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: form({ termo: texto, dtInicial: DESDE, dtFinal: today(), tpBusca: "exata", pagina }),
+        body: form({ termo: texto, dtInicial: desdeDe(project), dtFinal: today(), tpBusca: "exata", pagina }),
       });
       const found = dfHits(payload);
       hits.push(...found);
@@ -151,9 +151,9 @@ function msHits(payload) {
 }
 
 async function queryMs(project, cnpj, razaoSocial) {
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const url = new URL(MS_API);
-    url.search = form({ tipo: 1, texto, dataInicial: DESDE, dataFinal: today(), pagina: 1, registrosPorPagina: 100 });
+    url.search = form({ tipo: 1, texto, dataInicial: desdeDe(project), dataFinal: today(), pagina: 1, registrosPorPagina: 100 });
     // Busca sem resultado volta HTTP 400 com "Nenhum resultado encontrado."
     const response = await http(url.toString(), { aceita: [400] });
     return response.status === 400 ? [] : msHits(JSON.parse(response.text));
@@ -181,8 +181,8 @@ const rnHits = (payload) => sdoeHits(payload, RN_BASE);
 
 function querySdoe(base, codigoDiario) {
   return async (project, cnpj, razaoSocial) => {
-    const periodo = `${isoToBr(DESDE)}-${isoToBr(today())}`;
-    return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+    const periodo = `${isoToBr(desdeDe(project))}-${isoToBr(today())}`;
+    return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
       const payload = await httpJson(`${base}/diariooficial/public/search`, {
         method: "POST",
         // Sem o Referer do portal a API responde 403 referer_mismatch.
@@ -191,7 +191,7 @@ function querySdoe(base, codigoDiario) {
           first: 0,
           maxResults: 200,
           palavras: texto,
-          dataInicial: isoToBr(DESDE),
+          dataInicial: isoToBr(desdeDe(project)),
           dataFinal: isoToBr(today()),
           intervaloAno: periodo,
           codigoDiario,
@@ -225,13 +225,13 @@ function alHits(payload) {
 }
 
 async function queryAl(project, cnpj, razaoSocial) {
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const hits = [];
     for (const page of [1, 2, 3, 4]) {
       const payload = await httpJson(`${AL_BASE}/apinova/api/editions/searchES?page=${page}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ keywords: texto, range: [DESDE, today()], edition_number: "", searchType: "frase_exata", order: "novo" }),
+        body: JSON.stringify({ keywords: texto, range: [desdeDe(project), today()], edition_number: "", searchType: "frase_exata", order: "novo" }),
       });
       const found = alHits(payload);
       hits.push(...found);
@@ -258,11 +258,11 @@ function scHits(payload) {
 }
 
 async function querySc(project, cnpj, razaoSocial) {
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const response = await http(`${SC_BASE}/apis/busca-materia`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ busca: texto, dtIni: DESDE, dtFim: today(), tipoBusca: 2, pagination: { from: 0, size: 200 }, resumo: false }),
+      body: JSON.stringify({ busca: texto, dtIni: desdeDe(project), dtFim: today(), tipoBusca: 2, pagination: { from: 0, size: 200 }, resumo: false }),
       aceita: [400, 404],
     });
     return scHits(JSON.parse(response.text || "{}"));
@@ -289,14 +289,14 @@ function rsHits(payload, tipoDiario) {
 }
 
 async function queryRs(project, cnpj, razaoSocial) {
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const hits = [];
     // As licenças da FEPAM saem no DIC, não no DOE.
     for (const tipoDiario of ["doe", "dic"]) {
       for (const page of [1, 2, 3]) {
         const url = new URL(RS_API);
         // Palavras soltas fazem frase; aspas viram OU nesta API.
-        url.search = form({ page, tipoDiario, queryString: texto, dataIni: DESDE, dataFim: today() });
+        url.search = form({ page, tipoDiario, queryString: texto, dataIni: desdeDe(project), dataFim: today() });
         const found = rsHits(await httpJson(url.toString()), tipoDiario);
         hits.push(...found);
         if (found.length < 10) break;
@@ -335,7 +335,7 @@ function rjHits(html) {
 }
 
 async function queryRj(project, cnpj, razaoSocial) {
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const response = await http(`${RJ_BASE}/portal/modules/conteudoonline/busca_do.php?acao=busca`, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -350,7 +350,7 @@ async function queryRj(project, cnpj, razaoSocial) {
         buscar: "Buscar",
       }),
     });
-    return rjHits(response.text).filter((hit) => !hit.data || hit.data >= DESDE);
+    return rjHits(response.text).filter((hit) => !hit.data || hit.data >= desdeDe(project));
   });
 }
 
@@ -381,10 +381,10 @@ function maHits(payload) {
 }
 
 async function queryMa(project, cnpj, razaoSocial) {
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const url = new URL(`${MA_BASE}/ajax.busca.php`);
     // Várias palavras já viram frase; a primeira resposta traz cerca de 100 páginas, as mais recentes.
-    url.search = form({ termo: texto, datai: DESDE, dataf: today(), caderno: "" });
+    url.search = form({ termo: texto, datai: desdeDe(project), dataf: today(), caderno: "" });
     return maHits(await httpJson(url.toString()));
   });
 }
@@ -414,7 +414,7 @@ function acHits(html) {
 
 async function queryAc(project, cnpj, razaoSocial) {
   const ano = Number(today().slice(0, 4));
-  return collect(searchTerms(cnpj, razaoSocial), project, async (texto) => {
+  return collect(searchTerms(cnpj, razaoSocial, project), project, async (texto) => {
     const hits = [];
     for (let year = ano; year > ano - AC_ANOS; year -= 1) {
       const response = await http(AC_BASE, {
@@ -452,11 +452,11 @@ function toEditions(html) {
 
 async function queryTo(project, cnpj, razaoSocial) {
   const { pdfPages } = require("../documents/to-markdown");
-  const terms = searchTerms(cnpj, razaoSocial);
+  const terms = searchTerms(cnpj, razaoSocial, project);
   const editions = new Map();
   for (const texto of termTexts(terms)) {
     const url = new URL(`${TO_BASE}/busca`);
-    url.search = form({ por: "texto", texto, "data-inicial": DESDE, "data-final": today() });
+    url.search = form({ por: "texto", texto, "data-inicial": desdeDe(project), "data-final": today() });
     const response = await http(url.toString(), { timeout: 90000 });
     for (const edition of toEditions(response.text)) editions.set(edition.url, edition);
   }
@@ -512,10 +512,10 @@ function cePages(html) {
   return match ? Number(match[1]) : 1;
 }
 
-async function ceSearch(texto) {
+async function ceSearch(texto, project) {
   const query = [
     "page=pesquisaTextual", "action=PesquisarTextual", "cmd=11", "flag=1",
-    `dataini=${latin1Param(isoToBr(DESDE))}`, `datafim=${latin1Param(isoToBr(today()))}`,
+    `dataini=${latin1Param(isoToBr(desdeDe(project)))}`, `datafim=${latin1Param(isoToBr(today()))}`,
     "RadioGroup1=radio3", `pesqEx=${latin1Param(texto)}`, "numDiario=", "numCaderno=", "numPagina=",
   ].join("&");
   const first = await http(`${CE_BUSCA}/sead.to?${query}`, { encoding: "latin1", timeout: 90000 });
@@ -535,10 +535,10 @@ async function ceSearch(texto) {
 
 async function queryCe(project, cnpj, razaoSocial) {
   const { pdfPages } = require("../documents/to-markdown");
-  const terms = searchTerms(cnpj, razaoSocial);
+  const terms = searchTerms(cnpj, razaoSocial, project);
   const rows = new Map();
   for (const texto of termTexts(terms)) {
-    for (const row of await ceSearch(texto)) rows.set(`${row.pdf}:${row.pagina}`, row);
+    for (const row of await ceSearch(texto, project)) rows.set(`${row.pdf}:${row.pagina}`, row);
   }
   const recent = [...rows.values()].sort((a, b) => String(b.data).localeCompare(String(a.data))).slice(0, CE_PAGINAS);
   const pdfs = new Map();
@@ -596,7 +596,7 @@ function piNote(payload) {
 }
 
 async function queryPi(project, cnpj, razaoSocial) {
-  const terms = searchTerms(cnpj, razaoSocial);
+  const terms = searchTerms(cnpj, razaoSocial, project);
   if (!terms.term) return { total: 0, linhas: [] };
   const headers = { "x-requested-with": "XMLHttpRequest", "content-type": "application/x-www-form-urlencoded" };
   const payload = await httpJson(`${PI_BASE}/Api/buscaavancada.json`, {

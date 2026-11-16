@@ -147,9 +147,11 @@ async function queryLayer(layer, where) {
   return ranked;
 }
 
-async function queryAna(cnpj) {
-  const where = anaWhere(cnpj);
-  if (!where) return [];
+async function queryAna(cnpj, { uf = null } = {}) {
+  const base = anaWhere(cnpj);
+  if (!base) return [];
+  // Só outorgas da UF do projeto: sem o filtro, 80% vinham de outros estados.
+  const where = /^[A-Z]{2}$/.test(String(uf || "")) ? `${base} AND ing_sg_ufmunicipio = '${uf}'` : base;
   const groups = await Promise.all(LAYERS.map((layer) => queryLayer(layer, where)));
   return groups.flatMap((rows) => rows.slice(0, 6)).slice(0, 12);
 }

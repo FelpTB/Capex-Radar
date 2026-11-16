@@ -119,9 +119,14 @@ function classifyRow(cells, columns, projectsByRoot) {
     const inPeriod = Boolean(project.desde && row.inicio && row.inicio >= project.desde);
     if (inPeriod) hit.noPeriodo += 1;
     const rank = (sameCity ? 4 : 0) + (sameUf ? 2 : 0) + (inPeriod ? 1 : 0);
-    if (!rank) continue;
+    // Obra de outra UF não entra. Na mesma UF fica (o município vem antes):
+    // campus em dois municípios (Tamboré: Barueri e Santana de Parnaíba)
+    // tem obra matriculada no vizinho.
+    if (project.uf && !sameUf) continue;
     hit.amostra.push({ ...row, rank });
-    hit.amostra.sort((left, right) => right.rank - left.rank);
+    // Empate no rank: a obra mais recente vem antes (com muitas obras no
+    // município, as antigas ocupavam as 8 vagas e as da obra atual ficavam de fora).
+    hit.amostra.sort((left, right) => right.rank - left.rank || String(right.inicio || "").localeCompare(String(left.inicio || "")));
     if (hit.amostra.length > 8) hit.amostra.length = 8;
   }
 }

@@ -57,8 +57,57 @@ Sobre os mesmos 7.627 registros, a regra:
 
 **Código IBGE do projeto**: é preenchido pela API do IBGE na primeira consulta, para casar com a base do IAT.
 
+## Coleta focada: trazer menos informação inútil
+
+A pré-triagem só descarta depois da coleta. Para trazer menos, a própria consulta passou a usar o que separa os registros úteis.
+
+### O que os portais aceitam (testado em nov/2026)
+
+| Portal | Empresa **e** município na mesma busca? |
+|---|---|
+| DOU | Sim: `"Ascenty" "Vinhedo"` traz 2 atos, contra 33 só com o nome |
+| DOE-SP | Não: termos se somam (OU); frase com o município não acha nada |
+| DOE-PR, BA, GO, MT, ES, SE, AP (IONEWS) | Não de forma confiável |
+| DOE-MS | Não: as palavras são somadas (OU) |
+
+Onde o portal não aceita o município, os filtros possíveis são a data, o CNPJ buscado e o órgão do ato.
+
+### Padrões que guiam a coleta
+
+- **Diários.** As 74 diretas citavam o município. Nenhuma era de mais de 2 anos antes do anúncio. Todas vieram de órgãos de meio ambiente, águas, energia, desenvolvimento ou prefeituras. Os atos da Junta Comercial, do Ministério Público, de metrologia, de ensino e de finanças somavam 1.824 atos, nenhum útil.
+- **Raiz do CNPJ.** A busca pela raiz trazia os atos de todas as unidades da empresa: ~1.700 registros para 4 diretas.
+- **Fontes estruturadas** (ANA, BNDES, SIGA, CNO). Vinham da empresa no país inteiro: 80% das outorgas da ANA e 70% dos contratos do BNDES eram de outra UF.
+
+### O que mudou na consulta
+
+| Fonte | Antes | Agora |
+|---|---|---|
+| Todos os diários | desde 2015 | desde 3 anos antes do anúncio do projeto (`desde_busca`) |
+| Diários estaduais e municipais (SIGPUB) | raiz do CNPJ + nome | CNPJ completo das filiais do grupo no município + nome. Sem filial conhecida, raiz + nome. 93 dos 117 projetos têm filial no município |
+| Diários com órgão no resultado (DOE-SP, DOU, PE, SC, RJ, SIGPUB) | todo ato | sai ato de órgão que não publica obra (`orgaoSemObra`, em `src/enrichment/estaduais.js`) |
+| DOU | só o nome; os 5 atos mais recentes | nome **e** município. Sem resultado, só o nome. Ficam os atos da janela, e os que citam o município vêm antes |
+| ANA (outorgas) | empresa no país | empresa na UF do projeto |
+| BNDES | empresa no país | UF do projeto, contratos da janela |
+| ANEEL SIGA | empresa no país | UF do projeto |
+| CVM | 12 documentos mais recentes | documentos da janela |
+| IAT e ANTAQ (por nome) | 100 registros do estado | município do projeto (nome ou código IBGE) |
+| CNO | até 8 obras, inclusive de outras UFs, as mais antigas primeiro | obras da UF do projeto (o município vem antes), as mais recentes primeiro. O campus de Tamboré tem obras em Barueri e em Santana de Parnaíba |
+| ANM (SIGMINE), ONS/EPE | consultados | fora do Enriquecimento 2 |
+
+### Medição (12 projetos, coleta nova sem gravar × coleta de nov/2026)
+
+| | Antes | Agora |
+|---|---|---|
+| Registros coletados | 1.163 | **712 (−39%)** |
+| Registros que vão ao julgamento (após a pré-triagem) | 1.163 | **252 (−78%)** |
+| Diretas ainda encontradas | 60 | **55 (92%)** |
+
+Perdas conhecidas:
+- **4 outorgas da Ambev em Carambeí (2022).** Saíram no nome da filial de Ponta Grossa (0027-49), antes de a fábrica nova ter CNPJ próprio. O texto não cita Carambeí, só a bacia. Só voltariam com a busca pela raiz, que traz ~1.700 registros inúteis.
+- **1 ato da Bracell no DOE-SP.** A busca pelo nome devolve no máximo 100 atos por termo.
+
 ## Próximos passos possíveis
 
-- **Buscar já com o município.** Os diários são consultados pelo nome da empresa desde uma data fixa. Incluir o município e a janela de datas na própria busca (onde o portal permite) reduziria o tempo de coleta, que levou ~3 h para 117 projetos. Hoje o corte acontece só depois da coleta.
-- **Rever DOE-MS, DOE-RJ e DOE-MA.** Não tiveram nenhuma direta. Vale ver se a busca acha os atos de licenciamento desses estados (Imasul, Inea, Sema-MA) ou só atos fiscais.
-- **CVM:** só fato relevante que cite a obra ou o município.
+- **DOE-MS** (112 registros em um projeto, nenhuma direta). O resultado é a página inteira do diário, sem órgão. Vale buscar só no caderno do Imasul, se o portal permitir.
+- **CVM** (34 registros na amostra, nenhuma direta). Ler só fato relevante cujo assunto cite obra, ampliação ou investimento.
+- **Filiais antigas.** Incluir no cadastro as filiais baixadas ou de outro município que já responderam pela obra (caso Ambev 0027-49).

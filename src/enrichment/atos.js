@@ -35,6 +35,7 @@ function parseDouHits(html, term) {
       titulo: stripHtml(item.title),
       data: item.pubDate || null,
       secao: item.pubName || null,
+      orgao: item.hierarchyStr || null,
       pagina: item.numberPage || null,
       trecho: texto.slice(0, 240),
       url: urlTitle.startsWith("http") ? urlTitle : `https://www.in.gov.br/web/dou/-/${urlTitle}`,
@@ -161,15 +162,35 @@ async function describeDouHit(hit, summarize, term) {
 async function queryDou(razao, options = {}) {
   const term = holderTerm(razao);
   if (!term || term.length < 4) return { total: 0, linhas: [] };
-  const url = `${DOU_SEARCH}?q=${encodeURIComponent(`"${term}"`)}&delta=8&sortType=0`;
-  const response = await fetch(url, {
-    headers: { "user-agent": USER_AGENT },
-    signal: AbortSignal.timeout(40000),
-    redirect: "follow",
-  });
-  if (!response.ok) throw new Error(`Diário Oficial respondeu HTTP ${response.status}.`);
-  const hits = parseDouHits(await response.text(), term);
-  const recent = recentDouHits(hits, options.limit || DOU_LIMIT);
+  // A busca do DOU aceita duas frases juntas (E): com o município do projeto,
+  // vêm só os atos que citam empresa e município ("Ascenty" "Vinhedo": 2 atos em vez de 33).
+  const municipio = String(options.municipio || "").trim();
+  const consulta = municipio.length >= 3 ? `"${term}" "${municipio}"` : `"${term}"`;
+  const buscar = async (q) => {
+    const resposta = await fetch(`${DOU_SEARCH}?q=${encodeURIComponent(q)}&delta=8&sortType=0`, {
+      headers: { "user-agent": USER_AGENT },
+      signal: AbortSignal.timeout(40000),
+      redirect: "follow",
+    });
+    if (!resposta.ok) throw new Error(`Diário Oficial respondeu HTTP ${resposta.status}.`);
+    return resposta;
+  };
+  let response = await buscar(consulta);
+  // Município escrito de outro jeito no ato (São Jorge d'Oeste / do Oeste): sem
+  // resultado com o município, vale a busca só pelo nome (o município ordena).
+  if (consulta !== `"${term}"`) {
+    const html = await response.clone().text();
+    if (!parseDouHits(html, term).length) response = await buscar(`"${term}"`);
+  }
+  // Ficam os atos da janela do projeto; os que citam o município vêm primeiro.
+  // Sem nenhum que cite (município grafado de outro jeito), os mais recentes.
+  const local = fold(options.municipio || "");
+  const { orgaoSemObra } = require("./estaduais");
+  const hits = parseDouHits(await response.text(), term)
+    .filter((hit) => !orgaoSemObra(hit))
+    .filter((hit) => !options.desde || !douDateKey(hit.data) || douDateKey(hit.data) >= String(options.desde).replace(/-/g, ""));
+  const citam = local.length >= 4 ? hits.filter((hit) => fold(`${hit.titulo || ""} ${hit.texto || ""}`).includes(local)) : [];
+  const recent = citam.length ? citam.slice(0, options.limit || DOU_LIMIT) : recentDouHits(hits, options.limit || DOU_LIMIT);
   let summarize = options.summarize;
   if (summarize === undefined) {
     try {

@@ -76,6 +76,37 @@ function chaveDoRegistro(codigo, linha) {
   return `sec:${codigo}:${crypto.createHash("sha1").update(String(base)).digest("hex").slice(0, 20)}`;
 }
 
+// Janela da coleta: os diários são consultados a partir de alguns anos antes
+// do anúncio (análise de nov/2026: nenhuma evidência de diário com correlação
+// direta tinha mais de 2 anos antes do anúncio).
+const ANOS_ANTES_BUSCA = 3;
+
+function desdeDaBusca(anuncio) {
+  const d = anuncio ? new Date(anuncio) : null;
+  if (!d || Number.isNaN(d.getTime())) return null;
+  d.setUTCFullYear(d.getUTCFullYear() - ANOS_ANTES_BUSCA);
+  return d.toISOString().slice(0, 10);
+}
+
+const semAcento = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
+
+/**
+ * CNPJs das filiais do grupo no município do projeto (e a filial do
+ * projeto). A coleta busca por eles nos diários em vez da raiz do CNPJ, que
+ * traz os atos de todas as unidades da empresa.
+ */
+async function filiaisDoMunicipio(db, projeto) {
+  const lista = new Set(String(projeto.filial_cnpj || "").length === 14 ? [projeto.filial_cnpj] : []);
+  if (projeto.municipio && projeto.uf && projeto.grupo_id) {
+    const { rows } = await db.query(
+      "select cnpj, municipio from capex_radar.vw_filiais where grupo_id = $1 and uf = $2",
+      [projeto.grupo_id, projeto.uf],
+    );
+    for (const f of rows) if (semAcento(f.municipio) === semAcento(projeto.municipio)) lista.add(f.cnpj);
+  }
+  return [...lista].slice(0, 4);
+}
+
 /** Projeto da carteira no formato que a coleta do MVP espera. */
 function projetoParaColeta(p) {
   return {
@@ -91,6 +122,8 @@ function projetoParaColeta(p) {
     data_anuncio: p.data_anuncio || p.primeira_evidencia_em || null,
     filial_cnpj: p.filial_cnpj || null,
     codigo_ibge: p.codigo_ibge || null,
+    desde_busca: desdeDaBusca(p.data_anuncio || p.primeira_evidencia_em),
+    cnpjs_municipio: p.cnpjs_municipio || [],
     leitura: p.objeto || null,
   };
 }
@@ -370,7 +403,10 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
   const { getConfig } = require("./config");
   const modeloCorrelacao = getConfig().claudeDecisionModel;
   const fontes = await nomesDasFontes(db);
-  for (const p of projetos) p.codigo_ibge = await garantirIbge(db, p);
+  for (const p of projetos) {
+    p.codigo_ibge = await garantirIbge(db, p);
+    p.cnpjs_municipio = await filiaisDoMunicipio(db, p);
+  }
   const paraColeta = projetos.map(projetoParaColeta);
   let cno = new Map();
   try {
@@ -671,6 +707,8 @@ module.exports = {
   tituloDoRegistro,
   chaveDoRegistro,
   projetoParaColeta,
+  desdeDaBusca,
+  filiaisDoMunicipio,
   entradaLinha,
   lerLinhaDoTempo,
   avancaEstagio,
