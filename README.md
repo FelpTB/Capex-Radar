@@ -92,6 +92,14 @@ npm run doe:pdf-sync -- --dias 30 --uf RO  # uma UF
 
 Com o servidor no ar, o agendador relê os últimos 7 dias uma vez por dia.
 
+O CNO (Cadastro Nacional de Obras) é um ZIP de 1,7 GB lido localmente em `data/dadosgov/` e não sobe para o Railway. Atualize uma vez por mês:
+
+```bash
+npm run capex:cno-mensal
+```
+
+O comando baixa o ZIP novo, se houver, e cruza as obras com os projetos ativos (raiz, grupo, marca e sob encomenda). Classes já dadas e revisões humanas ficam como estão. As obras novas entram como `nao_avaliada` e são julgadas pelo especialista do CNO com `npm run capex:reprocessar -- registros-empresa --saida <pasta>` e depois `julgar`.
+
 ## Fluxo do piloto
 
 1. Abra **Prospectar** e clique em **Buscar novos projetos**.

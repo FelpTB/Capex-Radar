@@ -234,6 +234,17 @@ async function validarLocalDoProjeto(db, projetoId) {
       const v = await validarMunicipio(parte, p.uf);
       if (v.valido) validas.push(v.nome);
     }
+    // Projeto pai já dividido: cada município válido tem um filho por localidade.
+    const { rows: filhos } = await db.query(
+      "select municipio from capex_radar.projetos where projeto_pai_id = $1 and relacao = 'localidade' and status <> 'descartado'",
+      [projetoId],
+    );
+    const dobrar = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+    const cobertos = new Set(filhos.map((f) => dobrar(f.municipio)));
+    if (validas.length === partes.length && validas.every((m) => cobertos.has(dobrar(m)))) {
+      await db.query("update capex_radar.projetos set municipio_pendencia = null where id = $1 and municipio_pendencia is not null", [projetoId]);
+      return { valido: true, dividido: true, localidades: validas };
+    }
     const pendencia = { motivo: `"${p.municipio}" junta mais de um município: dividir o projeto em localidades`, sugestoes: validas, em: new Date().toISOString() };
     await db.query("update capex_radar.projetos set municipio_pendencia = $2::jsonb where id = $1", [projetoId, JSON.stringify(pendencia)]);
     return { valido: false, ...pendencia };

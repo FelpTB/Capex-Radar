@@ -22,7 +22,8 @@
     "capex:secundarias": "node scripts/capex-fontes-secundarias.js",
     "capex:mcp": "node scripts/capex-mcp-acesso.js",
     "capex:uso-ia": "node scripts/capex-uso-ia.js",
-    "capex:reprocessar": "node scripts/capex-reprocessar.js"
+    "capex:reprocessar": "node scripts/capex-reprocessar.js",
+    "capex:cno-mensal": "node scripts/dadosgov-sync.js SEC-CNO && node scripts/capex-reprocessar.js coletar-cno"
   },
   "keywords": [],
   "author": "",
