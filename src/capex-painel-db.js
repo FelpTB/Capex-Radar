@@ -439,28 +439,93 @@ async function retirarDoProjeto(evidenciaId, motivo, { ator = ATOR } = {}) {
  * por fonte e por classe (sql/031).
  */
 /**
- * Evidências aprovadas: as aceitas em projetos da carteira (não descartados),
- * com a classe do registro oficial quando houver (sql/031).
+ * Evidências por classe (aba Evidências). Junta três origens:
+ *  - evidências aceitas nos projetos (notícias e registros), com a classe do
+ *    registro oficial ou, nas notícias, a da confiança da ligação;
+ *  - registros oficiais analisados que não viraram evidência (possibilidades
+ *    e descartes do especialista);
+ *  - notícias tiradas do projeto (Filtro 1 e cronologia).
+ * Sem classe escolhida, traz até porClasse itens de cada seção; com classe,
+ * pagina só aquela. Devolve também a contagem de cada seção e os marcos da
+ * linha do tempo dos projetos listados.
  */
-async function evidenciasAprovadas() {
-  const { rows } = await pool.query(`
-    select e.id, e.titulo, e.url, e.veiculo, e.data_original, e.fonte_codigo, f.nome as fonte_nome,
-           ep.origem, ep.confianca, ep.motivo, coalesce(ep.revisado_por, ep.sugerido_por) as aprovado_por,
-           coalesce(ep.revisado_em, ep.sugerido_em) as aprovado_em,
-           p.id as projeto_id, p.titulo as projeto, p.uf, p.municipio, g.id as grupo_id, g.nome as grupo,
-           r.classe, r.probabilidade
-      from capex_radar.evidencia_projeto ep
-      join capex_radar.evidencias e on e.id = ep.evidencia_id
-      join capex_radar.projetos p on p.id = ep.projeto_id and p.status <> 'descartado'
-      left join capex_radar.grupos g on g.id = p.grupo_id
-      left join capex_radar.fontes f on f.codigo = e.fonte_codigo
-      left join lateral (
-        select classe, probabilidade from capex_radar.registros_analisados ra
-         where ra.evidencia_id = e.id and ra.projeto_id = p.id limit 1
-      ) r on true
-     where ep.situacao = 'aceito'
-     order by e.data_original desc nulls last, p.titulo`);
-  return rows;
+async function evidenciasPorClasse({ grupo = "", tipo = "", fonte = "", q = "", classe = "", pagina = 1, porClasse = 25, porPagina = 200 } = {}) {
+  const base = `
+    with base as (
+      select 'evidencia' as item, e.id::text as id, e.titulo, e.url, e.veiculo, e.data_original as data, e.fonte_codigo,
+             e.fonte_codigo !~ '^(SEC-|CAPTURA-)' as noticia, null::jsonb as registro,
+             ep.origem, coalesce(r.probabilidade, ep.confianca)::int as probabilidade,
+             coalesce(r.classe, case when ep.confianca is not null then capex_radar.classe_da_probabilidade(ep.confianca) else 'sem_nota' end) as classe,
+             coalesce(r.motivo, ep.motivo) as motivo,
+             coalesce(r.revisado_por, ep.revisado_por, r.analisado_por, ep.sugerido_por) as avaliado_por,
+             coalesce(r.revisado_em, ep.revisado_em, r.em, ep.sugerido_em) as avaliado_em,
+             (coalesce(r.revisado_por like 'usuario:%' and r.revisado_por <> 'usuario:claude-code', false) or coalesce(ep.revisado_por like 'usuario:%' and ep.revisado_por <> 'usuario:claude-code', false)) as revisado,
+             e.filtro->>'justificativa' as filtro2, e.filtro_final->>'justificativa' as filtro3,
+             null::text as descarte, p.id as projeto_id, p.titulo as projeto, p.uf, p.municipio, p.grupo_id
+        from capex_radar.evidencia_projeto ep
+        join capex_radar.evidencias e on e.id = ep.evidencia_id
+        join capex_radar.projetos p on p.id = ep.projeto_id and p.status <> 'descartado'
+        left join lateral (
+          select classe, probabilidade, motivo, analisado_por, em, revisado_por, revisado_em
+            from capex_radar.registros_analisados ra
+           where ra.evidencia_id = e.id and ra.projeto_id = p.id limit 1
+        ) r on true
+       where ep.situacao = 'aceito'
+      union all
+      select 'registro', r.id::text, null, null, null, r.data_registro, r.fonte_codigo, false, r.registro,
+             null, r.probabilidade, r.classe, r.motivo, coalesce(r.revisado_por, r.analisado_por), coalesce(r.revisado_em, r.em),
+             coalesce(r.revisado_por like 'usuario:%' and r.revisado_por <> 'usuario:claude-code', false), null, null, null, p.id, p.titulo, p.uf, p.municipio, p.grupo_id
+        from capex_radar.registros_analisados r
+        join capex_radar.projetos p on p.id = r.projeto_id and p.status <> 'descartado'
+       where r.classe is not null
+         and not exists (select 1 from capex_radar.evidencia_projeto ep
+                          where ep.evidencia_id = r.evidencia_id and ep.projeto_id = r.projeto_id and ep.situacao = 'aceito')
+      union all
+      select 'descartada', e.id::text, e.titulo, e.url, e.veiculo, e.data_original, e.fonte_codigo, true, null,
+             ep.origem, ep.confianca, 'descartada', ep.motivo, coalesce(ep.revisado_por, ep.sugerido_por), coalesce(ep.revisado_em, ep.sugerido_em),
+             coalesce(ep.revisado_por like 'usuario:%' and ep.revisado_por <> 'usuario:claude-code', false), e.filtro->>'justificativa', e.filtro_final->>'justificativa',
+             coalesce(ep.descarte, 'rejeitada'), p.id, p.titulo, p.uf, p.municipio, p.grupo_id
+        from capex_radar.evidencia_projeto ep
+        join capex_radar.evidencias e on e.id = ep.evidencia_id and e.fonte_codigo !~ '^(SEC-|CAPTURA-)'
+        join capex_radar.projetos p on p.id = ep.projeto_id and p.status <> 'descartado'
+       where ep.situacao = 'rejeitado'
+    ), filtrada as (
+      select * from base
+       where ($1 = '' or grupo_id::text = $1)
+         and ($2 = '' or noticia = ($2 = 'noticia'))
+         and ($3 = '' or fonte_codigo = $3)
+         and ($4 = '' or lower(concat_ws(' ', titulo, registro::text, projeto, veiculo, municipio, motivo)) like '%' || lower($4) || '%')
+    )`;
+  const termo = String(q || "").toLowerCase();
+  const params = [grupo, tipo, fonte, termo];
+  const [contagem, linhas, fontes] = await Promise.all([
+    pool.query(`${base} select classe, count(*)::int as n, count(distinct projeto_id)::int as projetos from filtrada group by classe`, params),
+    pool.query(`${base}
+      select * from (
+        select *, row_number() over (partition by classe order by data desc nulls last, projeto, id) as rn from filtrada
+      ) x
+      where ($5 = '' and rn <= $6) or (classe = $5 and rn > $7 and rn <= $7 + $8)
+      order by classe, rn`, [...params, classe, porClasse, (Math.max(1, pagina) - 1) * porPagina, porPagina]),
+    pool.query(`select codigo, nome from capex_radar.fontes`),
+  ]);
+  const ids = [...new Set(linhas.rows.map((r) => r.projeto_id))];
+  const { rows: projetos } = ids.length
+    ? await pool.query("select id, linha_tempo->'marcos' as marcos from capex_radar.projetos where id = any($1::uuid[])", [ids])
+    : { rows: [] };
+  const { rows: grupos } = await pool.query(
+    `select distinct g.id, g.nome from capex_radar.grupos g join capex_radar.projetos p on p.grupo_id = g.id and p.status <> 'descartado' order by g.nome`,
+  );
+  const { rows: codigos } = await pool.query(
+    `select distinct e.fonte_codigo from capex_radar.evidencia_projeto ep join capex_radar.evidencias e on e.id = ep.evidencia_id
+     union select distinct fonte_codigo from capex_radar.registros_analisados where classe is not null`,
+  );
+  return {
+    contagem: Object.fromEntries(contagem.rows.map((r) => [r.classe, r])),
+    itens: linhas.rows,
+    marcos: Object.fromEntries(projetos.map((p) => [p.id, Array.isArray(p.marcos) ? p.marcos : []])),
+    grupos,
+    fontes: codigos.map((c) => [c.fonte_codigo, fontes.rows.find((f) => f.codigo === c.fonte_codigo)?.nome || c.fonte_codigo]),
+  };
 }
 
 async function eficienciaFontes() {
@@ -666,7 +731,7 @@ async function alterarStatusProjeto(id, status, { ator = ATOR, motivo = null } =
 
 module.exports = {
   eficienciaFontes,
-  evidenciasAprovadas,
+  evidenciasPorClasse,
   retirarDoProjeto,
   ATOR,
   CAMPOS_EDITAVEIS,

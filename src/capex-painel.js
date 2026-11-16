@@ -113,7 +113,7 @@ function abas(ativa, totalProjetos) {
     ${aba("noticias", "/monitoramento", "Notícias")}
     ${aba("buscas", "/monitoramento/buscas", "Buscas")}
     ${aba("carteira", "/monitoramento/carteira", `Carteira (${totalProjetos})`)}
-    ${aba("evidencias", "/monitoramento/evidencias", "Evidências aprovadas")}
+    ${aba("evidencias", "/monitoramento/evidencias", "Evidências")}
     ${aba("agente", "/monitoramento/agente", "Agente")}
     ${aba("fontes", "/monitoramento/fontes", "Fontes")}
   </nav>`;
@@ -877,86 +877,158 @@ function blocoStatus(projeto, obras) {
   </section>`;
 }
 
-const ehNoticia = (e) => !/^(SEC-|CAPTURA-|DOE|DOU)/.test(e.fonte_codigo || "");
+// Seções da aba Evidências, na ordem da página.
+const SECOES_EVIDENCIA = [
+  { chave: "certeira", destino: "linha" },
+  { chave: "provavel", destino: "linha" },
+  { chave: "sem_nota", rotulo: "Ligadas sem nota", faixa: "sem probabilidade", tom: "info", destino: "linha",
+    regra: "Ligadas ao projeto à mão ou por regra (reprocessamento, subprojeto, projeto duplicado), sem nota de probabilidade. Contam como evidência e entram na linha do tempo quando citadas num marco." },
+  { chave: "incerta", destino: "possibilidade" },
+  { chave: "improvavel", destino: "possibilidade" },
+  { chave: "muito_improvavel", destino: "descarte", fechada: true },
+  { chave: "descartada", rotulo: "Notícias tiradas do projeto", faixa: "Filtro 1 e cronologia", tom: "neutral", destino: "descarte", fechada: true,
+    regra: "Notícias que estavam ligadas e saíram: matéria ampla (sem a obra), repetida, de outro projeto ou fora da cronologia da obra." },
+];
+const DESTINO_EVIDENCIA = {
+  linha: "Liga ao projeto como evidência e entra na linha do tempo quando sustenta um marco.",
+  possibilidade: "Não entra na linha do tempo: aparece como possibilidade no perfil, para revisão.",
+  descarte: "Descartada: fica só nos dados brutos, no fim da ficha do projeto.",
+};
+const DESCARTE_EVIDENCIA = { ampla: "matéria ampla", repetida: "repetida", outro_projeto: "de outro projeto", cronologia: "fora da cronologia", rejeitada: "rejeitada" };
 const ORIGEM_APROVACAO = { ia: "IA", manual: "manual", regra: "regra" };
 const POR_PAGINA = 200;
 
 function filtrosEvidencias(query = {}) {
   const texto = (v) => (typeof v === "string" ? v.trim().slice(0, 100) : "");
+  const secoes = SECOES_EVIDENCIA.map((s) => s.chave);
   return {
     grupo: uuid.safeParse(query.grupo).success ? query.grupo : "",
     tipo: ["noticia", "registro"].includes(query.tipo) ? query.tipo : "",
     fonte: texto(query.fonte),
     q: texto(query.q),
+    classe: secoes.includes(query.classe) ? query.classe : "",
     pagina: Math.max(1, Number.parseInt(query.pagina, 10) || 1),
   };
 }
 
-function paginaEvidencias({ evidencias, filtros, totalProjetos }) {
-  const dobrar = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-  const busca = dobrar(filtros.q);
-  const visiveis = evidencias.filter((e) =>
-    (!filtros.grupo || e.grupo_id === filtros.grupo)
-    && (!filtros.tipo || (filtros.tipo === "noticia") === ehNoticia(e))
-    && (!filtros.fonte || e.fonte_codigo === filtros.fonte)
-    && (!busca || dobrar(`${e.titulo} ${e.projeto} ${e.veiculo} ${e.municipio}`).includes(busca)));
-  const paginas = Math.max(1, Math.ceil(visiveis.length / POR_PAGINA));
-  const pagina = Math.min(filtros.pagina, paginas);
-  const lista = visiveis.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
-  const noticias = evidencias.filter(ehNoticia).length;
-  const projetosCom = new Set(evidencias.map((e) => e.projeto_id)).size;
-  const empresas = new Map(evidencias.map((e) => [e.grupo_id, e.grupo]));
-  const fontes = new Map(evidencias.map((e) => [e.fonte_codigo, e.fonte_nome || e.fonte_codigo]));
-  const ordenar = (m) => [...m].filter(([k]) => k).sort((a, b) => String(a[1]).localeCompare(String(b[1]), "pt-BR"));
+function secaoEvidencia(s) {
+  const c = classes.CLASSES[s.chave] || {};
+  return { rotulo: c.rotulo, faixa: c.faixa, tom: c.tom, ...s };
+}
+
+// Critérios de avaliação: a escala, o que cada especialista olha e o funil das notícias.
+function blocoCriterios() {
+  const { ESCALA, ESPECIALISTAS } = require("./capex-especialistas");
+  const especialistas = Object.values(ESPECIALISTAS).map((e) => `<div class="criterio">
+      <h4>${esc(e.nome)}</h4>
+      <p class="muted">${esc(e.contexto)}</p>
+      <p><strong>Sobe:</strong> ${esc(e.sobe.join("; "))}.</p>
+      <p><strong>Desce:</strong> ${esc(e.desce.join("; "))}.</p>
+    </div>`).join("");
+  return `<details class="raw-record">
+      <summary><strong>Critérios da avaliação</strong> <span class="muted">escala, especialistas por fonte e funil das notícias</span></summary>
+      <h3>Escala de probabilidade</h3>
+      <pre>${esc(ESCALA)}</pre>
+      <h3>Notícias</h3>
+      <p>Passam pelo Filtro 1 (manchete com ativo físico), pelo Filtro 2 (CapEx e fato novo, sem repetir outra notícia) e pelo Filtro 3 (matéria lida, obra ainda não concluída). A ligação ao projeto recebe uma confiança de 0 a 100, que dá a classe pela mesma escala. Saem do projeto se forem amplas, repetidas, de outro projeto ou fora da cronologia da obra.</p>
+      <h3>Registros oficiais: especialista de cada fonte</h3>
+      ${especialistas}
+    </details>`;
+}
+
+function linhaEvidencia(e, marcosDoProjeto, secao) {
+  const b = e.registro || {};
+  const titulo = e.titulo || b.titulo || b.nome || b.descricao || b.empreendimento || b.assunto || b.objeto || b.tipo_licenca || "(sem título)";
+  const link = e.url || b.url || b.link;
+  const url = /^https?:\/\//.test(link || "") ? link : null;
+  const tituloHtml = url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(String(titulo).slice(0, 180))} ↗</a>` : esc(String(titulo).slice(0, 180));
+  const marcos = e.item === "evidencia" ? marcosDoProjeto.filter((m) => (m.evidencias || []).map(String).includes(e.id)) : [];
+  let linha;
+  if (marcos.length) {
+    linha = `${badge("na linha do tempo", "success")}${marcos.map((m) => `<br><span class="muted">${esc(m.data || "")} · ${esc(m.marco || "")}</span>`).join("")}`;
+  } else if (secao.destino === "linha") {
+    linha = `${badge("evidência, sem marco", "warning")}<br><span class="muted">ligada ao projeto, mas nenhum marco a cita</span>`;
+  } else if (secao.destino === "possibilidade") {
+    linha = badge("possibilidade no perfil", "neutral");
+  } else {
+    linha = `${badge("descartada", "neutral")}${e.descarte ? `<br><span class="muted">${esc(DESCARTE_EVIDENCIA[e.descarte] || e.descarte)}</span>` : ""}`;
+  }
+  const especialista = e.noticia ? null : require("./capex-especialistas").especialistaDe(e.fonte_codigo).nome;
+  const criterios = [
+    e.motivo ? `<p>${esc(e.motivo)}</p>` : "",
+    especialista ? `<p class="muted">Especialista: ${esc(especialista)}</p>` : "",
+    e.noticia && e.origem ? `<p class="muted">Ligação: ${esc(ORIGEM_APROVACAO[e.origem] || e.origem)}${e.probabilidade != null ? `, confiança ${e.probabilidade}%` : ""}</p>` : "",
+    e.filtro2 ? `<p class="muted">Filtro 2: ${esc(e.filtro2)}</p>` : "",
+    e.filtro3 ? `<p class="muted">Filtro 3: ${esc(e.filtro3)}</p>` : "",
+    `<p class="muted">Avaliado por ${esc(e.avaliado_por || "—")} em ${esc(dia(e.avaliado_em))}${e.revisado ? " · revisado por humano" : ""}</p>`,
+  ].join("");
+  return `<tr>
+      <td>${esc(dia(e.data))}</td>
+      <td>${e.noticia ? badge("notícia", "info") : badge("registro", "neutral")}<br><span class="muted">${esc(e.noticia ? e.veiculo || "" : e.fonte_codigo)}</span></td>
+      <td>${tituloHtml}<br><a class="muted" href="/monitoramento/projetos/${e.projeto_id}">${esc(e.projeto)}</a> <span class="muted">· ${esc(local(e.uf, e.municipio))}</span></td>
+      <td>${e.probabilidade != null ? `<strong>${e.probabilidade}%</strong>` : "—"}</td>
+      <td>${linha}</td>
+      <td class="criterios">${criterios}</td>
+    </tr>`;
+}
+
+function paginaEvidencias({ contagem, itens, marcos, grupos, fontes, filtros, totalProjetos }) {
   const opcoes = {
-    grupo: [["", "Todas"], ...ordenar(empresas)],
+    grupo: [["", "Todas"], ...grupos.map((g) => [g.id, g.nome])],
     tipo: [["", "Notícias e registros"], ["noticia", "Notícias"], ["registro", "Registros oficiais"]],
-    fonte: [["", "Todas"], ...ordenar(fontes)],
+    fonte: [["", "Todas"], ...fontes.sort((a, b) => String(a[1]).localeCompare(String(b[1]), "pt-BR"))],
   };
   const campo = (nome, rotulo) => `<div><label>${rotulo}</label><select name="${nome}">${selectOptions(opcoes[nome], filtros[nome] || "")}</select></div>`;
   const algum = filtros.grupo || filtros.tipo || filtros.fonte || filtros.q;
-  const link = (n) => {
-    const p = new URLSearchParams(Object.entries({ ...filtros, pagina: n }).filter(([, v]) => v && v !== 1));
+  const link = (extra) => {
+    const p = new URLSearchParams(Object.entries({ ...filtros, ...extra }).filter(([k, v]) => v && !(k === "pagina" && v === 1)));
     return `/monitoramento/evidencias${p.toString() ? `?${p}` : ""}`;
   };
-  const linhas = lista.map((e) => {
-    const c = classes.CLASSES[e.classe];
-    const selo = c ? badge(`${c.rotulo}${e.probabilidade != null ? ` · ${e.probabilidade}%` : ""}`, c.tom) : "";
-    const titulo = esc(String(e.titulo || "(sem título)").slice(0, 180));
-    const url = /^https?:\/\//.test(e.url || "") ? e.url : null;
-    return `<tr>
-      <td>${esc(dia(e.data_original))}</td>
-      <td>${ehNoticia(e) ? badge("notícia", "info") : badge("registro", "neutral")}<br><span class="muted">${esc(ehNoticia(e) ? e.veiculo || e.fonte_nome || "" : e.fonte_codigo)}</span></td>
-      <td>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${titulo} ↗</a>` : titulo}${e.motivo ? `<br><span class="muted">${esc(String(e.motivo).slice(0, 200))}</span>` : ""}</td>
-      <td><a href="/monitoramento/projetos/${e.projeto_id}">${esc(e.projeto)}</a><br><span class="muted">${esc(local(e.uf, e.municipio))}</span></td>
-      <td>${selo}</td>
-      <td>${esc(ORIGEM_APROVACAO[e.origem] || e.origem)}<br><span class="muted">${esc(e.aprovado_por || "")} · ${esc(dia(e.aprovado_em))}</span></td>
-    </tr>`;
+  const secoes = SECOES_EVIDENCIA.map(secaoEvidencia).filter((s) => !filtros.classe || s.chave === filtros.classe);
+  const total = (k) => contagem[k]?.n || 0;
+  const naLinha = itens.filter((e) => e.item === "evidencia" && (marcos[e.projeto_id] || []).some((m) => (m.evidencias || []).map(String).includes(e.id))).length;
+  const resumo = SECOES_EVIDENCIA.map(secaoEvidencia).map((s) => `<a class="chip" href="${link({ classe: s.chave, pagina: 1 })}">${badge(s.rotulo, s.tom)} ${total(s.chave).toLocaleString("pt-BR")}</a>`).join(" ");
+  const corpo = secoes.map((s) => {
+    const lista = itens.filter((e) => e.classe === s.chave);
+    const n = total(s.chave);
+    const paginas = Math.max(1, Math.ceil(n / POR_PAGINA));
+    const navegacao = filtros.classe
+      ? (paginas > 1 ? `<p class="muted">Página ${filtros.pagina} de ${paginas}${filtros.pagina > 1 ? ` · <a href="${link({ pagina: filtros.pagina - 1 })}">← anterior</a>` : ""}${filtros.pagina < paginas ? ` · <a href="${link({ pagina: filtros.pagina + 1 })}">próxima →</a>` : ""}</p>` : "")
+      : (n > lista.length ? `<p><a href="${link({ classe: s.chave, pagina: 1 })}">Ver as ${n.toLocaleString("pt-BR")} →</a></p>` : "");
+    const ligadas = s.destino === "linha" ? lista.filter((e) => (marcos[e.projeto_id] || []).some((m) => (m.evidencias || []).map(String).includes(e.id))).length : 0;
+    const tabela = lista.length ? `<div class="table-scroll"><table class="table-compact">
+          <thead><tr><th>Data</th><th>Tipo</th><th>Evidência e projeto</th><th>Prob.</th><th>Linha do tempo</th><th>Critérios da avaliação</th></tr></thead>
+          <tbody>${lista.map((e) => linhaEvidencia(e, marcos[e.projeto_id] || [], s)).join("")}</tbody>
+        </table></div>` : '<p class="muted">Nada nesta classe com os filtros atuais.</p>';
+    return `<details class="evidence-class"${s.fechada && !filtros.classe ? "" : " open"} id="classe-${s.chave}">
+        <summary><h2>${badge(s.rotulo, s.tom)} ${esc(s.faixa)} <span class="muted">· ${n.toLocaleString("pt-BR")} em ${(contagem[s.chave]?.projetos || 0)} projeto(s)</span></h2></summary>
+        <p>${esc(s.regra || DESTINO_EVIDENCIA[s.destino])}${s.regra ? ` ${esc(DESTINO_EVIDENCIA[s.destino])}` : ""}${s.destino === "linha" && lista.length ? ` <strong>${ligadas} de ${lista.length} listadas estão num marco da linha do tempo.</strong>` : ""}</p>
+        ${tabela}
+        ${navegacao}
+      </details>`;
   }).join("");
-  const navegacao = paginas > 1 ? `<p class="muted">Página ${pagina} de ${paginas}${pagina > 1 ? ` · <a href="${link(pagina - 1)}">← anterior</a>` : ""}${pagina < paginas ? ` · <a href="${link(pagina + 1)}">próxima →</a>` : ""}</p>` : "";
   return layout({
-    title: "Evidências aprovadas",
+    title: "Evidências",
     active: "projetos",
     body: `
       <section class="page-heading">
-        <div><p class="eyebrow">Teste de monitoramento</p><h1>Evidências aprovadas</h1><p>${evidencias.length} evidências aceitas em ${projetosCom} projetos da carteira: ${noticias} notícias e ${evidencias.length - noticias} registros oficiais. Para tirar uma evidência ou trocar a classe, abra o projeto.</p></div>
+        <div><p class="eyebrow">Teste de monitoramento</p><h1>Evidências por classe</h1><p>Tudo o que foi avaliado para os projetos da carteira, separado pela classe de correlação: as ligadas à linha do tempo, as possibilidades e as descartadas, com o que levou a cada decisão. Para trocar a classe ou tirar uma evidência, abra o projeto.</p></div>
       </section>
       ${abas("evidencias", totalProjetos)}
       <form class="source-filters" method="get" action="/monitoramento/evidencias">
         ${campo("grupo", "Empresa")}
         ${campo("tipo", "Tipo")}
         ${campo("fonte", "Fonte")}
-        <div><label>Busca</label><input name="q" value="${esc(filtros.q)}" placeholder="título, projeto, município"></div>
-        <div class="source-filters__actions"><button class="button button--small" type="submit">Filtrar</button>${algum ? '<a href="/monitoramento/evidencias">Limpar filtros</a>' : ""}</div>
-        <p class="source-filters__count muted">${visiveis.length} evidência(s) neste filtro.</p>
+        <div><label>Busca</label><input name="q" value="${esc(filtros.q)}" placeholder="título, projeto, município, motivo"></div>
+        ${filtros.classe ? `<input type="hidden" name="classe" value="${esc(filtros.classe)}">` : ""}
+        <div class="source-filters__actions"><button class="button button--small" type="submit">Filtrar</button>${algum || filtros.classe ? '<a href="/monitoramento/evidencias">Limpar filtros</a>' : ""}</div>
       </form>
       <section class="raw-records">
-        <div class="table-scroll"><table class="table-compact">
-          <thead><tr><th>Data</th><th>Tipo</th><th>Evidência</th><th>Projeto</th><th>Classe</th><th>Aprovação</th></tr></thead>
-          <tbody>${linhas || '<tr><td colspan="6" class="muted">Nenhuma evidência neste filtro.</td></tr>'}</tbody>
-        </table></div>
-        ${navegacao}
-      </section>`,
+        <p class="evidence-summary">${resumo}${filtros.classe ? ` · <a href="${link({ classe: "", pagina: 1 })}">ver todas as classes</a>` : ""}</p>
+        ${filtros.classe ? "" : `<p class="muted">Nesta página, ${naLinha} evidência(s) listadas estão num marco da linha do tempo.</p>`}
+        ${blocoCriterios()}
+      </section>
+      <section class="raw-records">${corpo}</section>`,
   });
 }
 
@@ -1417,10 +1489,14 @@ function registrarMonitoramento(app) {
     res.send(paginaProjeto({ ...dados, notice: aviso(req) }));
   });
 
-  // Aba Evidências aprovadas: tudo o que está aceito nos projetos da carteira.
+  // Aba Evidências: uma seção por classe, com a linha do tempo e os critérios.
   app.get("/monitoramento/evidencias", async (req, res) => {
-    const [evidencias, projetos] = await Promise.all([painel.evidenciasAprovadas(), painel.carteira()]);
-    res.send(paginaEvidencias({ evidencias, filtros: filtrosEvidencias(req.query), totalProjetos: projetos.length }));
+    const filtros = filtrosEvidencias(req.query);
+    const [dados, projetos] = await Promise.all([
+      painel.evidenciasPorClasse({ ...filtros, porPagina: POR_PAGINA }),
+      painel.carteira(),
+    ]);
+    res.send(paginaEvidencias({ ...dados, filtros, totalProjetos: projetos.length }));
   });
 
   // Aba Fontes: eficiência das fontes primárias e secundárias.

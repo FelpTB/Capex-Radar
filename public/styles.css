@@ -488,6 +488,19 @@ details.js-janela[open] { min-width: 380px; }
 .raw-record { border-top: 1px solid var(--line); padding: 8px 0; }
 .raw-record summary { cursor: pointer; line-height: 1.5; }
 .raw-record pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; background: var(--bg); padding: 10px; border-radius: 8px; max-height: 320px; overflow: auto; }
+/* Aba Evidências: uma seção por classe */
+.evidence-class { border-top: 1px solid var(--line); padding: 12px 0; }
+.evidence-class > summary { cursor: pointer; list-style: none; }
+.evidence-class > summary::-webkit-details-marker { display: none; }
+.evidence-class > summary h2 { display: inline; font-size: 18px; }
+.evidence-class > summary h2::before { content: "▸ "; color: var(--muted, #888); }
+.evidence-class[open] > summary h2::before { content: "▾ "; }
+.evidence-summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.evidence-summary .chip { text-decoration: none; }
+.criterio { border-top: 1px dashed var(--line); padding: 6px 0; }
+.criterio h4 { margin: 4px 0; }
+td.criterios { min-width: 260px; max-width: 420px; font-size: 13px; }
+td.criterios p { margin: 2px 0; }
 .project-status { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; margin: 18px 0; }
 .status-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .status-row > div { display: grid; gap: 3px; }
