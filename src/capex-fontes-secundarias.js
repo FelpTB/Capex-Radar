@@ -396,10 +396,11 @@ async function gravarAnalisados(db, projetoId, analises, analisadoPor) {
                (select id from capex_radar.evidencias where chave_dedupe = $3), $8, $9, $10)
        on conflict (projeto_id, chave) do update set
          registro = excluded.registro, data_registro = excluded.data_registro,
-         correlacao = case when registros_analisados.revisado_por is null then excluded.correlacao else registros_analisados.correlacao end,
-         motivo = case when registros_analisados.revisado_por is null then excluded.motivo else registros_analisados.motivo end,
-         probabilidade = case when registros_analisados.revisado_por is null then excluded.probabilidade else registros_analisados.probabilidade end,
-         classe = case when registros_analisados.revisado_por is null then excluded.classe else registros_analisados.classe end,
+         -- Humano decide por último; coleta sem julgamento não apaga a classe já dada.
+         correlacao = case when registros_analisados.revisado_por is null and not (excluded.correlacao = 'nao_avaliada' and registros_analisados.classe is not null) then excluded.correlacao else registros_analisados.correlacao end,
+         motivo = case when registros_analisados.revisado_por is null and not (excluded.correlacao = 'nao_avaliada' and registros_analisados.classe is not null) then excluded.motivo else registros_analisados.motivo end,
+         probabilidade = case when registros_analisados.revisado_por is null and not (excluded.correlacao = 'nao_avaliada' and registros_analisados.classe is not null) then excluded.probabilidade else registros_analisados.probabilidade end,
+         classe = case when registros_analisados.revisado_por is null and not (excluded.correlacao = 'nao_avaliada' and registros_analisados.classe is not null) then excluded.classe else registros_analisados.classe end,
          evidencia_id = coalesce(excluded.evidencia_id, registros_analisados.evidencia_id),
          analisado_por = excluded.analisado_por, em = now()`,
       [projetoId, a.codigo, chave, JSON.stringify({ ...bruto, ...(a.linha?.contexto ? { contexto: String(a.linha.contexto).slice(0, 3000) } : {}) }),

@@ -157,6 +157,36 @@ async function coletar(args) {
   }
 }
 
+// Só o CNO, para toda a carteira (busca ampla: raízes do grupo, marca no
+// município, sob encomenda). O arquivo é lido uma vez; os registros ficam
+// 'nao_avaliada' para o especialista do CNO (registros-empresa / julgar).
+async function coletarCno(args) {
+  const { correlateLines } = require("../src/enrichment/correlacao");
+  const { matchCno } = require("../src/enrichment/cno");
+  const projetos = await projetosAtivos(args.projeto);
+  for (const p of projetos) {
+    p.codigo_ibge = await sec.garantirIbge(pool, p);
+    Object.assign(p, await sec.identidadeDoGrupo(pool, p.grupo_id, p.grupo));
+  }
+  const mvp = projetos.map(sec.projetoParaColeta);
+  console.log(`${projetos.length} projeto(s); lendo o CNO...`);
+  const hits = await matchCno(mvp);
+  const total = { analisados: 0, a_julgar: 0, origens: {} };
+  for (const [k, p] of projetos.entries()) {
+    const hit = hits.get(p.id);
+    if (!hit?.amostra?.length) continue;
+    const analises = [];
+    await correlateLines(mvp[k], "SEC-CNO", hit.amostra, {
+      semJulgamento: true,
+      onAnalise: (linha, correlacao, motivo, probabilidade) => analises.push({ codigo: "SEC-CNO", linha, correlacao, motivo, probabilidade }),
+    });
+    total.analisados += await sec.gravarAnalisados(pool, p.id, analises, "pendente");
+    total.a_julgar += analises.filter((x) => x.correlacao === "nao_avaliada").length;
+    for (const x of analises) total.origens[x.linha.origem_cno] = (total.origens[x.linha.origem_cno] || 0) + 1;
+  }
+  console.log(JSON.stringify(total));
+}
+
 async function registros(args) {
   if (!args.saida) throw new Error("Informe --saida <pasta>");
   fs.mkdirSync(args.saida, { recursive: true });
@@ -363,7 +393,7 @@ async function aplicar(args) {
 async function main() {
   const args = argumentos(process.argv.slice(2));
   const empresa = require("./capex-reprocessar-empresa").criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR });
-  const comandos = { dossie, coletar, registros, "registros-empresa": empresa.registrosEmpresa, julgar: empresa.julgar, aplicar };
+  const comandos = { dossie, coletar, "coletar-cno": coletarCno, registros, "registros-empresa": empresa.registrosEmpresa, julgar: empresa.julgar, aplicar };
   if (!comandos[args.comando]) throw new Error(`Comandos: ${Object.keys(comandos).join(", ")}`);
   await comandos[args.comando](args);
 }
