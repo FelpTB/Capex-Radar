@@ -438,6 +438,31 @@ async function retirarDoProjeto(evidenciaId, motivo, { ator = ATOR } = {}) {
  * ligação com um projeto) e os veículos. Secundárias: registros analisados
  * por fonte e por classe (sql/031).
  */
+/**
+ * Evidências aprovadas: as aceitas em projetos da carteira (não descartados),
+ * com a classe do registro oficial quando houver (sql/031).
+ */
+async function evidenciasAprovadas() {
+  const { rows } = await pool.query(`
+    select e.id, e.titulo, e.url, e.veiculo, e.data_original, e.fonte_codigo, f.nome as fonte_nome,
+           ep.origem, ep.confianca, ep.motivo, coalesce(ep.revisado_por, ep.sugerido_por) as aprovado_por,
+           coalesce(ep.revisado_em, ep.sugerido_em) as aprovado_em,
+           p.id as projeto_id, p.titulo as projeto, p.uf, p.municipio, g.id as grupo_id, g.nome as grupo,
+           r.classe, r.probabilidade
+      from capex_radar.evidencia_projeto ep
+      join capex_radar.evidencias e on e.id = ep.evidencia_id
+      join capex_radar.projetos p on p.id = ep.projeto_id and p.status <> 'descartado'
+      left join capex_radar.grupos g on g.id = p.grupo_id
+      left join capex_radar.fontes f on f.codigo = e.fonte_codigo
+      left join lateral (
+        select classe, probabilidade from capex_radar.registros_analisados ra
+         where ra.evidencia_id = e.id and ra.projeto_id = p.id limit 1
+      ) r on true
+     where ep.situacao = 'aceito'
+     order by e.data_original desc nulls last, p.titulo`);
+  return rows;
+}
+
 async function eficienciaFontes() {
   const [funil, veiculos, secundarias, nomes] = await Promise.all([
     pool.query(`
@@ -641,6 +666,7 @@ async function alterarStatusProjeto(id, status, { ator = ATOR, motivo = null } =
 
 module.exports = {
   eficienciaFontes,
+  evidenciasAprovadas,
   retirarDoProjeto,
   ATOR,
   CAMPOS_EDITAVEIS,
