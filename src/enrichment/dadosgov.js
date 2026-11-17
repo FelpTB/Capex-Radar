@@ -247,9 +247,20 @@ function csvMembers(entries) {
     .filter((entry) => entry.toLowerCase().endsWith(".csv") && !entry.endsWith("/"));
 }
 
+// No Windows, usa o tar.exe do sistema (bsdtar, lê ZIP e caminhos C:...).
+// Num terminal Git Bash o "tar" do PATH é o GNU tar, que trata "C:" como host
+// remoto e não abre ZIP.
+function tarBin() {
+  if (process.platform === "win32") {
+    const sistema = path.join(process.env.SystemRoot || "C:\\Windows", "System32", "tar.exe");
+    if (fs.existsSync(sistema)) return sistema;
+  }
+  return "tar";
+}
+
 function listZipEntries(zipPath) {
   return new Promise((resolve, reject) => {
-    const child = spawn("tar", ["-tf", zipPath], { stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(tarBin(), ["-tf", zipPath], { stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => {
@@ -268,7 +279,7 @@ function listZipEntries(zipPath) {
 
 function extractZipMembers(zipPath, dir, members) {
   return new Promise((resolve, reject) => {
-    const child = spawn("tar", ["-xf", zipPath, "-C", dir, ...members], { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(tarBin(), ["-xf", zipPath, "-C", dir, ...members], { stdio: ["ignore", "ignore", "pipe"] });
     let stderr = "";
     child.stderr.on("data", (chunk) => {
       stderr += chunk;
@@ -429,6 +440,7 @@ async function syncDadosGov(options = {}) {
 
 module.exports = {
   DATA_DIR,
+  tarBin,
   TARGETS,
   csvMembers,
   csvsPresent,

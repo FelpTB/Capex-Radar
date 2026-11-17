@@ -608,6 +608,7 @@ const PROCESSAMENTO = {
   processado: { rotulo: "Com fontes secundárias e linha do tempo", teste: (p) => Boolean(p.secundarias && p.linha_tempo) },
   linha_tempo: { rotulo: "Com linha do tempo montada", teste: (p) => temLinhaDoTempo(p) },
   pendente: { rotulo: "Ainda não processados", teste: (p) => !(p.secundarias && p.linha_tempo) },
+  sem_confirmacao: { rotulo: "Sem confirmação de execução", teste: (p) => semConfirmacao(p) != null },
 };
 
 // Linha do tempo montada com pelo menos um marco.
@@ -656,6 +657,32 @@ function tempo(valor) {
 // Data do projeto: a do anúncio ou, sem ela, a da primeira evidência.
 function dataDoAnuncio(p) {
   return p.data_anuncio || p.primeira_evidencia_em || null;
+}
+
+// Projeto anunciado há mais de 18 meses que ainda está antes da obra
+// (anúncio, licenciamento ou financiamento) e não tem marco de obra nem de
+// operação: não há confirmação de que foi executado. Devolve os meses desde o
+// anúncio, ou null.
+const MESES_SEM_CONFIRMACAO = 18;
+const ESTAGIOS_ANTES_DA_OBRA = new Set(["anuncio", "licenciamento", "funding"]);
+
+function semConfirmacao(p, hoje = new Date()) {
+  if (!p || p.status === "descartado" || !ESTAGIOS_ANTES_DA_OBRA.has(p.estagio)) return null;
+  const d = dataDoAnuncio(p);
+  if (!d) return null;
+  const inicio = new Date(d);
+  const meses = (hoje.getUTCFullYear() - inicio.getUTCFullYear()) * 12 + hoje.getUTCMonth() - inicio.getUTCMonth();
+  if (meses < MESES_SEM_CONFIRMACAO) return null;
+  const marcos = Array.isArray(p.linha_tempo?.marcos) ? p.linha_tempo.marcos : [];
+  if (marcos.some((m) => m.tipo === "obra" || m.tipo === "operacao")) return null;
+  return meses;
+}
+
+function alertaSemConfirmacao(p) {
+  const meses = semConfirmacao(p);
+  if (meses == null) return "";
+  const anos = meses >= 24 ? `${Math.floor(meses / 12)} anos` : `${meses} meses`;
+  return `<p class="alerta-execucao">${badge("sem confirmação de execução", "warning")}${ajuda(`Anunciado há ${anos} e ainda sem evidência de obra (CNO, licença de instalação, notícia de canteiro) nem de operação (inauguração, licença de operação). Pode ter sido adiado, cancelado ou executado sem notícia: vale uma busca dirigida.`)} <span class="muted">anunciado há ${anos}, sem obra nem operação registrada</span></p>`;
 }
 
 function anoDoProjeto(p) {
@@ -729,6 +756,7 @@ function cardProjeto(p) {
           <h2><a href="/monitoramento/projetos/${p.id}">${esc(p.titulo)}</a></h2>
           ${p.pai_titulo ? `<p class="project-row__parent muted">↳ ${esc(RELACAO_ROTULO[p.relacao] || "ligado")} de <a href="/monitoramento/projetos/${p.projeto_pai_id}">${esc(p.pai_titulo)}</a></p>` : ""}
           ${p.avaliacao && p.avaliacao.decisao !== "valido" ? linhaAvaliacao(p.avaliacao) : ""}
+          ${alertaSemConfirmacao(p)}
         </div>
         <div class="project-row__field"><span>Empresa</span><strong>${esc(p.grupo)}</strong></div>
         <div class="project-row__field"><span>Local</span><strong>${esc(localProjeto(p))}</strong></div>
@@ -1221,6 +1249,7 @@ function paginaProjeto({ projeto, timeline, notice, pai = null, filhos = [], reg
           ${badge(ESTAGIO_ROTULO[projeto.estagio] || projeto.estagio, "info")}${ajudaEstagio(projeto.estagio)} ${badge(projeto.flag_validacao, "neutral")}
           <p class="eyebrow">${esc(projeto.grupo)} · ${esc(NICHOS[projeto.nicho] || projeto.nicho)}</p>
           <h1>${esc(projeto.titulo)}</h1>
+          ${alertaSemConfirmacao(projeto)}
           <p>${esc(projeto.matriz_razao_social)} · ${esc(projeto.matriz_cnpj)}${projeto.filial_cnpj ? ` · filial ${esc(projeto.filial_cnpj)}` : ""}</p>
         </div>
       </section>
@@ -1788,4 +1817,5 @@ module.exports = {
   filtrarCarteira,
   localProjeto,
   paginaProjeto,
+  semConfirmacao,
 };

@@ -216,6 +216,38 @@ function licencaSemDiario(evidencias, registros) {
 }
 
 /**
+ * Depois de corrigir o município do projeto: os registros que a pré-triagem
+ * descartou por "não citar o município" e que citam o município novo voltam
+ * para 'nao_avaliada' (sem classe), para o próximo julgamento. Revisão humana
+ * não é tocada. Devolve quantos voltaram.
+ */
+async function reabrirPreTriagem(db, projetoId) {
+  const { rows: [p] } = await db.query("select municipio from capex_radar.projetos where id = $1", [projetoId]);
+  const dobrar = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  const alvo = dobrar(p?.municipio);
+  if (alvo.length < 4) return 0;
+  const { rows } = await db.query(
+    `select id, registro from capex_radar.registros_analisados
+      where projeto_id = $1 and motivo ilike 'Pré-triagem%munic%'
+        and (revisado_por is null or revisado_por = 'usuario:claude-code' or revisado_por not like 'usuario:%')`,
+    [projetoId],
+  );
+  const ids = rows.filter((r) => {
+    const { contexto, ...campos } = r.registro || {};
+    return dobrar(`${campos.municipio || ""} ${contexto || ""} ${JSON.stringify(campos)}`).includes(alvo);
+  }).map((r) => r.id);
+  if (!ids.length) return 0;
+  await db.query(
+    `update capex_radar.registros_analisados
+        set correlacao = 'nao_avaliada', classe = null, probabilidade = null,
+            motivo = 'Município do projeto corrigido: aguardando novo julgamento', em = now()
+      where id = any($1::bigint[])`,
+    [ids],
+  );
+  return ids.length;
+}
+
+/**
  * Valida o município do projeto (src/municipios.js). Grafia quase igual é
  * corrigida; município que não existe na UF (ou mais de um no mesmo campo)
  * fica em municipio_pendencia para revisão. Rede fora do ar não muda nada.
@@ -252,11 +284,13 @@ async function validarLocalDoProjeto(db, projetoId) {
   const v = await validarMunicipio(p.municipio, p.uf);
   if (!v.verificado) return v;
   if (v.valido) {
+    const mudou = String(p.municipio) !== String(v.nome);
     await db.query(
       `update capex_radar.projetos set municipio = $2, codigo_ibge = coalesce($3, codigo_ibge), municipio_pendencia = null
         where id = $1 and (municipio is distinct from $2 or codigo_ibge is null or municipio_pendencia is not null)`,
       [projetoId, v.nome, v.ibge],
     );
+    if (mudou) await reabrirPreTriagem(db, projetoId);
     return v;
   }
   await db.query("update capex_radar.projetos set municipio_pendencia = $2::jsonb where id = $1",
@@ -322,6 +356,7 @@ async function montarPerfil(db, projetoId) {
 }
 
 module.exports = {
+  reabrirPreTriagem,
   validarLocalDoProjeto,
   CAMPOS,
   falaDeLicenca,

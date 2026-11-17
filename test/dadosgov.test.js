@@ -14,6 +14,7 @@ const {
   parseDavListing,
   pickResource,
   TARGETS,
+  tarBin,
 } = require("../src/enrichment/dadosgov");
 
 test("pasta compartilhada vira endereço WebDAV e a listagem traz datas", () => {
@@ -92,7 +93,7 @@ test("extrai só os CSV do ZIP e exige a lista pedida", async () => {
   }
   fs.writeFileSync(path.join(source, "leia.txt"), "fora");
   const zip = path.join(dir, "cno.zip");
-  const packed = spawnSync("tar", ["-a", "-cf", zip, "-C", source, "cno.csv", "cno_cnaes.csv", "cno_vinculos.csv", "cno_areas.csv", "cno_totais.csv", "leia.txt"]);
+  const packed = spawnSync(tarBin(), ["-a", "-cf", zip, "-C", source, "cno.csv", "cno_cnaes.csv", "cno_vinculos.csv", "cno_areas.csv", "cno_totais.csv", "leia.txt"]);
   assert.equal(packed.status, 0, packed.stderr.toString());
   const out = path.join(dir, "saida");
   const names = await extractCsvs(zip, out, ["cno.csv", "cno_totais.csv"]);

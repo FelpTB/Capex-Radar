@@ -337,6 +337,8 @@ async function aplicarUma(d, { seco }) {
           where id = $1`,
         [projeto.id, /^[A-Z]{2}$/.test(c.uf || "") ? c.uf : null, c.municipio || null, c.valor_brl ?? null, c.objeto || null],
       );
+      // Município corrigido: a pré-triagem antiga volta para o julgamento.
+      if (c.municipio) await perfis.reabrirPreTriagem(client, projeto.id);
     }
     if (d.pai?.projeto_id) {
       await client.query("update capex_radar.projetos set projeto_pai_id = $2, relacao = $3 where id = $1", [projeto.id, d.pai.projeto_id, d.pai.relacao]);

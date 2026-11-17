@@ -584,3 +584,6 @@ body.is-waiting { cursor: progress; }
 .dv-axis-note { margin: 0; font-size: 12px; }
 .dv-tooltip { position: fixed; z-index: 120; max-width: 300px; padding: 6px 9px; border-radius: 6px; background: #1f2a24; color: #fff; font-size: 12px; line-height: 1.4; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
 .dv-tooltip[hidden] { display: none; }
+
+/* Alerta: projeto antigo sem evidência de obra nem de operação */
+.alerta-execucao { margin: 4px 0 0; font-size: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }

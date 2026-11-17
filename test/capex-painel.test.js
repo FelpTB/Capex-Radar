@@ -200,3 +200,14 @@ test("local do projeto diz quando é só a sede da matriz", () => {
   const html = paginaCarteira({ projetos: [{ ...PROJETOS[0], uf: "SC", municipio: "CHAPECO", local_origem: "matriz" }] });
   assert.match(html, /<span>Local<\/span><strong>Sede: CHAPECO \/ SC<\/strong>/);
 });
+
+test("semConfirmacao: projeto antigo antes da obra e sem marco de obra ou operação", () => {
+  const { semConfirmacao } = require("../src/capex-painel");
+  const hoje = new Date("2026-11-17T00:00:00Z");
+  const base = { status: "ativo", estagio: "anuncio", data_anuncio: "2020-11-12", linha_tempo: { marcos: [{ tipo: "anuncio", data: "2020-11" }] } };
+  assert.equal(semConfirmacao(base, hoje), 72);
+  assert.equal(semConfirmacao({ ...base, data_anuncio: "2026-01-10" }, hoje), null);
+  assert.equal(semConfirmacao({ ...base, estagio: "mobilizacao" }, hoje), null);
+  assert.equal(semConfirmacao({ ...base, linha_tempo: { marcos: [{ tipo: "operacao", data: "2021-07" }] } }, hoje), null);
+  assert.equal(semConfirmacao({ ...base, status: "descartado" }, hoje), null);
+});

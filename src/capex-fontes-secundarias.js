@@ -427,16 +427,23 @@ async function classificarRegistro(db, projeto, reg, v, { ator, humano = false, 
   if (classes.ligaLinhaDoTempo(classe)) {
     const mapa = fontes || await nomesDasFontes(db);
     evidencias = await gravarRegistros(projeto, reg.fonte_codigo, [{ ...reg.registro, correlacao: v.motivo || classes.CLASSES[classe].rotulo }], mapa.get(reg.fonte_codigo), humano ? "humano" : "claude-code");
-    // Evidência que tinha saído do projeto volta.
+    // Evidência que tinha saído do projeto volta. A evidência é achada pela
+    // chave ou pelo evidencia_id do registro (evidências antigas têm outra chave).
     await painel.emTransacao((client) => client.query(
       `update capex_radar.evidencia_projeto set situacao = 'aceito', descarte = null, motivo = $3, revisado_por = $4, revisado_em = now()
-        where projeto_id = $1 and evidencia_id = (select id from capex_radar.evidencias where chave_dedupe = $2) and situacao = 'rejeitado'`,
+        where projeto_id = $1 and evidencia_id in (
+          select id from capex_radar.evidencias where chave_dedupe = $2
+          union select evidencia_id from capex_radar.registros_analisados where projeto_id = $1 and chave = $2 and evidencia_id is not null)
+          and situacao = 'rejeitado'`,
       [projeto.id, reg.chave, String(v.motivo || "").slice(0, 300) || null, ator],
     ), ator);
   } else {
     await painel.emTransacao((client) => client.query(
       `update capex_radar.evidencia_projeto set situacao = 'rejeitado', descarte = 'outro_projeto', motivo = $3, revisado_por = $4, revisado_em = now()
-        where projeto_id = $1 and evidencia_id = (select id from capex_radar.evidencias where chave_dedupe = $2) and situacao = 'aceito'`,
+        where projeto_id = $1 and evidencia_id in (
+          select id from capex_radar.evidencias where chave_dedupe = $2
+          union select evidencia_id from capex_radar.registros_analisados where projeto_id = $1 and chave = $2 and evidencia_id is not null)
+          and situacao = 'aceito'`,
       [projeto.id, reg.chave, `Classe ${classes.CLASSES[classe].rotulo}: ${v.motivo || ""}`.slice(0, 300), ator],
     ), ator);
   }
