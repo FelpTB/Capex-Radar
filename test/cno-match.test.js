@@ -105,3 +105,27 @@ test("a ficha exige os cinco CSV extraídos", async () => {
   );
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("obra em nome da construtora com vínculo ao CNPJ do grupo entra com origem vinculo", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cno-vinc-"));
+  const csv = path.join(dir, "cno.csv");
+  fs.writeFileSync(csv, [
+    '"CNO","NI do responsável","Nome do município","Estado","Área total","Situação","Data de início","Nome empresarial","Qualificação do responsavel","Nome","CNO vinculado","Data da situação"',
+    '"000000000777","51325314000103","ARARAS","SP","552","02","2026-04-01","PLAEGE CONSTRUTORA LTDA","0053","PLAEGE CONSTRUTORA LTDA","","2026-04-01"',
+    '"000000000888","51325314000103","LIMEIRA","SP","900","02","2026-04-01","PLAEGE CONSTRUTORA LTDA","0053","PLAEGE CONSTRUTORA LTDA","","2026-04-01"',
+  ].join("\n"), "latin1");
+  fs.writeFileSync(path.join(dir, "cno_areas.csv"), "CNO,Categoria,Destinacao,Tipo de obra,Tipo de Area,Tipo de Area Complementar,Metragem\n", "latin1");
+  fs.writeFileSync(path.join(dir, "cno_cnaes.csv"), "CNO,CNAE,Data de registro\n", "latin1");
+  fs.writeFileSync(path.join(dir, "cno_vinculos.csv"), [
+    "CNO,Data de início,Data de fim,Data de registro,Qualificação do contribuinte,NI do responsável",
+    "000000000777,2026-04-01,,2026-04-01,0053,60409075000667",
+  ].join("\n"), "latin1");
+  fs.writeFileSync(path.join(dir, "cno_totais.csv"), "Total de obras,Total de cnaes,Total de áreas,Total de vínculos\n2,0,0,1\n", "latin1");
+  const hits = await matchCno([{ id: "n", cnpj: "60409075000101", uf: "SP", municipio: "Araras", status_em: "2025-09-04", sobEncomenda: false }], csv);
+  const amostra = hits.get("n").amostra;
+  assert.equal(amostra.length, 1);
+  assert.equal(amostra[0].cno, "000000000777");
+  assert.equal(amostra[0].origem_cno, "vinculo");
+  assert.equal(amostra[0].vinculos[0].ni, "60409075000667");
+  fs.rmSync(dir, { recursive: true, force: true });
+});

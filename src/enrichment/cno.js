@@ -139,6 +139,9 @@ function classifyRow(cells, columns, projectsByRoot) {
 // dono do imóvel ou da construtora, sem a marca (Mercado Livre em Jacareí).
 //   raiz           raiz do CNPJ de qualquer empresa do grupo (project.raizes)
 //   marca          obra no município do projeto com a marca no nome
+//   vinculo        obra em nome de outra pessoa (construtora) cujo vínculo no
+//                  cno_vinculos.csv tem o CNPJ de uma empresa do grupo (ex.: a
+//                  Plaege na fábrica da Nestlé em Araras)
 //   sob_encomenda  sem nada acima no município: obra grande (>= 5.000 m²) de
 //                  pessoa jurídica no município, iniciada até ~13 meses do anúncio
 // O especialista do CNO julga a probabilidade de cada uma.
@@ -182,14 +185,15 @@ function guardar(lista, row, max) {
   if (lista.length > max) lista.length = max;
 }
 
-/** Uma linha do CNO contra os projetos: por raiz do grupo e, no município, por marca ou sob encomenda. */
-function classifyRowAmplo(cells, columns, { porRaiz, porCidade }) {
+/** Uma linha do CNO contra os projetos: por raiz do grupo, por vínculo e, no município, por marca ou sob encomenda. */
+function classifyRowAmplo(cells, columns, { porRaiz, porCidade, porVinculo = new Map() }) {
   const ni = onlyDigits(cells[columns.ni] || "").padStart(14, "0");
   const raiz = ni.slice(0, 8);
   const daRaiz = ni !== "00000000000000" ? porRaiz.get(raiz) || [] : [];
   const cidade = chaveCidade(cells[columns.uf], cells[columns.municipio]);
   const daCidade = porCidade.get(cidade) || [];
-  if (!daRaiz.length && !daCidade.length) return;
+  const doVinculo = porVinculo.get(cnoKey(cells[columns.cno])) || [];
+  if (!daRaiz.length && !daCidade.length && !doVinculo.length) return;
   const row = linhaDoCno(cells, columns, ni);
   const vistos = new Set();
   for (const project of daRaiz) {
@@ -208,6 +212,17 @@ function classifyRowAmplo(cells, columns, { porRaiz, porCidade }) {
     const origem = raiz === onlyDigits(project.cnpj).padStart(14, "0").slice(0, 8) ? "raiz" : "raiz_grupo";
     guardar(hit.amostra, { ...row, rank: (sameCity ? 4 : 0) + (sameUf ? 2 : 0) + (inPeriod ? 1 : 0), origem_cno: origem }, AMOSTRA_MAX);
   }
+  // Obra da construtora com vínculo a uma empresa do grupo: mesma UF do projeto.
+  for (const project of doVinculo) {
+    if (vistos.has(project.id)) continue;
+    vistos.add(project.id);
+    const sameUf = project.uf && row.uf.toUpperCase() === project.uf.toUpperCase();
+    if (project.uf && !sameUf) continue;
+    const city = fold(project.municipio || "");
+    const sameCity = city.length > 2 && fold(row.municipio).includes(city);
+    const inPeriod = Boolean(project.desde && row.inicio && row.inicio >= project.desde);
+    guardar(project.hits.amostra, { ...row, rank: (sameCity ? 5 : 1) + (inPeriod ? 1 : 0), origem_cno: "vinculo" }, AMOSTRA_MAX);
+  }
   for (const project of daCidade) {
     if (vistos.has(project.id)) continue;
     const hit = project.hits;
@@ -222,6 +237,28 @@ function classifyRowAmplo(cells, columns, { porRaiz, porCidade }) {
     if (!(dias <= ENCOMENDA_DIAS)) continue;
     guardar(hit.encomenda, { ...row, rank: -dias, origem_cno: "sob_encomenda" }, ENCOMENDA_MAX);
   }
+}
+
+/**
+ * CNO -> projetos cujo grupo aparece como vínculo da obra (cno_vinculos.csv):
+ * a obra está em nome da construtora, mas o contratante é do grupo.
+ */
+function vinculosDoGrupo(csvPath, porRaiz) {
+  const porVinculo = new Map();
+  if (!fs.existsSync(csvPath)) return Promise.resolve(porVinculo);
+  return streamCsv(csvPath, (header) => ({
+    cno: requireColumn(header, /^cno$/, "CNO"),
+    ni: requireColumn(header, /ni do responsavel/, "NI do responsável"),
+  }), (cells, columns) => {
+    const ni = onlyDigits(cells[columns.ni] || "");
+    if (ni.length !== 14) return;
+    const projetos = porRaiz.get(ni.slice(0, 8));
+    if (!projetos) return;
+    const k = cnoKey(cells[columns.cno]);
+    const lista = porVinculo.get(k) || [];
+    for (const p of projetos) if (!lista.includes(p)) lista.push(p);
+    porVinculo.set(k, lista);
+  }).then(() => porVinculo);
 }
 
 function emptyHit() {
@@ -444,9 +481,9 @@ function matchCno(projects, csvPath = CSV) {
     }
   }
 
-  return readCsv(csvPath, (cells, columns) => {
-    classifyRowAmplo(cells, columns, { porRaiz, porCidade });
-  }).then(() => {
+  return vinculosDoGrupo(path.join(dir, "cno_vinculos.csv"), porRaiz).then((porVinculo) => readCsv(csvPath, (cells, columns) => {
+    classifyRowAmplo(cells, columns, { porRaiz, porCidade, porVinculo });
+  })).then(() => {
     // Nada da empresa nem da marca no município: entram as candidatas sob encomenda.
     for (const project of ready) {
       const hit = byId.get(project.id);
@@ -471,6 +508,7 @@ module.exports = {
   columnIndex,
   classifyRow,
   classifyRowAmplo,
+  vinculosDoGrupo,
   citaMarca,
   matchCno,
   namesInCno,

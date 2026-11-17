@@ -8,6 +8,7 @@ Cada arquivo `<empresa>.json` da pasta tem:
   - `raiz`: no CNPJ da matriz do projeto;
   - `raiz_grupo`: no CNPJ de outra empresa do mesmo grupo (ex.: Seara na JBS);
   - `marca`: no município do projeto, com a marca da empresa no nome da obra ou do responsável (construtora, subsidiária);
+  - `vinculo`: em nome de outra pessoa (em geral a construtora), mas com o CNPJ de uma empresa do grupo como vínculo da obra (veja `vinculos`). É obra contratada pelo grupo: no município e no período do projeto, pese como a obra da própria empresa; obra pequena de manutenção na mesma planta é outra obra;
   - `sob_encomenda`: no município do projeto, obra grande de outra empresa iniciada perto do anúncio, sem a marca. Típico de galpão logístico e data center construídos por incorporadora (build-to-suit, "BTS", "centro logístico", "condomínio logístico").
 
 Para CADA registro, decida a que projeto(s) da empresa ele pode pertencer e dê a probabilidade (0 a 100) pela escala do especialista. Pontos de atenção:
