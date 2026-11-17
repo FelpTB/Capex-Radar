@@ -126,10 +126,14 @@ async function obrasDosProjetos(ids) {
   const { rows: cno } = await pool.query(
     `select projeto_id, registro->>'cno' as cno, coalesce(nullif(registro->>'nome', ''), registro->>'empresa') as nome,
             registro->>'municipio' as municipio, nullif(registro->>'area', '')::numeric as area, registro->>'inicio' as inicio,
-            registro->>'situacao' as situacao, registro->'areas'->0->>'categoria' as categoria,
-            registro->'areas'->0->>'destinacao' as destinacao
-       from capex_radar.registros_analisados
-      where fonte_codigo = 'SEC-CNO' and classe in ('certeira', 'provavel') and projeto_id = any($1::uuid[])
+            registro->>'situacao' as situacao, a.categoria, a.destinacao
+       from capex_radar.registros_analisados r
+       left join lateral (
+         select x->>'categoria' as categoria, x->>'destinacao' as destinacao
+           from jsonb_array_elements(coalesce(r.registro->'areas', '[]'::jsonb)) x
+          order by (x->>'categoria' = 'Existente'), (x->>'metragem')::numeric desc nulls last limit 1
+       ) a on true
+      where r.fonte_codigo = 'SEC-CNO' and r.classe in ('certeira', 'provavel') and r.projeto_id = any($1::uuid[])
       order by registro->>'inicio' desc nulls last`,
     [[...ids, ...filhos.map((f) => f.id)]],
   );

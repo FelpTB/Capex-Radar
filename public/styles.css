@@ -414,6 +414,8 @@ body.is-loading main.container { opacity: .6; transition: opacity .15s; }
 .obra-item--cno { padding-left: 12px; }
 .obra-item--filho ~ .obra-item--cno { padding-left: 24px; }
 .obra-item__status { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
+.obra-item__campos { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 2px; color: var(--muted); }
+.obra-item__campos em { font-style: normal; font-size: 11px; text-transform: uppercase; letter-spacing: .02em; margin-right: 2px; }
 .news-card__enriched { margin: 8px 0 4px; padding: 8px 10px; border-left: 3px solid var(--line); font-size: 13px; line-height: 1.45; }
 .news-card__enriched p { margin: 0 0 4px; }
 .news-card__enriched p:last-child { margin-bottom: 0; }

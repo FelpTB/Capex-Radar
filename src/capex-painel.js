@@ -209,10 +209,18 @@ function blocoObrasDoCard(obras = []) {
   const linha = (o) => {
     if (o.tipo === "cno") {
       const situacao = CNO_SITUACAO[o.situacao] || o.situacao || "—";
-      const descricao = [o.categoria, o.destinacao, o.area ? m2(o.area) : null, o.municipio, o.inicio ? `início ${dia(o.inicio)}` : null].filter(Boolean).join(" · ");
+      const campo = (rotulo, valor) => `<span><em>${rotulo}</em> ${esc(valor || "—")}</span>`;
       return `<li class="obra-item obra-item--cno">
-          <div><strong>${esc(String(o.nome || `CNO ${o.cno}`).slice(0, 90))}</strong> <span class="muted">matrícula CNO ${esc(o.cno || "")}</span><br><span class="muted">${esc(descricao)}</span></div>
-          <div class="obra-item__status">${badge(situacao, OBRA_TOM[situacao] || "neutral")}<span class="muted">valor —</span></div>
+          <div>
+            <strong>${esc(String(o.nome || `CNO ${o.cno}`).slice(0, 90))}</strong> <span class="muted">CNO ${esc(o.cno || "")}</span>
+            <div class="obra-item__campos">
+              ${campo("Início", o.inicio ? dia(o.inicio) : null)}
+              ${campo("Área", o.area ? m2(o.area) : null)}
+              ${campo("Município", o.municipio)}
+              ${campo("Categoria", [o.categoria, o.destinacao].filter(Boolean).join(" · "))}
+            </div>
+          </div>
+          <div class="obra-item__status">${badge(situacao, OBRA_TOM[situacao] || "neutral")}</div>
         </li>`;
     }
     const rotulo = RELACAO_ROTULO[o.relacao] || "projeto ligado";
