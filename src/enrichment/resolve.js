@@ -2,6 +2,22 @@ function onlyDigits(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
+// Município para comparação: sem acento, sem apóstrofo e sem os conectivos
+// (d', de, do, da, dos, das), palavra a palavra. Assim "São Jorge d'Oeste" e
+// "SAO JORGE DO OESTE" viram "sao jorge oeste".
+const CONECTIVOS = new Set(["d", "de", "do", "da", "dos", "das"]);
+
+function chaveMunicipio(value) {
+  return fold(value).split(/[^a-z0-9]+/).filter((t) => t && !CONECTIVOS.has(t)).join(" ");
+}
+
+/** O texto cita o município (palavras inteiras, tolerante à grafia)? */
+function citaMunicipio(texto, municipio) {
+  const alvo = chaveMunicipio(municipio);
+  if (alvo.length < 4) return false;
+  return ` ${chaveMunicipio(texto)} `.includes(` ${alvo} `);
+}
+
 function fold(value) {
   return String(value || "")
     .normalize("NFD")
@@ -75,6 +91,8 @@ function ownersFromParticipacao(participacao) {
 }
 
 module.exports = {
+  chaveMunicipio,
+  citaMunicipio,
   onlyDigits,
   fold,
   nameTerm,

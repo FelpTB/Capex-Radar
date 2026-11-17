@@ -19,6 +19,7 @@ const { especialistaDe, instrucoesDoEspecialista, ESPECIALISTAS } = require("../
 const ESTRUTURADAS = /^SEC-(BNDES|CNO|CVM|SISLIC|SIGA|ANEEL|REIDI|ANA|ANTT|ANTAQ|IAT|SEMAD|CNPJ|ANP)/;
 
 const dobrar = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+const { citaMunicipio } = require("../src/enrichment/resolve");
 
 function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
   async function registrosEmpresa(args) {
@@ -50,7 +51,7 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
       for (const r of unicos.values()) {
         const { contexto, ...campos } = r.registro || {};
         const texto = dobrar(`${contexto || ""} ${JSON.stringify(campos)}`);
-        if (ESTRUTURADAS.test(r.fonte_codigo) || municipios.some((m) => texto.includes(m))) {
+        if (ESTRUTURADAS.test(r.fonte_codigo) || municipios.some((m) => texto.includes(m)) || lista.some((p) => citaMunicipio(texto, p.municipio))) {
           julgar.push({
             chave: r.chave, fonte: r.fonte_codigo, especialista: especialistaDe(r.fonte_codigo).chave, data: dia(r.data_registro),
             campos: JSON.stringify(campos).slice(0, 900), contexto: contexto ? String(contexto).slice(0, 900) : null,

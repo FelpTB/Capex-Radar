@@ -234,7 +234,8 @@ async function reabrirPreTriagem(db, projetoId) {
   );
   const ids = rows.filter((r) => {
     const { contexto, ...campos } = r.registro || {};
-    return dobrar(`${campos.municipio || ""} ${contexto || ""} ${JSON.stringify(campos)}`).includes(alvo);
+    const texto = `${campos.municipio || ""} ${contexto || ""} ${JSON.stringify(campos)}`;
+    return dobrar(texto).includes(alvo) || require("./enrichment/resolve").citaMunicipio(texto, p.municipio);
   }).map((r) => r.id);
   if (!ids.length) return 0;
   await db.query(

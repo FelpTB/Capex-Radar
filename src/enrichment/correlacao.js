@@ -1,4 +1,4 @@
-const { fold } = require("./resolve");
+const { fold, chaveMunicipio, citaMunicipio: textoCitaMunicipio } = require("./resolve");
 const classes = require("../capex-classes");
 
 // Registros lidos pelo modelo por fonte. Os do município da ficha vêm antes; o resto não é avaliado.
@@ -24,7 +24,7 @@ function localGate(line, project) {
   const municipio = lineMunicipio(line);
   const local = fold(project?.municipio || "");
   if (!municipio || local.length < 3) return line?.no_municipio ? "mesmo_municipio" : "sem_local";
-  return fold(municipio).includes(local) || line?.no_municipio ? "mesmo_municipio" : "outro_municipio";
+  return fold(municipio).includes(local) || chaveMunicipio(municipio).includes(chaveMunicipio(project?.municipio)) || line?.no_municipio ? "mesmo_municipio" : "outro_municipio";
 }
 
 // ---------------------------------------------------------------------------
@@ -71,7 +71,7 @@ function preTriagem(line, project, codigo = "") {
   const texto = fold(`${contexto || ""} ${JSON.stringify(campos)}`);
   const digitos = JSON.stringify(campos).replace(/\D/g, "") + String(contexto || "").replace(/\D/g, "");
   const municipio = fold(project?.municipio || "");
-  const citaMunicipio = municipio.length >= 4 && texto.includes(municipio);
+  const citaMunicipio = municipio.length >= 4 && (texto.includes(municipio) || textoCitaMunicipio(texto, project?.municipio));
   const citaFilial = String(project?.filial_cnpj || "").length === 14 && digitos.includes(String(project.filial_cnpj));
   const mesmoIbge = project?.codigo_ibge && line?.ibge && String(line.ibge) === String(project.codigo_ibge);
   // Projeto sem município (só UF, várias localidades): não dá para exigir o local.

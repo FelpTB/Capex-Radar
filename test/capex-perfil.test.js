@@ -35,3 +35,12 @@ test("reabrirPreTriagem não faz nada com município curto ou vazio", async () =
   assert.equal(await reabrirPreTriagem(db, "p1"), 0);
   assert.deepEqual(db.reabertos, []);
 });
+
+test("citaMunicipio aceita grafias com d', do e sem acento, e exige palavra inteira", () => {
+  const { chaveMunicipio, citaMunicipio } = require("../src/enrichment/resolve");
+  assert.equal(chaveMunicipio("São Jorge d'Oeste"), chaveMunicipio("SAO JORGE DO OESTE"));
+  assert.equal(citaMunicipio("Rodovia PR 281, sn no município de São Jorge do Oeste/PR", "São Jorge d'Oeste"), true);
+  assert.equal(citaMunicipio("Município Rancho Alegre D’Oeste.", "Rancho Alegre do Oeste"), true);
+  assert.equal(citaMunicipio("Itapiranga/SC", "Ipira"), false);
+  assert.equal(citaMunicipio("qualquer texto", "Ijuí"), false);
+});
