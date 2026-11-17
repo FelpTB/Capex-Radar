@@ -587,3 +587,10 @@ body.is-waiting { cursor: progress; }
 
 /* Alerta: projeto antigo sem evidência de obra nem de operação */
 .alerta-execucao { margin: 4px 0 0; font-size: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+
+/* Dados brutos analisados: barra de ordenação e grupos por fonte */
+.raw-sort { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 12px; font-size: 13px; }
+.raw-sort .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 12px; font: inherit; cursor: pointer; }
+.raw-sort .chip:hover { border-color: var(--green); }
+.raw-sort .chip.is-active { background: var(--green); border-color: var(--green); color: #fff; }
+.raw-group { margin: 14px 0 4px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 2px; }

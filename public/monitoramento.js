@@ -203,6 +203,54 @@
   });
 
   // -------------------------------------------------------------------------
+  // Dados brutos analisados: ordenar por data, nome ou fonte (agrupada)
+  // -------------------------------------------------------------------------
+  const ORDENS = {
+    data: (a, b) => (b.dataset.data || "").localeCompare(a.dataset.data || ""),
+    nome: (a, b) => (a.dataset.nome || "").localeCompare(b.dataset.nome || "", "pt-BR"),
+    fonte: (a, b) => (a.dataset.fonte || "").localeCompare(b.dataset.fonte || "") || (b.dataset.data || "").localeCompare(a.dataset.data || ""),
+  };
+
+  function ordenarRegistros(secao, ordem) {
+    if (!secao || !ORDENS[ordem]) return;
+    secao.querySelectorAll(".raw-list").forEach((lista) => {
+      lista.querySelectorAll(".raw-group").forEach((h) => h.remove());
+      const itens = [...lista.querySelectorAll(":scope > details.raw-record")].sort(ORDENS[ordem]);
+      let fonteAtual = null;
+      for (const item of itens) {
+        if (ordem === "fonte" && item.dataset.fonte !== fonteAtual) {
+          fonteAtual = item.dataset.fonte;
+          const n = itens.filter((x) => x.dataset.fonte === fonteAtual).length;
+          const h = document.createElement("h4");
+          h.className = "raw-group";
+          h.textContent = `${fonteAtual || "sem fonte"} (${n})`;
+          lista.appendChild(h);
+        }
+        lista.appendChild(item);
+      }
+    });
+    secao.querySelectorAll(".js-ordem-registros [data-ordem]").forEach((b) => {
+      b.classList.toggle("is-active", b.dataset.ordem === ordem);
+      b.setAttribute("aria-pressed", String(b.dataset.ordem === ordem));
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    const botao = event.target.closest(".js-ordem-registros [data-ordem]");
+    if (!botao) return;
+    ordenarRegistros(botao.closest("section"), botao.dataset.ordem);
+    try { localStorage.setItem("radar:ordem-registros", botao.dataset.ordem); } catch { /* sem armazenamento */ }
+  });
+
+  // Ao abrir a ficha, aplica a última ordem escolhida.
+  function ordemSalva() {
+    let ordem = null;
+    try { ordem = localStorage.getItem("radar:ordem-registros"); } catch { /* sem armazenamento */ }
+    if (!ORDENS[ordem] || ordem === "data") return;
+    document.querySelectorAll(".js-ordem-registros").forEach((barra) => ordenarRegistros(barra.closest("section"), ordem));
+  }
+
+  // -------------------------------------------------------------------------
   // Ações do card: aprovar, descartar e desfazer
   // -------------------------------------------------------------------------
   document.addEventListener("submit", async (event) => {
@@ -360,6 +408,7 @@
 
   // Ao abrir ou trocar de página, retoma a barra de uma triagem em andamento.
   function iniciar() {
+    ordemSalva();
     const box = document.getElementById("triagem-progresso");
     if (box?.dataset.job) acompanhar(box.dataset.job);
   }

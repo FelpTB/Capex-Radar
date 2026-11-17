@@ -927,11 +927,36 @@ function formClasse(r) {
     </form>`;
 }
 
+// Nome do registro para a lista: o campo que descreve o ato ou a obra (o
+// "titulo" de várias fontes é só a razão social, então vem por último).
+function tituloRegistro(r) {
+  const b = r.registro || {};
+  const atividade = b.atividade ? [b.modalidade_descricao, b.atividade].filter(Boolean).join(": ") : null;
+  // Trecho de diário vem cortado no meio da palavra ("…ÃO DE LICENÇA"): sai o pedaço inicial.
+  const cortado = /^\s*…/.test(String(b.trecho || ""));
+  const trecho = b.trecho
+    ? String(b.trecho).replace(/^[\s….]+/, "").replace(cortado ? /^\S*\s+/ : /^/, "").replace(/\s+/g, " ")
+    : null;
+  return String(b.empreendimento || b.descricao || b.assunto || b.objeto || atividade || b.finalidade || b.nome || b.tipo_licenca || trecho || b.titulo || r.chave || "");
+}
+
+// Data do registro em ISO (AAAA-MM-DD), para ordenar.
+function dataIso(valor) {
+  if (!valor) return "";
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+}
+
+// Ordem padrão (sem script): data mais recente primeiro; sem data no fim.
+function porDataDesc(a, b) {
+  return dataIso(b.data_registro).localeCompare(dataIso(a.data_registro));
+}
+
 function linhaRegistro(r) {
   const b = r.registro || {};
-  const titulo = b.titulo || b.nome || b.descricao || b.empreendimento || b.assunto || b.objeto || b.tipo_licenca || r.chave;
+  const titulo = tituloRegistro(r);
   const url = /^https?:\/\//.test(b.url || b.link || "") ? b.url || b.link : null;
-  return `<details class="raw-record">
+  return `<details class="raw-record" data-data="${esc(dataIso(r.data_registro))}" data-nome="${esc(titulo.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/^[^a-z]+/, "").slice(0, 120))}" data-fonte="${esc(r.fonte_codigo || "")}">
       <summary>${seloClasse(r)} <strong>${esc(r.fonte_codigo)}</strong> <span class="muted">${esc(dia(r.data_registro))}</span> ${esc(String(titulo).slice(0, 160))}</summary>
       ${r.motivo ? `<p class="muted">${esc(r.motivo)}${r.revisado_por ? ` — revisado por ${esc(r.revisado_por)} em ${esc(dia(r.revisado_em))}` : ""}</p>` : ""}
       ${url ? `<p><a href="${esc(url)}" target="_blank" rel="noopener">Abrir a fonte ↗</a></p>` : ""}
@@ -1191,13 +1216,28 @@ function paginaFontes({ funil, veiculos, secundarias, totalProjetos }) {
 }
 
 // Possibilidades: incertas e improváveis, destacadas para revisão (acima da linha do tempo).
+// Barra de ordenação dos registros (public/monitoramento.js reordena no lugar).
+function barraOrdem() {
+  return `<div class="raw-sort js-ordem-registros" role="group" aria-label="Ordenar registros">
+      <span class="muted">Ordenar por:</span>
+      <button type="button" class="chip is-active" data-ordem="data">Data (recente)</button>
+      <button type="button" class="chip" data-ordem="nome">Nome (A–Z)</button>
+      <button type="button" class="chip" data-ordem="fonte">Fonte</button>
+    </div>`;
+}
+
+function listaRegistros(lista) {
+  return `<div class="raw-list">${[...lista].sort(porDataDesc).map(linhaRegistro).join("")}</div>`;
+}
+
 function blocoPossibilidades(registros) {
   const lista = registros.filter((r) => classes.ehPossibilidade(r.classe));
   if (!lista.length) return "";
   return `<section class="raw-records possibilities">
     <h2>Possibilidades <span class="muted">(${lista.length})</span></h2>
     <p class="muted">Registros oficiais que podem ser deste projeto (incertos ou improváveis). Revise e troque a classe: provável ou certeira leva o registro para a linha do tempo.</p>
-    ${lista.map(linhaRegistro).join("")}
+    ${barraOrdem()}
+    ${listaRegistros(lista)}
   </section>`;
 }
 
@@ -1215,8 +1255,9 @@ function blocoRegistros(registros) {
   return `<section class="raw-records">
     <h2>Dados brutos analisados <span class="muted">(${registros.length})</span></h2>
     <p class="muted">${resumo}. Provável e certeira viram evidência na linha do tempo; incerta e improvável aparecem em Possibilidades; o resto fica aqui. Toda classe pode ser trocada.</p>
-    ${ligados.length ? `<h3>Ligados à linha do tempo (${ligados.length})</h3>${ligados.map(linhaRegistro).join("")}` : ""}
-    ${descartados.length ? `<h3>Descartados (${descartados.length})</h3>${descartados.map(linhaRegistro).join("")}` : ""}
+    ${barraOrdem()}
+    ${ligados.length ? `<h3>Ligados à linha do tempo (${ligados.length})</h3>${listaRegistros(ligados)}` : ""}
+    ${descartados.length ? `<h3>Descartados (${descartados.length})</h3>${listaRegistros(descartados)}` : ""}
   </section>`;
 }
 
