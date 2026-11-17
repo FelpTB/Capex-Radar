@@ -220,13 +220,13 @@ function blocoObrasDoCard(obras = []) {
               ${campo("Categoria", [o.categoria, o.destinacao].filter(Boolean).join(" · "))}
             </div>
           </div>
-          <div class="obra-item__status">${badge(situacao, OBRA_TOM[situacao] || "neutral")}</div>
+          <div class="obra-item__status"><span>${badge(situacao, OBRA_TOM[situacao] || "neutral")}${ajudaObra(situacao)}</span></div>
         </li>`;
     }
     const rotulo = RELACAO_ROTULO[o.relacao] || "projeto ligado";
     return `<li class="obra-item${o.tipo === "filho" ? " obra-item--filho" : ""}">
         <div><a href="/monitoramento/projetos/${o.id}"><strong>${esc(o.titulo)}</strong></a> <span class="muted">${esc(rotulo)}</span><br><span class="muted">${esc(String(o.objeto || local(o.uf, o.municipio) || "").slice(0, 140))}</span></div>
-        <div class="obra-item__status">${badge(ESTAGIO_ROTULO[o.estagio] || o.estagio || "—", "info")}<span>${esc(o.valor_estimado_brl == null ? "valor —" : money(o.valor_estimado_brl))}</span></div>
+        <div class="obra-item__status"><span>${badge(ESTAGIO_ROTULO[o.estagio] || o.estagio || "—", "info")}${ajudaEstagio(o.estagio)}</span><span>${esc(o.valor_estimado_brl == null ? "valor —" : money(o.valor_estimado_brl))}</span></div>
       </li>`;
   };
   const cnos = obras.filter((o) => o.tipo === "cno").length;
@@ -571,6 +571,38 @@ function listaCurtaNoticias(noticias, guardadas = new Set()) {
 
 const STATUS_ROTULO = { ativo: "Ativo", em_revisao: "Em revisão", descartado: "Descartado" };
 
+// Explicação de cada status, mostrada no "?" ao passar o mouse.
+const STATUS_AJUDA = {
+  ativo: "Situação na carteira: projeto confirmado por uma pessoa. É o que aparece na carteira por padrão.",
+  em_revisao: "Situação na carteira: criado pelo agente de IA a partir de uma notícia, falta a confirmação humana.",
+  descartado: "Situação na carteira: tirado da carteira (inválido, duplicado ou sem obra). Reversível, com motivo.",
+};
+const ESTAGIO_AJUDA = {
+  anuncio: "Status do projeto: investimento anunciado, ainda sem licença, financiamento ou obra.",
+  licenciamento: "Status do projeto: licença ambiental (LP, LI, LO), outorga ou alvará em andamento ou concedida.",
+  funding: "Status do projeto: financiamento contratado ou aprovado (BNDES, debêntures, FIDC, incentivo fiscal).",
+  contratacao_epc: "Status do projeto: construtora ou EPC contratada, terreno comprado ou projeto executivo em curso.",
+  mobilizacao: "Status do projeto: obra iniciada (canteiro, terraplenagem, matrícula ativa no CNO, obra em andamento).",
+  operacao: "Status do projeto: obra concluída (inauguração, licença de operação ou matrícula do CNO encerrada do porte do projeto).",
+  desaceleracao: "Status do projeto: atrasado, suspenso, reduzido ou adiado.",
+  cancelado: "Status do projeto: a empresa desistiu do investimento.",
+};
+const OBRA_AJUDA = {
+  ativa: "Status da obra (CNO 02): obra em andamento na Receita Federal.",
+  encerrada: "Status da obra (CNO 15): obra concluída e baixada. Depois do anúncio, indica conclusão.",
+  paralisada: "Status da obra (CNO 14): obra parada.",
+  suspensa: "Status da obra (CNO 03): matrícula suspensa.",
+  nula: "Status da obra (CNO 01): matrícula anulada (aberta por engano ou em duplicidade). Não indica obra.",
+};
+
+function ajuda(texto) {
+  if (!texto) return "";
+  return `<span class="ajuda" tabindex="0" role="note" aria-label="${esc(texto)}" data-ajuda="${esc(texto)}">?</span>`;
+}
+const ajudaEstagio = (estagio) => ajuda(ESTAGIO_AJUDA[estagio]);
+const ajudaStatus = (status) => ajuda(STATUS_AJUDA[status]);
+const ajudaObra = (situacao) => ajuda(OBRA_AJUDA[situacao]);
+
 // Processamento do projeto: fontes secundárias consultadas e linha do tempo montada.
 const PROCESSAMENTO = {
   processado: { rotulo: "Com fontes secundárias e linha do tempo", teste: (p) => Boolean(p.secundarias && p.linha_tempo) },
@@ -685,7 +717,7 @@ function linhaDoTempoCard(p) {
           <div class="mini-timeline__track">${pontos}</div>
           <div class="mini-timeline__info">
             <span><strong>${esc(data)}</strong> <span class="muted">${esc(origem)}</span></span>
-            <span>${badge(ESTAGIO_ROTULO[p.estagio] || p.estagio || "—", tomEstagio(p.estagio))}${p.status && p.status !== "ativo" ? ` ${badge(STATUS_ROTULO[p.status] || p.status, p.status === "descartado" ? "danger" : "warning")}` : ""}</span>
+            <span>${badge(ESTAGIO_ROTULO[p.estagio] || p.estagio || "—", tomEstagio(p.estagio))}${ajudaEstagio(p.estagio)}${p.status && p.status !== "ativo" ? ` ${badge(STATUS_ROTULO[p.status] || p.status, p.status === "descartado" ? "danger" : "warning")}${ajudaStatus(p.status)}` : ""}</span>
           </div>
         </div>`;
 }
@@ -747,7 +779,7 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
     cards = STATUS_ORDEM.map((status) => {
       const doStatus = visiveis.filter((p) => p.status === status);
       if (!doStatus.length) return "";
-      return `<section class="project-status-group"><h2>${esc(STATUS_ROTULO[status])} <span class="muted">(${doStatus.length})</span></h2>
+      return `<section class="project-status-group"><h2>${esc(STATUS_ROTULO[status])} ${ajudaStatus(status)} <span class="muted">(${doStatus.length})</span></h2>
         <div class="project-list">${doStatus.map(cardProjeto).join("")}</div></section>`;
     }).join("");
   }
@@ -825,7 +857,7 @@ const CAMPOS_PERFIL_ROTULO = [
 
 function blocoFamilia(pai, filhos) {
   if (!pai && !filhos.length) return "";
-  const item = (x) => `<li><a href="/monitoramento/projetos/${x.id}">${esc(x.titulo)}</a> ${badge(RELACAO_ROTULO[x.relacao] || "projeto", "info")}${x.status !== "ativo" ? ` ${badge(STATUS_ROTULO[x.status] || x.status, "warning")}` : ""}</li>`;
+  const item = (x) => `<li><a href="/monitoramento/projetos/${x.id}">${esc(x.titulo)}</a> ${badge(RELACAO_ROTULO[x.relacao] || "projeto", "info")}${x.status !== "ativo" ? ` ${badge(STATUS_ROTULO[x.status] || x.status, "warning")}${ajudaStatus(x.status)}` : ""}</li>`;
   return `<section class="project-family">
     ${pai ? `<p>Este projeto é ${esc(RELACAO_ROTULO[pai.relacao_do_filho] || "ligado a")} de: <a href="/monitoramento/projetos/${pai.id}">${esc(pai.titulo)}</a></p>` : ""}
     ${filhos.length ? `<h2>Subprojetos e localidades (${filhos.length})</h2><ul>${filhos.map(item).join("")}</ul>` : ""}
@@ -894,7 +926,7 @@ function resumoObras(obras) {
 function blocoStatus(projeto, obras) {
   const pend = projeto.municipio_pendencia;
   const linhas = obras.map((o) => `<tr>
-      <td>${badge(o.situacao_descricao || "—", OBRA_TOM[o.situacao_descricao] || "neutral")}</td>
+      <td>${badge(o.situacao_descricao || "—", OBRA_TOM[o.situacao_descricao] || "neutral")}${ajudaObra(o.situacao_descricao)}</td>
       <td><strong>${esc(o.nome || "—")}</strong><br><span class="muted">CNO ${esc(o.cno)} · ${esc(o.municipio || "")}/${esc(o.uf || "")}${o.responsavel ? ` · ${esc(o.responsavel)}` : ""}${o.qualificacao ? ` (${esc(CNO_QUALIFICACAO[o.qualificacao] || o.qualificacao)})` : ""}</span></td>
       <td>${o.area ? `${Number(o.area).toLocaleString("pt-BR")} m²` : "—"}</td>
       <td>${esc(dia(o.inicio))}</td>
@@ -903,8 +935,8 @@ function blocoStatus(projeto, obras) {
     </tr>`).join("");
   return `<section class="project-status">
     <div class="status-row">
-      <div><span class="muted">Status do projeto</span><strong>${esc(ESTAGIO_ROTULO[projeto.estagio] || projeto.estagio)}</strong><span class="muted">${esc(STATUS_ROTULO[projeto.status] || projeto.status)} na carteira</span></div>
-      <div><span class="muted">Status das obras</span><strong>${esc(resumoObras(obras))}</strong></div>
+      <div><span class="muted">Status do projeto</span><strong>${esc(ESTAGIO_ROTULO[projeto.estagio] || projeto.estagio)} ${ajudaEstagio(projeto.estagio)}</strong><span class="muted">${esc(STATUS_ROTULO[projeto.status] || projeto.status)} na carteira ${ajudaStatus(projeto.status)}</span></div>
+      <div><span class="muted">Status das obras ${ajuda("Situação de cada matrícula do CNO ligada ao projeto: ativa, encerrada, paralisada, suspensa ou nula. Passe o mouse no ? de cada obra para o detalhe.")}</span><strong>${esc(resumoObras(obras))}</strong></div>
     </div>
     ${pend ? `<p class="project-card__review">${badge("revisar município", "warning")} ${esc(pend.motivo || "")}${pend.sugestoes?.length ? ` Sugestões: ${esc(pend.sugestoes.join(", "))}.` : ""}</p>` : ""}
     ${obras.length ? `<h3>Obras do projeto (${obras.length})</h3>
@@ -1186,7 +1218,7 @@ function paginaProjeto({ projeto, timeline, notice, pai = null, filhos = [], reg
       <p><a href="/monitoramento/carteira">← Carteira</a></p>
       <section class="project-hero">
         <div>
-          ${badge(ESTAGIO_ROTULO[projeto.estagio] || projeto.estagio, "info")} ${badge(projeto.flag_validacao, "neutral")}
+          ${badge(ESTAGIO_ROTULO[projeto.estagio] || projeto.estagio, "info")}${ajudaEstagio(projeto.estagio)} ${badge(projeto.flag_validacao, "neutral")}
           <p class="eyebrow">${esc(projeto.grupo)} · ${esc(NICHOS[projeto.nicho] || projeto.nicho)}</p>
           <h1>${esc(projeto.titulo)}</h1>
           <p>${esc(projeto.matriz_razao_social)} · ${esc(projeto.matriz_cnpj)}${projeto.filial_cnpj ? ` · filial ${esc(projeto.filial_cnpj)}` : ""}</p>
