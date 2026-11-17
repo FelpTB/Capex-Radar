@@ -142,6 +142,7 @@ function hubBody(sources, filters = {}) {
         <p>${esc(alvo)}</p>
       </div>
     </section>
+    ${require("./fontes-aproveitamento").subnavHub("fontes")}
     <form class="source-filters hub-filters" method="get" action="/fontes/hub">
       <label>UF do projeto
         <select name="uf">${selectOptions([["", "Todas"], ...BRAZIL_UFS.map((uf) => [uf, uf])], project.uf)}</select>

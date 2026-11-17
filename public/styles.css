@@ -537,3 +537,50 @@ td .ajuda::after { bottom: auto; top: calc(100% + 6px); left: 0; transform: none
 .carregando__giro { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--green, #2f7d4f); animation: carregando-gira .8s linear infinite; }
 @keyframes carregando-gira { to { transform: rotate(360deg); } }
 body.is-waiting { cursor: progress; }
+
+/* Hub de fontes: abas e gráficos de aproveitamento */
+.hub-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 18px; border-bottom: 1px solid var(--line); }
+.hub-tabs a { padding: 8px 12px; border-bottom: 2px solid transparent; color: var(--muted); font-weight: 600; }
+.hub-tabs a.active { color: var(--ink); border-bottom-color: var(--green); }
+.hub-tabs a:hover { text-decoration: none; color: var(--ink); }
+:root { --dv-sim: #2a78d6; --dv-linha: #184f95; --dv-possivel: #6da7ec; --dv-cinza: #d6d5cd; --dv-trilho: #f0efec; --dv-grid: #e1e0d9; }
+.dv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 18px 0; }
+.dv-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; min-width: 0; }
+.dv-card--wide { grid-column: 1 / -1; }
+.dv-card h2 { margin: 0 0 4px; font-size: 17px; }
+.dv-card > p.muted { margin: 0 0 12px; font-size: 13px; }
+@media (max-width: 860px) { .dv-grid { grid-template-columns: 1fr; } }
+.dv-bars, .dv-stack-list { display: flex; flex-direction: column; gap: 4px; }
+.dv-bar, .dv-stack-row { display: grid; grid-template-columns: minmax(90px, 32%) 1fr auto; align-items: center; gap: 10px; padding: 3px 4px; border-radius: 6px; font-size: 13px; }
+.dv-bar:hover, .dv-bar:focus, .dv-bar.is-hover { background: var(--dv-trilho); outline: none; }
+.dv-bar__rotulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.dv-bar__trilho { position: relative; height: 12px; border-left: 1px solid #c3c2b7; }
+.dv-bar__valor { display: block; height: 100%; background: var(--dv-sim); border-radius: 0 4px 4px 0; }
+.dv-bar__numero { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--ink); font-size: 12px; }
+.dv-stack { display: flex; gap: 2px; height: 14px; }
+.dv-stack__seg { min-width: 3px; height: 100%; }
+.dv-stack__seg:first-child { border-radius: 0; }
+.dv-stack__seg:last-child { border-radius: 0 4px 4px 0; }
+.dv-stack__seg:hover, .dv-stack__seg:focus, .dv-stack__seg.is-hover { outline: 2px solid var(--ink); outline-offset: 1px; }
+.dv-fill--sim { background: var(--dv-sim); }
+.dv-fill--resto { background: var(--dv-cinza); }
+.dv-fill--linha { background: var(--dv-linha); }
+.dv-fill--possivel { background: var(--dv-possivel); }
+.dv-fill--descarte { background: var(--dv-cinza); }
+.dv-fill--sem { background: repeating-linear-gradient(45deg, #fff 0 3px, #c3c2b7 3px 4px); }
+.dv-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; list-style: none; margin: 0 0 10px; padding: 0; font-size: 12px; color: var(--muted); }
+.dv-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.dv-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.dv-fill--sem.dv-swatch { border: 1px solid #c3c2b7; }
+.dv-cols { display: flex; align-items: stretch; gap: 6px; height: 110px; margin-bottom: 24px; padding-top: 6px; border-bottom: 1px solid #c3c2b7; background: linear-gradient(to top, var(--dv-grid) 1px, transparent 1px) 0 0 / 100% 25%; }
+.dv-col { flex: 1; position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-width: 0; cursor: default; border-radius: 4px; }
+.dv-col:hover, .dv-col:focus, .dv-col.is-hover { background: rgba(0,0,0,.04); outline: none; }
+.dv-col__pilha { display: flex; flex-direction: column; gap: 2px; width: 70%; max-width: 34px; margin: 0 auto; }
+.dv-col__seg { display: block; min-height: 2px; }
+.dv-col__seg:first-child { border-radius: 4px 4px 0 0; }
+.dv-col__rotulo { position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--muted); }
+.dv-mini-title { margin: 6px 0 2px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.dv-col__numero { text-align: center; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dv-axis-note { margin: 0; font-size: 12px; }
+.dv-tooltip { position: fixed; z-index: 120; max-width: 300px; padding: 6px 9px; border-radius: 6px; background: #1f2a24; color: #fff; font-size: 12px; line-height: 1.4; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.18); }
+.dv-tooltip[hidden] { display: none; }

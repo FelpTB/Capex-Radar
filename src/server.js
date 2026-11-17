@@ -548,6 +548,12 @@ app.get("/fontes/hub", async (req, res) => {
   }));
 });
 
+// Hub de fontes › Aproveitamento: gráficos de quanto cada fonte chega aos projetos.
+app.get("/fontes/hub/aproveitamento", async (req, res) => {
+  const aproveitamento = require("./fontes-aproveitamento");
+  res.send(aproveitamento.paginaAproveitamento(await aproveitamento.dadosAproveitamento()));
+});
+
 app.get("/fontes/:codigo", async (req, res) => {
   const codigo = String(req.params.codigo || "").toUpperCase();
   const guide = sourceGuide(codigo);
