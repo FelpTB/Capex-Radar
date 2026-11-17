@@ -135,7 +135,7 @@ function acoesCard(noticia) {
   }
   const aprovar = noticia.sugerido_projeto_id ? "Aceitar vínculo" : "Aprovar como projeto";
   return `<div class="news-card__actions">
-    <form class="js-acao" method="post" action="${base}/aprovar">
+    <form class="js-acao" method="post" action="${base}/aprovar" data-carregando="Aprovando e incluindo na linha do tempo…">
       <button class="button button--small" type="submit">${aprovar}</button>
     </form>
     <form class="js-acao news-card__discard" method="post" action="${base}/descartar">
@@ -353,7 +353,7 @@ function blocoVinculos(noticia, vinculos) {
   const itens = vinculos.map((v) => {
     const acoes = v.situacao === "sugerido"
       ? `<div class="inline-actions">
-           <form method="post" action="/monitoramento/noticias/${noticia.id}/vincular">
+           <form method="post" action="/monitoramento/noticias/${noticia.id}/vincular" data-carregando="Aprovando e incluindo na linha do tempo…">
              <input type="hidden" name="projeto_id" value="${v.projeto_id}">
              <button class="button button--small" type="submit">Aceitar</button>
            </form>
@@ -383,7 +383,7 @@ function formularioProjeto(noticia, matrizes, filiais) {
   if (!matrizes.length) {
     return `<section class="form-card compact"><h2>Criar projeto</h2><p class="muted">Esta empresa ainda não tem CNPJ cadastrado (matriz). O projeto só nasce quando houver a raiz.</p></section>`;
   }
-  return `<form class="form-card compact" method="post" action="/monitoramento/noticias/${noticia.id}/projeto">
+  return `<form class="form-card compact" method="post" action="/monitoramento/noticias/${noticia.id}/projeto" data-carregando="Criando o projeto e montando a linha do tempo…">
     <h2>Criar projeto</h2>
     <p class="muted">Pré-preenchido com a leitura da IA. A notícia vira a evidência primária.</p>
     <label>Título *</label><input name="titulo" required maxlength="200" value="${esc(ex.objeto ? `${noticia.grupo} — ${ex.objeto}` : noticia.titulo)}">
@@ -402,7 +402,7 @@ function formularioProjeto(noticia, matrizes, filiais) {
 function paginaNoticia({ noticia, vinculos, projetos, matrizes, filiais, notice }) {
   const situacao = situacaoNoticia({ ...noticia, sugerido_projeto_id: vinculos.find((v) => v.situacao === "sugerido")?.projeto_id });
   const vincular = projetos.length
-    ? `<form class="form-card compact" method="post" action="/monitoramento/noticias/${noticia.id}/vincular">
+    ? `<form class="form-card compact" method="post" action="/monitoramento/noticias/${noticia.id}/vincular" data-carregando="Aprovando e incluindo na linha do tempo…">
          <h2>Vincular a projeto existente</h2>
          <select name="projeto_id" required>${selectOptions(projetos.map((p) => [p.id, `${p.titulo}${p.uf ? ` · ${p.uf}` : ""}`]))}</select>
          <button class="button button--secondary" type="submit">Vincular</button>
@@ -892,7 +892,7 @@ function seloClasse(r) {
 
 function formClasse(r) {
   const opcoes = classes.ORDEM.map((k) => `<option value="${k}"${k === r.classe ? " selected" : ""}>${classes.CLASSES[k].rotulo} (${classes.CLASSES[k].faixa})</option>`).join("");
-  return `<form class="inline-actions" method="post" action="/monitoramento/registros/${r.id}/classe">
+  return `<form class="inline-actions" method="post" action="/monitoramento/registros/${r.id}/classe" data-carregando="Trocando a classe e atualizando a linha do tempo…">
       <select name="classe">${opcoes}</select>
       <input name="motivo" placeholder="motivo (opcional)" maxlength="300">
       <button class="button button--small" type="submit">Trocar classe</button>
@@ -1448,6 +1448,23 @@ function paginaAgente({ resumo, decisoes, filtros, grupos, fila, totalProjetos, 
   });
 }
 
+// Depois de aprovar: a evidência entra na linha do tempo do projeto. Devolve
+// o complemento da mensagem; um erro aqui não desfaz a aprovação.
+async function linhaAposAprovacao(projetoId) {
+  if (!projetoId) return "";
+  try {
+    const r = await require("./capex-fontes-secundarias").incluirNaLinhaDoTempo(pool, projetoId);
+    if (!r) return "";
+    if (r.modo === "modelo") {
+      return ` Linha do tempo refeita: ${r.marcos} marco(s)${r.estagio_mudou ? `, estágio ${r.estagio_mudou}` : ""}.`;
+    }
+    return ` Evidência incluída na linha do tempo (${r.marcos} marco(s); provisória até o modelo revisar).`;
+  } catch (error) {
+    console.error("linha do tempo após aprovação:", error.message);
+    return " A linha do tempo não foi atualizada agora; ela é refeita na próxima rodada.";
+  }
+}
+
 function querJson(req) {
   return (req.get("accept") || "").includes("application/json");
 }
@@ -1516,9 +1533,9 @@ function registrarMonitoramento(app) {
     const id = uuid.parse(req.params.id);
     try {
       const r = await painel.aprovarNoticia(id);
-      const mensagem = r.acao === "projeto_criado"
+      const mensagem = (r.acao === "projeto_criado"
         ? `Projeto "${r.projeto_titulo}" criado.`
-        : "Notícia vinculada ao projeto sugerido.";
+        : "Notícia vinculada ao projeto sugerido.") + await linhaAposAprovacao(r.projeto_id);
       await responderAcao(req, res, id, mensagem, "/monitoramento");
     } catch (error) {
       if (!querJson(req)) throw error;
@@ -1529,13 +1546,15 @@ function registrarMonitoramento(app) {
   app.post("/monitoramento/noticias/:id/projeto", async (req, res) => {
     const id = uuid.parse(req.params.id);
     const projeto = await painel.criarProjetoDaNoticia(id, projetoSchema.parse(req.body));
-    res.redirect(`/monitoramento/projetos/${projeto.id}?message=${encodeURIComponent(`Projeto "${projeto.titulo}" criado com a notícia como evidência primária.`)}`);
+    const linha = await linhaAposAprovacao(projeto.id);
+    res.redirect(`/monitoramento/projetos/${projeto.id}?message=${encodeURIComponent(`Projeto "${projeto.titulo}" criado com a notícia como evidência primária.${linha}`)}`);
   });
 
   app.post("/monitoramento/noticias/:id/vincular", async (req, res) => {
     const id = uuid.parse(req.params.id);
-    await painel.vincularNoticia(id, uuid.parse(req.body.projeto_id));
-    await responderAcao(req, res, id, "Notícia vinculada ao projeto.", `/monitoramento/noticias/${id}`);
+    const projetoId = uuid.parse(req.body.projeto_id);
+    await painel.vincularNoticia(id, projetoId);
+    await responderAcao(req, res, id, `Notícia vinculada ao projeto.${await linhaAposAprovacao(projetoId)}`, `/monitoramento/noticias/${id}`);
   });
 
   app.post("/monitoramento/noticias/:id/rejeitar", async (req, res) => {
@@ -1585,7 +1604,8 @@ function registrarMonitoramento(app) {
     const motivo = typeof req.body?.motivo === "string" && req.body.motivo.trim() ? req.body.motivo.trim().slice(0, 300) : `Revisão humana: ${classes.CLASSES[classe].rotulo}`;
     const r = await require("./capex-fontes-secundarias").revisarRegistro(require("./db").pool, id, { classe, motivo, ator: "usuario:painel" });
     if (!r) return res.status(404).send("Registro não encontrado");
-    res.redirect(`/monitoramento/projetos/${r.projeto_id}?message=${encodeURIComponent(`Classe trocada para ${classes.CLASSES[classe].rotulo}.`)}`);
+    const linha = classes.CLASSES[classe].destino === "linha" ? await linhaAposAprovacao(r.projeto_id) : "";
+    res.redirect(`/monitoramento/projetos/${r.projeto_id}?message=${encodeURIComponent(`Classe trocada para ${classes.CLASSES[classe].rotulo}.${linha}`)}`);
   });
 
   app.post("/monitoramento/projetos/:id/restaurar", async (req, res) => {

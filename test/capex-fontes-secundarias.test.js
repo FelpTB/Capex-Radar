@@ -75,3 +75,28 @@ test("pendentes: projeto com evidência sem linha do tempo, sem marcos ou com ev
   assert.match(sql, /provisoria/);
   assert.doesNotMatch(sql, /status <> 'descartado'/);
 });
+
+test("acrescentarMarcos põe só as evidências sem marco, na ordem das datas", () => {
+  const linha = { marcos: [
+    { data: "2024-03", marco: "Anúncio", tipo: "anuncio", evidencias: ["a"] },
+    { data: "2025-06-01", marco: "Licença", tipo: "licenciamento", evidencias: ["c"] },
+  ] };
+  const evidencias = [
+    { id: "a", titulo: "Anúncio", data_original: "2024-03-10" },
+    { id: "b", titulo: "Obra começa", data_original: "2024-11-20" },
+    { id: "c", titulo: "Licença", data_original: "2025-06-01" },
+  ];
+  const { marcos, novas } = sec.acrescentarMarcos(linha, evidencias);
+  assert.equal(novas, 1);
+  assert.deepEqual(marcos.map((m) => m.evidencias[0]), ["a", "b", "c"]);
+  assert.equal(marcos[1].tipo, "outro");
+  assert.equal(linha.marcos.length, 2);
+  const vazia = sec.acrescentarMarcos(null, evidencias.slice(1, 2));
+  assert.equal(vazia.marcos[0].tipo, "anuncio");
+});
+
+test("incluirNaLinhaDoTempo sem modelo não chama o cronista e cai no provisório", async () => {
+  // Projeto inexistente: devolve null sem tocar em nada.
+  const db = { query: async () => ({ rows: [] }) };
+  assert.equal(await sec.incluirNaLinhaDoTempo(db, "x", { cronista: null }), null);
+});

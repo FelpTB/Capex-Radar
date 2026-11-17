@@ -527,3 +527,13 @@ td.criterios p { margin: 2px 0; }
 .ajuda:hover::after, .ajuda:focus::after { opacity: 1; visibility: visible; }
 .obra-item__status .ajuda::after, .mini-timeline__info .ajuda::after { left: auto; right: 0; transform: none; }
 td .ajuda::after { bottom: auto; top: calc(100% + 6px); left: 0; transform: none; }
+
+/* Aviso de carregamento das ações demoradas (aprovação com linha do tempo) */
+.carregando { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(15, 23, 19, .45); }
+.carregando[hidden] { display: none; }
+.carregando__caixa { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 380px; padding: 24px 28px; border-radius: 12px; background: var(--surface); color: var(--text, inherit); text-align: center; box-shadow: 0 12px 32px rgba(0,0,0,.25); }
+.carregando__caixa p { margin: 4px 0 0; font-size: 13px; }
+.carregando__etapa { font-size: 14px; }
+.carregando__giro { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--green, #2f7d4f); animation: carregando-gira .8s linear infinite; }
+@keyframes carregando-gira { to { transform: rotate(360deg); } }
+body.is-waiting { cursor: progress; }

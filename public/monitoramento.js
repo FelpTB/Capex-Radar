@@ -19,8 +19,9 @@
     el.className = `toast toast--${tipo}`;
     el.textContent = texto;
     toasts.appendChild(el);
-    setTimeout(() => el.classList.add("is-leaving"), 3800);
-    setTimeout(() => el.remove(), 4300);
+    const ms = Math.max(3800, texto.length * 60);
+    setTimeout(() => el.classList.add("is-leaving"), ms);
+    setTimeout(() => el.remove(), ms + 500);
   }
 
   // -------------------------------------------------------------------------
@@ -145,11 +146,69 @@
   });
 
   // -------------------------------------------------------------------------
+  // Aviso de carregamento para ações demoradas (aprovação com linha do tempo).
+  // O formulário pede o aviso com data-carregando="texto".
+  // -------------------------------------------------------------------------
+  function mostrarCarregando(texto) {
+    let el = document.getElementById("carregando");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "carregando";
+      el.className = "carregando";
+      el.setAttribute("role", "alertdialog");
+      el.setAttribute("aria-live", "assertive");
+      el.innerHTML = `<div class="carregando__caixa">
+          <span class="carregando__giro" aria-hidden="true"></span>
+          <strong class="js-carregando-texto"></strong>
+          <span class="carregando__etapa js-carregando-etapa"></span>
+          <span class="muted js-carregando-tempo"></span>
+          <p class="muted">A linha do tempo é refeita pelo modelo: pode levar até 2 minutos. Não feche a página.</p>
+        </div>`;
+      document.body.appendChild(el);
+    }
+    el.querySelector(".js-carregando-texto").textContent = texto;
+    const etapa = el.querySelector(".js-carregando-etapa");
+    const tempo = el.querySelector(".js-carregando-tempo");
+    const inicio = Date.now();
+    const etapas = [[0, "Gravando a aprovação…"], [3, "Montando a linha do tempo com o modelo…"], [45, "Ainda montando: projetos com muitas evidências demoram mais…"], [120, "Quase no limite; se o modelo não responder, a evidência entra como marco provisório."]];
+    const tique = () => {
+      const s = Math.round((Date.now() - inicio) / 1000);
+      etapa.textContent = etapas.filter(([de]) => s >= de).pop()[1];
+      tempo.textContent = `${s} s`;
+    };
+    clearInterval(el._timer);
+    tique();
+    el._timer = setInterval(tique, 1000);
+    el.hidden = false;
+    document.body.classList.add("is-waiting");
+    return () => {
+      clearInterval(el._timer);
+      el.hidden = true;
+      document.body.classList.remove("is-waiting");
+    };
+  }
+
+  // Voltando à página pelo histórico, o aviso não fica preso na tela.
+  window.addEventListener("pageshow", () => {
+    const el = document.getElementById("carregando");
+    if (el) { clearInterval(el._timer); el.hidden = true; }
+    document.body.classList.remove("is-waiting");
+  });
+
+  // Formulário comum (sem script de ação): só mostra o aviso e deixa enviar.
+  document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (event.defaultPrevented || form.matches("form.js-acao") || !form.dataset.carregando) return;
+    mostrarCarregando(form.dataset.carregando);
+  });
+
+  // -------------------------------------------------------------------------
   // Ações do card: aprovar, descartar e desfazer
   // -------------------------------------------------------------------------
   document.addEventListener("submit", async (event) => {
     const form = event.target;
     if (form.matches("form.js-acao")) {
+      const fecharAviso = form.dataset.carregando ? mostrarCarregando(form.dataset.carregando) : () => {};
       event.preventDefault();
       const card = form.closest(".news-card");
       // Lê o formulário antes de desabilitar: campo desabilitado não é enviado.
@@ -177,6 +236,8 @@
         avisar(error.message, "erro");
         botoes.forEach((el) => { el.disabled = false; });
         card?.classList.remove("is-busy");
+      } finally {
+        fecharAviso();
       }
       return;
     }

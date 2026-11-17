@@ -802,9 +802,87 @@ async function montarLinhaDoTempo(db, projeto, cronista) {
   return { ...registro, estagio_mudou: muda ? `${projeto.estagio} → ${linha.estagio}` : null };
 }
 
+// ---------------------------------------------------------------------------
+// Aprovação no painel: a evidência aceita entra na linha do tempo na hora.
+// ---------------------------------------------------------------------------
+
+// Tempo máximo esperando o modelo; depois disso a evidência entra como marco
+// provisório (o modelo que ainda estiver rodando grava a linha completa depois).
+const LIMITE_LINHA_MS = 150000;
+
+function comLimite(promessa, ms) {
+  let timer;
+  const limite = new Promise((_, rejeitar) => {
+    timer = setTimeout(() => rejeitar(new Error(`o modelo passou de ${Math.round(ms / 1000)} s`)), ms);
+  });
+  return Promise.race([promessa, limite]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Acrescenta à linha do tempo um marco para cada evidência aceita que ainda
+ * não está em marco nenhum, na ordem das datas. Não mexe nos marcos que já
+ * existem.
+ */
+function acrescentarMarcos(linha, evidencias) {
+  const marcos = [...(linha?.marcos || [])];
+  const presentes = new Set(marcos.flatMap((m) => (m.evidencias || []).map(String)));
+  const novas = evidencias.filter((e) => !presentes.has(String(e.id)));
+  for (const e of novas) {
+    marcos.push({
+      data: dia(e.data_original),
+      marco: String(e.titulo || "Evidência do projeto").slice(0, 400),
+      tipo: marcos.length ? "outro" : "anuncio",
+      evidencias: [String(e.id)],
+    });
+  }
+  const chave = (m) => dataDoMarco(m.data, "inicio") || "9999-12-31";
+  marcos.sort((a, b) => chave(a).localeCompare(chave(b)));
+  return { marcos, novas: novas.length };
+}
+
+/**
+ * Depois que uma pessoa aprova uma evidência no painel: refaz a linha do
+ * tempo do projeto com o modelo (o estágio só avança). Sem modelo, com erro
+ * ou passando do limite de tempo, a evidência entra como marco provisório na
+ * linha que já existe, e a linha fica marcada para o modelo refazer depois.
+ * No fim, regrava o perfil do projeto.
+ */
+async function incluirNaLinhaDoTempo(db, projetoId, { cronista, limiteMs = LIMITE_LINHA_MS, ator = ATOR } = {}) {
+  const projeto = await recarregarProjeto(db, projetoId);
+  if (!projeto) return null;
+  const modelo = cronista === undefined ? cronistaPadrao() : cronista;
+  let resultado = null;
+  let erro = null;
+  if (modelo) {
+    try {
+      const linha = await comLimite(montarLinhaDoTempo(db, projeto, modelo), limiteMs);
+      if (linha) resultado = { modo: "modelo", marcos: linha.marcos.length, estagio_mudou: linha.estagio_mudou };
+    } catch (error) {
+      erro = String(error.message || error).slice(0, 200);
+    }
+  }
+  if (!resultado) {
+    const evidencias = await evidenciasDoProjeto(db, projetoId);
+    if (!evidencias.length) return null;
+    const { marcos, novas } = acrescentarMarcos(projeto.linha_tempo, evidencias);
+    const base = projeto.linha_tempo || { versao: VERSAO_LINHA, modelo: null, resumo: "", estagio: null };
+    const registro = { ...base, marcos, provisoria: true, evidencias: evidencias.length, em: new Date().toISOString() };
+    await painel.emTransacao((client) => client.query(
+      "update capex_radar.projetos set linha_tempo = $2::jsonb, atualizado_em = now() where id = $1",
+      [projetoId, JSON.stringify(registro)],
+    ), ator);
+    resultado = { modo: "provisoria", marcos: marcos.length, novas, erro };
+  }
+  const perfis = require("./capex-perfil");
+  await painel.emTransacao((client) => perfis.montarPerfil(client, projetoId), ator).catch(() => null);
+  return resultado;
+}
+
 module.exports = {
   VERSAO,
   VERSAO_LINHA,
+  incluirNaLinhaDoTempo,
+  acrescentarMarcos,
   PROMPT_LINHA,
   dataDoRegistro,
   tituloDoRegistro,
