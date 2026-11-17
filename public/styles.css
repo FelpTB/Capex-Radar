@@ -405,13 +405,14 @@ body.is-loading main.container { opacity: .6; transition: opacity .15s; }
 .news-card__title a { color: var(--ink); }
 .news-card__reading { margin: 0 0 4px; font-weight: 650; font-size: 14px; }
 .news-card__why, .news-card__hint { margin: 0 0 4px; color: var(--muted); font-size: 13px; }
-/* Card da notícia: dropdown com as obras do projeto */
-.news-card__obras { margin: 6px 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
-.news-card__obras > summary { cursor: pointer; font-weight: 600; }
-.news-card__obras ul { list-style: none; margin: 6px 0 0; padding: 0; }
+/* Card do projeto na Carteira: dropdown com as obras */
+.project-obras { grid-column: 1 / -1; margin: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+.project-obras > summary { cursor: pointer; font-weight: 600; }
+.project-obras ul { list-style: none; margin: 6px 0 0; padding: 0; }
 .obra-item { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); }
-.obra-item--filho { padding-left: 12px; }
-.obra-item--cno { padding-left: 24px; }
+.obra-item--filho { padding-left: 0; }
+.obra-item--cno { padding-left: 12px; }
+.obra-item--filho ~ .obra-item--cno { padding-left: 24px; }
 .obra-item__status { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap; }
 .news-card__enriched { margin: 8px 0 4px; padding: 8px 10px; border-left: 3px solid var(--line); font-size: 13px; line-height: 1.45; }
 .news-card__enriched p { margin: 0 0 4px; }

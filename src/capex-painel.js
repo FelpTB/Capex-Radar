@@ -196,7 +196,6 @@ function cardNoticia(noticia) {
     ${motivoIa ? `<p class="news-card__why">IA: ${esc(motivoIa)}</p>` : ""}
     ${blocoEnriquecimento(noticia)}
     ${sugestao}
-    ${blocoObrasDoCard(noticia.obras)}
     ${linhaAgente(noticia)}
     ${acoesCard(noticia)}
   </article>`;
@@ -205,7 +204,7 @@ function cardNoticia(noticia) {
 // Dropdown do card: as obras do projeto ligado, com nome, descrição curta, status e valor.
 
 function blocoObrasDoCard(obras = []) {
-  if (!obras.length) return "";
+  if (!obras.length) return `<details class="project-obras"><summary>Obras do projeto <span class="muted">· nenhuma ainda</span></summary><p class="muted">Nenhuma matrícula no CNO ligada ao projeto e nenhum subprojeto.</p></details>`;
   const m2 = (n) => `${Math.round(Number(n)).toLocaleString("pt-BR")} m²`;
   const linha = (o) => {
     if (o.tipo === "cno") {
@@ -216,16 +215,16 @@ function blocoObrasDoCard(obras = []) {
           <div class="obra-item__status">${badge(situacao, OBRA_TOM[situacao] || "neutral")}<span class="muted">valor —</span></div>
         </li>`;
     }
-    const rotulo = o.tipo === "filho" ? RELACAO_ROTULO[o.relacao] || "projeto ligado" : o.sugerido ? "projeto sugerido" : "projeto";
+    const rotulo = RELACAO_ROTULO[o.relacao] || "projeto ligado";
     return `<li class="obra-item${o.tipo === "filho" ? " obra-item--filho" : ""}">
         <div><a href="/monitoramento/projetos/${o.id}"><strong>${esc(o.titulo)}</strong></a> <span class="muted">${esc(rotulo)}</span><br><span class="muted">${esc(String(o.objeto || local(o.uf, o.municipio) || "").slice(0, 140))}</span></div>
         <div class="obra-item__status">${badge(ESTAGIO_ROTULO[o.estagio] || o.estagio || "—", "info")}<span>${esc(o.valor_estimado_brl == null ? "valor —" : money(o.valor_estimado_brl))}</span></div>
       </li>`;
   };
   const cnos = obras.filter((o) => o.tipo === "cno").length;
-  const projetos = obras.length - cnos;
-  const resumo = [`${projetos} projeto(s)`, cnos ? `${cnos} obra(s) no CNO` : null].filter(Boolean).join(" · ");
-  return `<details class="news-card__obras">
+  const filhos = obras.length - cnos;
+  const resumo = [cnos ? `${cnos} obra(s) no CNO` : null, filhos ? `${filhos} projeto(s) ligado(s)` : null].filter(Boolean).join(" · ");
+  return `<details class="project-obras">
       <summary>Obras do projeto <span class="muted">· ${resumo}</span></summary>
       <ul>${obras.map(linha).join("")}</ul>
     </details>`;
@@ -695,6 +694,7 @@ function cardProjeto(p) {
         <div class="project-row__field"><span>Local</span><strong>${esc(localProjeto(p))}</strong></div>
         <div class="project-row__field project-row__field--valor"><span>Valor</span><strong>${esc(money(p.valor_estimado_brl))}</strong></div>
         ${linhaDoTempoCard(p)}
+        ${blocoObrasDoCard(p.obras)}
       </article>`;
 }
 
@@ -1456,8 +1456,11 @@ function registrarMonitoramento(app) {
   });
 
   app.get("/monitoramento/carteira", async (req, res) => {
+    const projetos = await painel.carteira({ incluirDescartados: true });
+    const obras = await painel.obrasDosProjetos(projetos.map((x) => x.id));
+    for (const x of projetos) x.obras = obras.get(x.id) || [];
     res.send(paginaCarteira({
-      projetos: await painel.carteira({ incluirDescartados: true }),
+      projetos,
       filtros: filtrosCarteira(req.query),
       notice: aviso(req),
     }));
