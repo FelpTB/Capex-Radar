@@ -196,9 +196,39 @@ function cardNoticia(noticia) {
     ${motivoIa ? `<p class="news-card__why">IA: ${esc(motivoIa)}</p>` : ""}
     ${blocoEnriquecimento(noticia)}
     ${sugestao}
+    ${blocoObrasDoCard(noticia.obras)}
     ${linhaAgente(noticia)}
     ${acoesCard(noticia)}
   </article>`;
+}
+
+// Dropdown do card: as obras do projeto ligado, com nome, descrição curta, status e valor.
+
+function blocoObrasDoCard(obras = []) {
+  if (!obras.length) return "";
+  const m2 = (n) => `${Math.round(Number(n)).toLocaleString("pt-BR")} m²`;
+  const linha = (o) => {
+    if (o.tipo === "cno") {
+      const situacao = CNO_SITUACAO[o.situacao] || o.situacao || "—";
+      const descricao = [o.categoria, o.destinacao, o.area ? m2(o.area) : null, o.municipio, o.inicio ? `início ${dia(o.inicio)}` : null].filter(Boolean).join(" · ");
+      return `<li class="obra-item obra-item--cno">
+          <div><strong>${esc(String(o.nome || `CNO ${o.cno}`).slice(0, 90))}</strong> <span class="muted">matrícula CNO ${esc(o.cno || "")}</span><br><span class="muted">${esc(descricao)}</span></div>
+          <div class="obra-item__status">${badge(situacao, OBRA_TOM[situacao] || "neutral")}<span class="muted">valor —</span></div>
+        </li>`;
+    }
+    const rotulo = o.tipo === "filho" ? RELACAO_ROTULO[o.relacao] || "projeto ligado" : o.sugerido ? "projeto sugerido" : "projeto";
+    return `<li class="obra-item${o.tipo === "filho" ? " obra-item--filho" : ""}">
+        <div><a href="/monitoramento/projetos/${o.id}"><strong>${esc(o.titulo)}</strong></a> <span class="muted">${esc(rotulo)}</span><br><span class="muted">${esc(String(o.objeto || local(o.uf, o.municipio) || "").slice(0, 140))}</span></div>
+        <div class="obra-item__status">${badge(ESTAGIO_ROTULO[o.estagio] || o.estagio || "—", "info")}<span>${esc(o.valor_estimado_brl == null ? "valor —" : money(o.valor_estimado_brl))}</span></div>
+      </li>`;
+  };
+  const cnos = obras.filter((o) => o.tipo === "cno").length;
+  const projetos = obras.length - cnos;
+  const resumo = [`${projetos} projeto(s)`, cnos ? `${cnos} obra(s) no CNO` : null].filter(Boolean).join(" · ");
+  return `<details class="news-card__obras">
+      <summary>Obras do projeto <span class="muted">· ${resumo}</span></summary>
+      <ul>${obras.map(linha).join("")}</ul>
+    </details>`;
 }
 
 function barraTriagem(job, rotulo = "Funil de notícias") {

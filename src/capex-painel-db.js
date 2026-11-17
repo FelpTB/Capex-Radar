@@ -105,7 +105,60 @@ async function listarNoticias({ grupoId = null, situacao = "revisar", limite = 1
       limit $2`,
     id ? [grupoId, limite, id] : [grupoId, limite],
   );
+  const obras = await obrasDasNoticias(rows.map((r) => r.id));
+  for (const r of rows) r.obras = obras.get(String(r.id)) || [];
   return rows;
+}
+
+/**
+ * Obras do projeto de cada notícia, para o dropdown do card: o próprio
+ * projeto, os filhos (subprojeto, localidade, expansão) e as matrículas do
+ * CNO ligadas (certeira ou provável). Projeto aceito vale sobre o sugerido.
+ */
+async function obrasDasNoticias(ids) {
+  const porNoticia = new Map();
+  if (!ids.length) return porNoticia;
+  const { rows: alvos } = await pool.query(
+    `select distinct on (ep.evidencia_id, ep.projeto_id) ep.evidencia_id, ep.situacao,
+            p.id, p.titulo, p.objeto, p.estagio, p.valor_estimado_brl, p.uf, p.municipio
+       from capex_radar.evidencia_projeto ep
+       join capex_radar.projetos p on p.id = ep.projeto_id and p.status <> 'descartado'
+      where ep.evidencia_id = any($1::uuid[]) and ep.situacao in ('aceito', 'sugerido')
+      order by ep.evidencia_id, ep.projeto_id, (ep.situacao = 'aceito') desc`,
+    [ids],
+  );
+  if (!alvos.length) return porNoticia;
+  const projetos = [...new Set(alvos.map((a) => a.id))];
+  const { rows: filhos } = await pool.query(
+    `select id, projeto_pai_id, relacao, titulo, objeto, estagio, valor_estimado_brl, uf, municipio
+       from capex_radar.projetos
+      where projeto_pai_id = any($1::uuid[]) and status <> 'descartado'
+      order by titulo`,
+    [projetos],
+  );
+  const { rows: cno } = await pool.query(
+    `select projeto_id, registro->>'cno' as cno, coalesce(nullif(registro->>'nome', ''), registro->>'empresa') as nome,
+            registro->>'municipio' as municipio, nullif(registro->>'area', '')::numeric as area, registro->>'inicio' as inicio,
+            registro->>'situacao' as situacao, registro->'areas'->0->>'categoria' as categoria,
+            registro->'areas'->0->>'destinacao' as destinacao
+       from capex_radar.registros_analisados
+      where fonte_codigo = 'SEC-CNO' and classe in ('certeira', 'provavel') and projeto_id = any($1::uuid[])
+      order by registro->>'inicio' desc nulls last`,
+    [[...projetos, ...filhos.map((f) => f.id)]],
+  );
+  const obrasDoProjeto = (id) => cno.filter((c) => c.projeto_id === id).map((c) => ({ tipo: "cno", ...c }));
+  for (const a of alvos) {
+    const lista = porNoticia.get(String(a.evidencia_id)) || [];
+    // Projeto aceito na frente do sugerido; o mesmo projeto não se repete.
+    if (lista.some((o) => o.tipo === "projeto" && o.id === a.id)) continue;
+    const bloco = [
+      { tipo: "projeto", sugerido: a.situacao === "sugerido", ...a },
+      ...obrasDoProjeto(a.id),
+      ...filhos.filter((f) => f.projeto_pai_id === a.id).flatMap((f) => [{ tipo: "filho", ...f }, ...obrasDoProjeto(f.id)]),
+    ];
+    porNoticia.set(String(a.evidencia_id), a.situacao === "aceito" ? [...bloco, ...lista] : [...lista, ...bloco]);
+  }
+  return porNoticia;
 }
 
 /** Uma notícia no formato do card, para redesenhar só ele depois de uma ação. */
