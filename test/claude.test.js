@@ -70,6 +70,25 @@ test("cada chamada grava os tokens com a etapa, somando as voltas", async () => 
   claude.definirGravadorDeUso(async () => {});
 });
 
+test("falha ao gravar o uso não derruba a chamada e aparece no log uma vez", async () => {
+  const claude = require("../src/claude");
+  claude.definirGravadorDeUso(async () => { throw new Error("sem permissão"); });
+  const erros = [];
+  const original = console.error;
+  console.error = (msg) => erros.push(String(msg));
+  try {
+    const client = { messages: { create: async () => ({ stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: "text", text: '{"ok":true}' }] }) } };
+    assert.equal(await claude.pedirJson(client, { etapa: "filtro1", system: "s", user: "u" }), '{"ok":true}');
+    await claude.pedirJson(client, { etapa: "filtro1", system: "s", user: "u" });
+    await new Promise((r) => setImmediate(r));
+  } finally {
+    console.error = original;
+    claude.definirGravadorDeUso(async () => {});
+  }
+  assert.equal(erros.filter((m) => m.includes("Uso de IA não gravado")).length, 1);
+  assert.match(erros[0], /sem permissão/);
+});
+
 test("enriquecimento pede uma busca, uma leitura curta e poucas voltas", () => {
   const enr = require("../src/capex-enriquecimento");
   const [busca, leitura] = enr.ferramentas();

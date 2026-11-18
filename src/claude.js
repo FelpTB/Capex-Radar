@@ -53,9 +53,17 @@ function novoUso(etapa, modelo) {
   return { etapa: etapa || null, modelo, entrada: 0, saida: 0, cache_leitura: 0, cache_escrita: 0, buscas: 0, voltas: 0, temUso: false };
 }
 
+// A falha ao gravar o uso não derruba a chamada, mas aparece no log (uma vez
+// por processo), para a tabela não ficar vazia sem ninguém perceber.
+let avisouFalhaDeUso = false;
+
 function registrarUso(uso) {
   if (!uso.temUso) return;
-  Promise.resolve().then(() => gravarUso(uso)).catch(() => {});
+  Promise.resolve().then(() => gravarUso(uso)).catch((error) => {
+    if (avisouFalhaDeUso) return;
+    avisouFalhaDeUso = true;
+    console.error(`Uso de IA não gravado em capex_radar.ia_uso (etapa ${uso.etapa || "?"}): ${error.message}`);
+  });
 }
 
 /**
