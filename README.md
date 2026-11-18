@@ -98,7 +98,26 @@ O CNO (Cadastro Nacional de Obras) é um ZIP de 1,7 GB lido localmente em `data/
 npm run capex:cno-mensal
 ```
 
-O comando baixa o ZIP novo, se houver, e cruza as obras com os projetos ativos (raiz, grupo, marca e sob encomenda). Classes já dadas e revisões humanas ficam como estão. As obras novas entram como `nao_avaliada` e são julgadas pelo especialista do CNO com `npm run capex:reprocessar -- registros-empresa --saida <pasta>` e depois `julgar`.
+O comando baixa o ZIP novo, se houver, e cruza as obras com os projetos ativos (raiz, grupo, vínculo, marca e sob encomenda). Classes já dadas e revisões humanas ficam como estão. As obras novas entram como `nao_avaliada` e são julgadas pelo especialista do CNO com `npm run capex:reprocessar -- registros-empresa --saida <pasta>` e depois `julgar`.
+
+### Funil de notícias pelo Claude Code (sem a API)
+
+Com a rotina automática desligada, o funil de notícias roda pelo Claude Code, sem gastar crédito da API:
+
+```bash
+npm run capex:coletar -- --sem-ia
+npm run capex:funil -- contar
+npm run capex:funil -- exportar --saida <pasta>
+```
+
+O Claude Code segue `docs/claude-code/funil-noticias.md` (com os critérios das fases em `<pasta>/_criterios.md`, os mesmos prompts da API), lê as matérias quando vale a pena e escreve `<pasta>/decisoes.json`. Depois:
+
+```bash
+npm run capex:funil -- aplicar --arquivo <pasta>/decisoes.json --seco
+npm run capex:funil -- aplicar --arquivo <pasta>/decisoes.json
+```
+
+O `--seco` valida tudo sem gravar; com erro em qualquer decisão, nada é gravado. A aplicação grava a leitura da manchete, os Filtros 2 e 3, o enriquecimento e a decisão (criar projeto em revisão, vincular ou descartar), registra a decisão na aba Agente para avaliação e põe marcos provisórios na linha do tempo dos projetos tocados, que é refeita com `capex:reprocessar -- dossie` e `docs/claude-code/linha-do-tempo.md`.
 
 ## Fluxo do piloto
 
