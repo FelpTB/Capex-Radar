@@ -15,6 +15,7 @@ Para CADA registro, decida a que projeto(s) da empresa ele pode pertencer e dê 
 - Matrícula encerrada (15) depois da obra do projeto é forte evidência de conclusão: não reduza a probabilidade por estar encerrada.
 - Um projeto pode ter várias matrículas (galpão, caldeira, ETE, subestação, pátio); cada uma ligada à obra do projeto é evidência.
 - `sob_encomenda`: só passe de 60 quando houver sinal concreto além de "obra grande no município" — nome de centro logístico/BTS/data center, data muito próxima do anúncio, área compatível com o que a notícia diz. Sem isso, fique em 30–55 (possibilidade).
+- Porte: os projetos trazem `area_construida_m2` e `area_terreno_m2` quando a notícia dá a área. A obra não precisa ter a mesma área, mas tem de ser do mesmo porte (de cerca de um terço ao dobro). Obra com mais de 3 vezes a maior área da notícia é terreno de condomínio, loteamento ou complexo: no máximo 45 (improvável), ou 59 se o nome cita a empresa. O Radar aplica esse teto ao gravar, e o motivo ganha a explicação do porte.
 - `marca` e `raiz_grupo`: confirme que a obra é do porte e do tipo do projeto; obra pequena ou antiga da mesma unidade é outra obra.
 - Homônimos (ex.: "Auto Posto Bracell", "Eldorado" como nome de bairro/município) são muito improváveis.
 

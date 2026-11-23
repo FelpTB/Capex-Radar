@@ -43,7 +43,7 @@ Escreva `decisoes.json` na pasta: uma lista com UM objeto por notícia exportada
       "url_original": "https://...",
       "veiculo_original": "...",
       "resumo": "3 a 5 frases do que a matéria diz",
-      "perfil": { "objeto": "...", "uf": "MG", "municipio": "...", "valor_brl": 1000000000, "estagio": "anuncio", "empregos": 200, "capacidade": "...", "construtora": null, "inicio_obra": null, "previsao_operacao": "2028" },
+      "perfil": { "objeto": "...", "uf": "MG", "municipio": "...", "valor_brl": 1000000000, "estagio": "anuncio", "empregos": 200, "capacidade": "...", "area_construida_m2": null, "area_terreno_m2": null, "construtora": null, "inicio_obra": null, "previsao_operacao": "2028" },
       "trechos": ["até 3 trechos copiados da matéria"]
     },
     "projeto_id": "<só em vincular>",

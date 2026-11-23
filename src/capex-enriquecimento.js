@@ -58,6 +58,7 @@ CAMPOS
 - uf: sigla do estado; municipio: cidade; local_detalhe: distrito, rodovia ou bairro, se houver.
 - valor_brl: valor do investimento em reais, número inteiro (R$ 1,2 bilhão = 1200000000). Valor em dólar ou euro fica em valor_texto, com valor_brl null. valor_texto: o valor como escrito.
 - capacidade: capacidade produtiva ou área, como escrito. empregos: número de empregos (obra ou operação), inteiro.
+- area_construida_m2 e area_terreno_m2: área construída e área do terreno em m², números inteiros (300 mil m² = 300000; 12 hectares = 120000). Só o que o texto disser; sem a distinção, a área citada vai em area_terreno_m2. null se não houver.
 - estagio: um de ${ESTAGIOS.join(", ")}.
 - obra: por_fazer (anúncio, licença, financiamento, sem obra iniciada), em_andamento, concluida (inaugurado, em operação), sem_obra (aquisição, máquinas, ocupação de galpão pronto) ou incerto.
 - data_fato: data do fato (AAAA-MM-DD, AAAA-MM ou AAAA). inicio_obra e previsao_operacao: como escrito (ex.: "2025", "segundo semestre de 2026").
@@ -65,7 +66,7 @@ CAMPOS
 - trechos: até 3 frases copiadas do texto que sustentam objeto, local, valor e estágio (até 300 caracteres cada).
 - observacao: uma frase sobre qualquer coisa que ponha o projeto em dúvida (outra empresa, fora do Brasil, plano genérico, já concluído, só intenção). null se nada.
 
-Responda com JSON: {"encontrou":true,"url_original":"...","veiculo_original":"...","resumo":"...","empresa":"...","mesmo_grupo":true,"objeto":"...","tipo_ativo":"...","uf":"MS","municipio":"...","local_detalhe":null,"valor_brl":null,"valor_texto":null,"capacidade":null,"empregos":null,"estagio":"anuncio","obra":"por_fazer","data_fato":"2025-03-10","inicio_obra":null,"previsao_operacao":null,"construtora":null,"financiamento":null,"trechos":["..."],"observacao":null}`;
+Responda com JSON: {"encontrou":true,"url_original":"...","veiculo_original":"...","resumo":"...","empresa":"...","mesmo_grupo":true,"objeto":"...","tipo_ativo":"...","uf":"MS","municipio":"...","local_detalhe":null,"valor_brl":null,"valor_texto":null,"capacidade":null,"empregos":null,"area_construida_m2":null,"area_terreno_m2":null,"estagio":"anuncio","obra":"por_fazer","data_fato":"2025-03-10","inicio_obra":null,"previsao_operacao":null,"construtora":null,"financiamento":null,"trechos":["..."],"observacao":null}`;
 
 const texto = (max) => z.string().trim().max(max).nullable().optional().catch(null);
 
@@ -85,6 +86,8 @@ const saidaSchema = z.object({
   valor_texto: texto(120),
   capacidade: texto(200),
   empregos: z.number().int().nonnegative().nullable().optional().catch(null),
+  area_construida_m2: z.number().nonnegative().nullable().optional().catch(null),
+  area_terreno_m2: z.number().nonnegative().nullable().optional().catch(null),
   estagio: z.enum(ESTAGIOS).nullable().optional().catch(null),
   obra: z.enum(OBRA).nullable().optional().catch(null),
   data_fato: z.string().trim().regex(/^\d{4}(-\d{2}){0,2}$/).nullable().optional().catch(null),
@@ -98,7 +101,7 @@ const saidaSchema = z.object({
 
 const CAMPOS_PERFIL = [
   "empresa", "mesmo_grupo", "objeto", "tipo_ativo", "uf", "municipio", "local_detalhe", "valor_brl", "valor_texto",
-  "capacidade", "empregos", "estagio", "obra", "data_fato", "inicio_obra", "previsao_operacao", "construtora", "financiamento",
+  "capacidade", "empregos", "area_construida_m2", "area_terreno_m2", "estagio", "obra", "data_fato", "inicio_obra", "previsao_operacao", "construtora", "financiamento",
 ];
 
 function dia(valor) {

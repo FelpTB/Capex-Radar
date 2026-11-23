@@ -894,10 +894,10 @@ const CORRELACAO_ROTULO = {
   nao_avaliada: ["não avaliada", "neutral"],
 };
 const ETAPA_PERFIL_ROTULO = { inicial: "Perfil inicial", enriquecido: "Perfil enriquecido", completo: "Perfil completo" };
-const ORIGEM_ROTULO = { projeto: "cadastro", manchete: "manchete", materia: "matéria", fonte_secundaria: "fonte oficial", linha_tempo: "linha do tempo" };
+const ORIGEM_ROTULO = { projeto: "cadastro", manchete: "manchete", materia: "matéria", fonte_secundaria: "fonte oficial", linha_tempo: "linha do tempo", texto: "texto das notícias" };
 const CAMPOS_PERFIL_ROTULO = [
   ["objeto", "Objeto"], ["tipo_ativo", "Tipo de ativo"], ["local_detalhe", "Local (detalhe)"], ["valor_texto", "Valor (como divulgado)"],
-  ["capacidade", "Capacidade"], ["empregos", "Empregos"], ["obra", "Obra"], ["inicio_obra", "Início da obra"],
+  ["capacidade", "Capacidade"], ["area_construida_m2", "Área construída (m²)"], ["area_terreno_m2", "Área do terreno (m²)"], ["empregos", "Empregos"], ["obra", "Obra"], ["inicio_obra", "Início da obra"],
   ["previsao_operacao", "Previsão de operação"], ["construtora", "Construtora / EPC"], ["financiamento", "Financiamento"],
 ];
 
@@ -916,7 +916,7 @@ function blocoPerfil(projeto) {
   const origem = (campo) => (perfil.origem?.[campo] ? ` <span class="muted">(${esc(ORIGEM_ROTULO[perfil.origem[campo]] || perfil.origem[campo])})</span>` : "");
   const linhas = CAMPOS_PERFIL_ROTULO
     .filter(([campo]) => perfil[campo] != null && perfil[campo] !== "")
-    .map(([campo, rotulo]) => `<div><dt>${rotulo}</dt><dd>${esc(String(perfil[campo]))}${origem(campo)}</dd></div>`).join("");
+    .map(([campo, rotulo]) => `<div><dt>${rotulo}</dt><dd>${esc(campo.startsWith("area_") && Number(perfil[campo]) ? Number(perfil[campo]).toLocaleString("pt-BR") : String(perfil[campo]))}${origem(campo)}</dd></div>`).join("");
   const licencas = (perfil.licencas || []).map((l) => `<li>${esc(l.tipo)}${l.numero ? ` nº ${esc(l.numero)}` : ""} · ${esc(l.orgao || l.fonte)}${l.data ? ` · ${esc(dia(l.data))}` : ""}</li>`).join("");
   return `<section class="project-profile">
     <h2>${esc(ETAPA_PERFIL_ROTULO[projeto.perfil_etapa] || "Perfil")} <span class="muted">· atualizado em ${esc(dia(projeto.perfil_em))}</span></h2>

@@ -158,14 +158,21 @@ async function correlateLines(project, codigo, lines, { judge = null, onAnalise 
     const verdict = verdicts.get(item) || (resumo.metodo === "municipio"
       ? { probabilidade: item.gate === "mesmo_municipio" ? (municipioBasta ? 80 : 55) : (municipioBasta ? 55 : 35), motivo: "Sem leitura do contexto; vale o município da ficha." }
       : { probabilidade: 50, motivo: "O modelo não avaliou o registro." });
-    const probabilidade = verdict.probabilidade ?? classes.probabilidadeDaCorrelacao(verdict.correlacao);
+    let probabilidade = verdict.probabilidade ?? classes.probabilidadeDaCorrelacao(verdict.correlacao);
+    let motivo = verdict.motivo || null;
+    // Obra do CNO muito maior que a área da notícia não passa de improvável (capex-porte.js).
+    if (codigo === "SEC-CNO" && project.area) {
+      const porte = require("../capex-porte");
+      const capado = porte.aplicarTeto({ probabilidade, motivo }, item.line, project.area, { citaMarca: porte.citaEmpresa(item.line, project.marcas) });
+      ({ probabilidade, motivo } = capado);
+    }
     const classe = classes.classeDe(probabilidade);
     const correlacao = classes.correlacaoDaClasse(classe);
     resumo[classe] = (resumo[classe] || 0) + 1;
-    analisar(item.line, correlacao, verdict.motivo || null, probabilidade);
+    analisar(item.line, correlacao, motivo, probabilidade);
     if (!classes.ligaLinhaDoTempo(classe)) continue;
     const { contexto, ...line } = item.line;
-    kept.push({ ...line, correlacao: verdict.motivo, probabilidade });
+    kept.push({ ...line, correlacao: motivo, probabilidade });
   }
   resumo.diretas = kept.length;
   delete resumo.direta;

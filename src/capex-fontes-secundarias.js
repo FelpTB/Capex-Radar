@@ -169,6 +169,9 @@ function projetoParaColeta(p) {
     raizes: p.raizes || [],
     marcas: p.marcas || [],
     leitura: p.objeto || null,
+    // Área da notícia (perfil) para o teto por porte das obras do CNO.
+    area: p.perfil && (p.perfil.area_construida_m2 || p.perfil.area_terreno_m2)
+      ? { area_construida_m2: p.perfil.area_construida_m2 || null, area_terreno_m2: p.perfil.area_terreno_m2 || null } : null,
   };
 }
 
@@ -412,15 +415,36 @@ async function gravarAnalisados(db, projetoId, analises, analisadoPor) {
 }
 
 /**
+ * Teto por porte (capex-porte.js) de um veredito sobre obra do CNO, com a
+ * área do perfil do projeto e as marcas do grupo.
+ */
+async function tetoDoPorte(db, projeto, registro, veredito) {
+  const { rows: [p] } = await db.query(
+    "select perfil, grupo_id, (select nome from capex_radar.grupos g where g.id = projetos.grupo_id) as grupo from capex_radar.projetos where id = $1",
+    [projeto.id],
+  );
+  const porte = require("./capex-porte");
+  if (!p || !porte.areaDeReferencia(p.perfil)) return veredito;
+  const { marcas } = await identidadeDoGrupo(db, p.grupo_id, p.grupo);
+  return porte.aplicarTeto(veredito, registro, p.perfil, { citaMarca: porte.citaEmpresa(registro, marcas) });
+}
+
+/**
  * Dá a classe a um registro analisado do projeto e liga ou desliga a
  * evidência: provável ou certeira vira evidência na linha do tempo; abaixo
  * disso, a evidência (se havia) sai do projeto. v = { probabilidade | classe
  * | correlacao, motivo }. Com humano=true, a coleta seguinte não muda a classe.
  */
 async function classificarRegistro(db, projeto, reg, v, { ator, humano = false, fontes = null } = {}) {
-  const probabilidade = v.probabilidade != null ? Math.round(Number(v.probabilidade))
+  let probabilidade = v.probabilidade != null ? Math.round(Number(v.probabilidade))
     : v.classe ? classes.PROBABILIDADE_DA_CLASSE[v.classe]
       : classes.probabilidadeDaCorrelacao(v.correlacao);
+  // Julgamento automático (Claude Code) de obra do CNO: teto por porte. O humano decide sem teto.
+  if (!humano && reg.fonte_codigo === "SEC-CNO") {
+    const capado = await tetoDoPorte(db, projeto, reg.registro, { probabilidade, motivo: v.motivo || null });
+    if (capado.teto_porte) v = { ...v, motivo: capado.motivo };
+    probabilidade = capado.probabilidade;
+  }
   const classe = classes.classeDe(probabilidade);
   if (!classe) throw new Error(`Classe inválida: ${JSON.stringify(v)}`);
   let evidencias = 0;
@@ -516,6 +540,9 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
     p.codigo_ibge = await garantirIbge(db, p);
     p.cnpjs_municipio = await filiaisDoMunicipio(db, p);
     Object.assign(p, await identidadeDoGrupo(db, p.grupo_id, p.grupo));
+    if (p.perfil === undefined) {
+      p.perfil = (await db.query("select perfil from capex_radar.projetos where id = $1", [p.id])).rows[0]?.perfil || null;
+    }
   }
   const paraColeta = projetos.map(projetoParaColeta);
   let cno = new Map();
@@ -885,8 +912,32 @@ async function incluirNaLinhaDoTempo(db, projetoId, { cronista, limiteMs = LIMIT
   return resultado;
 }
 
+/**
+ * Tira da linha do tempo os marcos cujas evidências saíram todas do projeto
+ * (reclassificadas abaixo de provável). Devolve quantos marcos saíram.
+ */
+async function podarMarcos(db, projetoId, { ator = ATOR } = {}) {
+  const { rows: [p] } = await db.query("select linha_tempo from capex_radar.projetos where id = $1", [projetoId]);
+  const marcos = p?.linha_tempo?.marcos;
+  if (!Array.isArray(marcos) || !marcos.length) return 0;
+  const { rows } = await db.query(
+    "select evidencia_id from capex_radar.evidencia_projeto where projeto_id = $1 and situacao = 'aceito'",
+    [projetoId],
+  );
+  const aceitas = new Set(rows.map((r) => String(r.evidencia_id)));
+  const ficam = marcos.filter((m) => !(m.evidencias || []).length || m.evidencias.some((id) => aceitas.has(String(id))));
+  if (ficam.length === marcos.length) return 0;
+  await painel.emTransacao((client) => client.query(
+    "update capex_radar.projetos set linha_tempo = $2::jsonb, atualizado_em = now() where id = $1",
+    [projetoId, JSON.stringify({ ...p.linha_tempo, marcos: ficam })],
+  ), ator);
+  return marcos.length - ficam.length;
+}
+
 module.exports = {
   VERSAO,
+  podarMarcos,
+  tetoDoPorte,
   VERSAO_LINHA,
   incluirNaLinhaDoTempo,
   acrescentarMarcos,

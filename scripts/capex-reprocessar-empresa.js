@@ -74,7 +74,8 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
       for (const p of lista) {
         doc.projetos.push({
           id: p.id, titulo: p.titulo, objeto: p.objeto, uf: p.uf, municipio: p.municipio,
-          data_anuncio: dia(p.data_anuncio), estagio: p.estagio, projeto_pai_id: p.projeto_pai_id, relacao: p.relacao,
+          data_anuncio: dia(p.data_anuncio), estagio: p.estagio,
+          area_construida_m2: p.perfil?.area_construida_m2 || null, area_terreno_m2: p.perfil?.area_terreno_m2 || null, projeto_pai_id: p.projeto_pai_id, relacao: p.relacao,
           noticias: (await noticiasDoProjeto(p.id)).filter((n) => n.fonte.startsWith("notícia")).map((n) => `${n.data} ${n.titulo}`),
         });
       }

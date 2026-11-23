@@ -22,6 +22,7 @@
 //   npm run capex:reprocessar -- julgar --arquivo <atribuicoes.json> [--empresa <nome>] [--automaticos <arquivo>]
 //   npm run capex:reprocessar -- aplicar --arquivo <decisoes.json> [--seco]
 //   npm run capex:reprocessar -- lancamento [--projeto <id>] [--seco]
+//   npm run capex:reprocessar -- porte [--projeto <id>] [--seco]
 // "correcoes": { "uf", "municipio", "valor_brl", "objeto" } corrige o cadastro do projeto.
 //
 // Arquivo de decisões (um objeto ou uma lista de objetos):
@@ -68,7 +69,7 @@ const dia = (v) => {
 
 async function projetosAtivos(projetoId) {
   const { rows } = await pool.query(
-    `select v.*, p.objeto, p.secundarias, p.linha_tempo, p.data_fim, p.projeto_pai_id, p.relacao
+    `select v.*, p.objeto, p.secundarias, p.linha_tempo, p.data_fim, p.projeto_pai_id, p.relacao, p.perfil
        from capex_radar.vw_carteira v
        join capex_radar.projetos p on p.id = v.id
       where ${projetoId ? "v.id = $1" : "v.status = 'ativo'"}
@@ -421,10 +422,54 @@ async function lancamento(args) {
   console.log(`${projetos.length} projetos; ${mudam} com data nova${seco ? " (seco: nada gravado)" : ""}.`);
 }
 
+/**
+ * Rejulga pelo porte (src/capex-porte.js) as obras do CNO já classificadas
+ * de incerta para cima nos projetos cuja notícia dá a área. Revisão humana
+ * fica. Com --seco só lista. Ao gravar: perfil com a área, reclassificação
+ * (a evidência sai da linha do tempo abaixo de provável), marcos sem
+ * evidência removidos e perfil de novo.
+ */
+async function porte(args) {
+  const seco = Boolean(args.seco);
+  const porteMod = require("../src/capex-porte");
+  const { rows: projetos } = await pool.query(
+    `select v.*, p.objeto from capex_radar.vw_carteira v join capex_radar.projetos p on p.id = v.id
+      where ${args.projeto ? "v.id = $1" : "p.status <> 'descartado'"} order by v.grupo, v.titulo`,
+    args.projeto ? [args.projeto] : [],
+  );
+  const resumo = { projetos_com_area: 0, rebaixados: 0, marcos_removidos: 0 };
+  for (const projeto of projetos) {
+    const perfil = await perfis.perfilComArea(pool, projeto.id);
+    if (!porteMod.areaDeReferencia(perfil)) continue;
+    resumo.projetos_com_area += 1;
+    const { rows: registros } = await pool.query(
+      `select chave, registro, probabilidade, motivo, classe from capex_radar.registros_analisados
+        where projeto_id = $1 and fonte_codigo = 'SEC-CNO' and revisado_por is null
+          and classe in ('certeira', 'provavel', 'incerta')`,
+      [projeto.id],
+    );
+    const { marcas } = await sec.identidadeDoGrupo(pool, projeto.grupo_id, projeto.grupo);
+    const vereditos = [];
+    for (const r of registros) {
+      const capado = porteMod.aplicarTeto({ probabilidade: r.probabilidade, motivo: r.motivo }, r.registro, perfil, { citaMarca: porteMod.citaEmpresa(r.registro, marcas) });
+      if (!capado.teto_porte) continue;
+      vereditos.push({ chave: r.chave, probabilidade: r.probabilidade, motivo: r.motivo });
+      console.log(`${projeto.titulo} | ${r.registro?.nome || r.chave} | ${r.classe} ${r.probabilidade} -> ${capado.probabilidade} | ${capado.motivo.split(";")[0]}`);
+    }
+    resumo.rebaixados += vereditos.length;
+    if (seco || !vereditos.length) continue;
+    await painel.emTransacao((client) => perfis.montarPerfil(client, projeto.id), ATOR);
+    await sec.aplicarJulgamento(pool, projeto, vereditos, { ator: ATOR });
+    resumo.marcos_removidos += await sec.podarMarcos(pool, projeto.id, { ator: ATOR });
+    await painel.emTransacao((client) => perfis.montarPerfil(client, projeto.id), ATOR);
+  }
+  console.log(`${JSON.stringify(resumo)}${seco ? " (seco: nada gravado)" : ""}`);
+}
+
 async function main() {
   const args = argumentos(process.argv.slice(2));
   const empresa = require("./capex-reprocessar-empresa").criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR });
-  const comandos = { dossie, coletar, "coletar-cno": coletarCno, registros, "registros-empresa": empresa.registrosEmpresa, julgar: empresa.julgar, aplicar, lancamento };
+  const comandos = { dossie, coletar, "coletar-cno": coletarCno, registros, "registros-empresa": empresa.registrosEmpresa, julgar: empresa.julgar, aplicar, lancamento, porte };
   if (!comandos[args.comando]) throw new Error(`Comandos: ${Object.keys(comandos).join(", ")}`);
   await comandos[args.comando](args);
 }

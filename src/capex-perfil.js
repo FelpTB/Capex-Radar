@@ -16,7 +16,7 @@
 const CAMPOS = [
   "objeto", "tipo_ativo", "uf", "municipio", "local_detalhe", "valor_brl", "valor_texto",
   "capacidade", "empregos", "estagio", "obra", "data_anuncio", "inicio_obra", "previsao_operacao",
-  "construtora", "financiamento",
+  "construtora", "financiamento", "area_construida_m2", "area_terreno_m2",
 ];
 
 const ETAPAS = ["inicial", "enriquecido", "completo"];
@@ -418,8 +418,46 @@ async function montarPerfil(db, projetoId) {
         motivo: r.motivo || null,
       };
     });
+  completarArea(perfil, projeto, evidencias);
   await gravarPerfil(db, projetoId, perfil, etapa);
   return { etapa, perfil };
+}
+
+/** Perfil atual do projeto com a área completada pelos textos, sem gravar. */
+async function perfilComArea(db, projetoId) {
+  const { rows: [projeto] } = await db.query("select id, objeto, perfil from capex_radar.projetos where id = $1", [projetoId]);
+  if (!projeto) return null;
+  const { rows: evidencias } = await db.query(
+    `select e.titulo, e.fonte_codigo, e.extracao, e.enriquecimento
+       from capex_radar.evidencia_projeto ep join capex_radar.evidencias e on e.id = ep.evidencia_id
+      where ep.projeto_id = $1 and ep.situacao = 'aceito'`,
+    [projetoId],
+  );
+  const perfil = { ...(projeto.perfil || {}), origem: { ...(projeto.perfil?.origem || {}) } };
+  return completarArea(perfil, projeto, evidencias);
+}
+
+/**
+ * Área do projeto (construída e terreno) lida nos textos das notícias quando a
+ * matéria não a deu em número: serve para comparar o porte das obras do CNO
+ * (src/capex-porte.js).
+ */
+function completarArea(perfil, projeto, evidencias = []) {
+  if (!vazio(perfil.area_construida_m2) || !vazio(perfil.area_terreno_m2)) return perfil;
+  // Só notícia: o resumo e a capacidade do perfil podem ter vindo de um
+  // registro oficial (a área da própria obra do CNO), o que tornaria a comparação circular.
+  const textos = [projeto?.objeto];
+  for (const e of evidencias) {
+    if (e.fonte_codigo !== "gnews_rss") continue;
+    const en = e.enriquecimento || {};
+    textos.push(e.titulo, e.extracao?.objeto, en.resumo, en.perfil?.capacidade, en.perfil?.objeto, ...(en.trechos || []));
+  }
+  const area = require("./capex-porte").areaDosTextos(textos.filter(Boolean));
+  for (const campo of ["area_construida_m2", "area_terreno_m2"]) {
+    const valor = area[campo.replace("area_", "")];
+    if (valor) { perfil[campo] = valor; perfil.origem[campo] = "texto"; }
+  }
+  return perfil;
 }
 
 module.exports = {
@@ -429,6 +467,8 @@ module.exports = {
   falaDeLicenca,
   licencaSemDiario,
   montarPerfil,
+  completarArea,
+  perfilComArea,
   lancamentoProposto,
   recalcularLancamento,
   FONTES_LANCAMENTO,
