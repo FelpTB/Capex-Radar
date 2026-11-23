@@ -10,7 +10,7 @@
 // Uso:
 //   npm run capex:coletar -- --sem-ia                      coleta e regras (sem IA)
 //   npm run capex:funil -- contar
-//   npm run capex:funil -- exportar --saida <pasta> [--grupo <nome>] [--limite 60]
+//   npm run capex:funil -- exportar --saida <pasta> [--grupo <nome>] [--limite 60] [--lote N --tamanho 50]
 //   (o Claude Code segue docs/claude-code/funil-noticias.md e escreve <pasta>/decisoes.json)
 //   npm run capex:funil -- aplicar --arquivo <pasta>/decisoes.json [--seco]
 //
@@ -104,11 +104,19 @@ function criterios() {
   ].join("\n\n");
 }
 
+// Lote de até 50 grupos, na mesma ordem e com a mesma numeração do capex:coletar --lote.
+function loteDeGrupos(grupos, args) {
+  if (!args.lote) return grupos;
+  const tamanho = Math.min(Number(args.tamanho) || 50, 50);
+  const inicio = (Number(args.lote) - 1) * tamanho;
+  return grupos.slice(inicio, inicio + tamanho);
+}
+
 async function exportar(args) {
   if (!args.saida) throw new Error("Informe --saida <pasta>");
   fs.mkdirSync(args.saida, { recursive: true });
   const limite = Number(args.limite) || LIMITE_PADRAO;
-  const grupos = await coletor.carregarGrupos(pool, args.grupo ? { nome: args.grupo } : {});
+  const grupos = loteDeGrupos(await coletor.carregarGrupos(pool, args.grupo ? { nome: args.grupo } : {}), args);
   const indice = [];
   for (const grupo of grupos) {
     const { rows: noticias } = await pool.query(

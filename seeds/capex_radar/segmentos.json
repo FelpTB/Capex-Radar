@@ -290,7 +290,7 @@
       ]
     }
   },
-  "excluir_notas": "Raízes de CNPJ fora do segmento (CNAE de porto em lubrificante e fertilizante, consultoria portuária, comércio exterior agrícola, serviço submarino de petróleo) ou controladas pelo Estado (Petrobras Biocombustível, Araucária Nitrogenados). Também ficam de fora subsidiárias de um grupo já escolhido (WMS, WMB e Bompreço do Carrefour; Americel e Telmex Solutions da Claro; Salobo e Onça Puma da Vale) e a Allore Capital (gestora, não mineradora).",
+  "excluir_notas": "Raízes de CNPJ fora do segmento (CNAE de porto em lubrificante e fertilizante, consultoria portuária, comércio exterior agrícola, serviço submarino de petróleo) ou controladas pelo Estado (Petrobras Biocombustível, Araucária Nitrogenados). Também ficam de fora subsidiárias de um grupo já escolhido (WMS, WMB e Bompreço do Carrefour; Americel e Telmex Solutions da Claro; Salobo e Onça Puma da Vale) e a Allore Capital (gestora, não mineradora). Atvos Bioenergia Eldorado: o nome 'Eldorado' traz o município e homônimos na busca.",
   "excluir": [
     "54122724",
     "02476026",
@@ -309,7 +309,8 @@
     "47894889",
     "02667694",
     "14314050",
-    "97422620"
+    "97422620",
+    "05620523"
   ],
   "nomes": {
     "15114494": "Corredor Logística e Infraestrutura"
