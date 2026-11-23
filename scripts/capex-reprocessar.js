@@ -21,6 +21,7 @@
 //   npm run capex:reprocessar -- registros-empresa --saida <pasta> [--empresa <nome>]
 //   npm run capex:reprocessar -- julgar --arquivo <atribuicoes.json> [--empresa <nome>] [--automaticos <arquivo>]
 //   npm run capex:reprocessar -- aplicar --arquivo <decisoes.json> [--seco]
+//   npm run capex:reprocessar -- lancamento [--projeto <id>] [--seco]
 // "correcoes": { "uf", "municipio", "valor_brl", "objeto" } corrige o cadastro do projeto.
 //
 // Arquivo de decisões (um objeto ou uma lista de objetos):
@@ -392,10 +393,38 @@ async function aplicar(args) {
   }
 }
 
+/**
+ * Recalcula a data de lançamento (primeira notícia ou obra do CNO aceita) dos
+ * projetos não descartados. Com --seco só lista o que mudaria. Ao gravar,
+ * refaz o perfil do projeto, que usa a data.
+ */
+async function lancamento(args) {
+  const seco = Boolean(args.seco);
+  const { rows: projetos } = await pool.query(
+    `select p.id, g.nome as grupo, p.titulo from capex_radar.projetos p
+       left join capex_radar.grupos g on g.id = p.grupo_id
+      where ${args.projeto ? "p.id = $1" : "p.status <> 'descartado'"}
+      order by g.nome, p.titulo`,
+    args.projeto ? [args.projeto] : [],
+  );
+  let mudam = 0;
+  for (const p of projetos) {
+    const r = await perfis.recalcularLancamento(pool, p.id, { seco: true });
+    if (!r) continue;
+    if (r.mudou) {
+      mudam += 1;
+      const ref = r.ref?.mais_antiga ? `manual; evidência anterior em ${r.ref.mais_antiga.data}` : `${r.origem}: ${String(r.ref?.titulo || "").slice(0, 90)}`;
+      console.log(`${p.titulo} | ${r.antes || "-"} -> ${r.depois || "-"} | ${ref}`);
+    }
+    if (!seco) await painel.emTransacao((client) => perfis.montarPerfil(client, p.id), ATOR);
+  }
+  console.log(`${projetos.length} projetos; ${mudam} com data nova${seco ? " (seco: nada gravado)" : ""}.`);
+}
+
 async function main() {
   const args = argumentos(process.argv.slice(2));
   const empresa = require("./capex-reprocessar-empresa").criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR });
-  const comandos = { dossie, coletar, "coletar-cno": coletarCno, registros, "registros-empresa": empresa.registrosEmpresa, julgar: empresa.julgar, aplicar };
+  const comandos = { dossie, coletar, "coletar-cno": coletarCno, registros, "registros-empresa": empresa.registrosEmpresa, julgar: empresa.julgar, aplicar, lancamento };
   if (!comandos[args.comando]) throw new Error(`Comandos: ${Object.keys(comandos).join(", ")}`);
   await comandos[args.comando](args);
 }

@@ -304,8 +304,74 @@ async function validarLocalDoProjeto(db, projetoId) {
  * completo se já passou pelo Enriquecimento 2 (fontes secundárias), senão
  * enriquecido se há matéria lida, senão inicial. Grava e devolve a etapa.
  */
+// Evidências fortes que marcam o lançamento do projeto, com a origem gravada.
+const FONTES_LANCAMENTO = { gnews_rss: "noticia", "SEC-CNO": "cno" };
+
+/**
+ * Data de lançamento proposta (função pura). O lançamento é a data da
+ * primeira evidência forte aceita (notícia ou obra do CNO), não a do fato que
+ * a notícia conta: uma inauguração noticiada não é o lançamento. A data
+ * informada por uma pessoa (origem manual) fica; se houver evidência anterior
+ * a ela, vai em ref.mais_antiga para o alerta da ficha.
+ * projeto: { data_anuncio, data_anuncio_origem }; primeira: evidência ou null.
+ */
+function lancamentoProposto(projeto, primeira) {
+  const atual = dia(projeto?.data_anuncio);
+  const ref = primeira && dia(primeira.data_original)
+    ? { evidencia_id: String(primeira.id), titulo: primeira.titulo || null, fonte: primeira.fonte_codigo, data: dia(primeira.data_original) }
+    : null;
+  if (projeto?.data_anuncio_origem === "manual") {
+    const maisAntiga = ref && atual && ref.data < atual ? ref : null;
+    return { data: atual, origem: "manual", ref: maisAntiga ? { mais_antiga: maisAntiga } : null };
+  }
+  if (!ref) return { data: atual, origem: projeto?.data_anuncio_origem || null, ref: projeto?.data_anuncio_ref || null };
+  return { data: ref.data, origem: FONTES_LANCAMENTO[ref.fonte] || "noticia", ref };
+}
+
+async function primeiraEvidenciaForte(db, projetoId) {
+  const { rows: [primeira] } = await db.query(
+    `select e.id, e.titulo, e.fonte_codigo, e.data_original
+       from capex_radar.evidencia_projeto ep
+       join capex_radar.evidencias e on e.id = ep.evidencia_id
+      where ep.projeto_id = $1 and ep.situacao = 'aceito' and ep.descarte is null
+        and e.fonte_codigo = any($2::text[]) and e.data_original is not null
+      order by e.data_original, e.criado_em
+      limit 1`,
+    [projetoId, Object.keys(FONTES_LANCAMENTO)],
+  );
+  return primeira || null;
+}
+
+/**
+ * Recalcula a data de lançamento do projeto pela primeira evidência forte.
+ * Com { seco: true } só devolve a proposta. Devolve { antes, depois, origem,
+ * ref, mudou } ou null sem projeto.
+ */
+async function recalcularLancamento(db, projetoId, { seco = false } = {}) {
+  const { rows: [projeto] } = await db.query(
+    "select id, data_anuncio, data_anuncio_origem, data_anuncio_ref from capex_radar.projetos where id = $1",
+    [projetoId],
+  );
+  if (!projeto) return null;
+  const primeira = await primeiraEvidenciaForte(db, projetoId);
+  const proposta = lancamentoProposto(projeto, primeira);
+  const antes = dia(projeto.data_anuncio);
+  const mudou = proposta.data !== antes || proposta.origem !== (projeto.data_anuncio_origem || null)
+    || JSON.stringify(proposta.ref) !== JSON.stringify(projeto.data_anuncio_ref || null);
+  if (mudou && !seco) {
+    await db.query(
+      `update capex_radar.projetos
+          set data_anuncio = $2::date, data_anuncio_origem = $3, data_anuncio_ref = $4::jsonb, atualizado_em = now()
+        where id = $1`,
+      [projetoId, proposta.data, proposta.origem, proposta.ref ? JSON.stringify(proposta.ref) : null],
+    );
+  }
+  return { antes, depois: proposta.data, origem: proposta.origem, ref: proposta.ref, mudou: proposta.data !== antes };
+}
+
 async function montarPerfil(db, projetoId) {
   await validarLocalDoProjeto(db, projetoId).catch(() => null);
+  await recalcularLancamento(db, projetoId);
   const { rows: [projeto] } = await db.query(
     `select id, titulo, objeto, uf, municipio, valor_estimado_brl, estagio, data_anuncio, data_fim,
             secundarias, linha_tempo
@@ -363,6 +429,9 @@ module.exports = {
   falaDeLicenca,
   licencaSemDiario,
   montarPerfil,
+  lancamentoProposto,
+  recalcularLancamento,
+  FONTES_LANCAMENTO,
   ETAPAS,
   perfilVazio,
   perfilInicial,

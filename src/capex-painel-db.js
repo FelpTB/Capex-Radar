@@ -639,7 +639,7 @@ async function obterProjeto(id) {
     ),
     pool.query(
       `select objeto, fonte_valor, avaliacao, secundarias, linha_tempo, perfil, perfil_etapa, perfil_em,
-              projeto_pai_id, relacao, municipio_pendencia
+              projeto_pai_id, relacao, municipio_pendencia, data_anuncio_origem, data_anuncio_ref
          from capex_radar.projetos where id = $1`,
       [id],
     ),
@@ -723,6 +723,19 @@ async function atualizarProjeto(id, campos, { ator = ATOR } = {}) {
       [id, ...nomes.map((c) => campos[c])],
     );
     if (!projeto) throw new Error("Projeto não encontrado.");
+    // Data de lançamento informada à mão fica como manual; apagada, volta a
+    // ser a da primeira evidência forte (capex-perfil.recalcularLancamento).
+    if (nomes.includes("data_anuncio")) {
+      const manual = campos.data_anuncio ? "manual" : null;
+      await client.query(
+        "update capex_radar.projetos set data_anuncio_origem = $2, data_anuncio_ref = null where id = $1",
+        [id, manual],
+      );
+      if (!manual) {
+        const r = await require("./capex-perfil").recalcularLancamento(client, id);
+        if (r) projeto.data_anuncio = r.depois;
+      }
+    }
     // Município ou UF alterados: valida pela API de cidades (src/municipios.js).
     if (nomes.includes("municipio") || nomes.includes("uf")) {
       projeto.validacao_municipio = await require("./capex-perfil").validarLocalDoProjeto(client, id).catch(() => null);

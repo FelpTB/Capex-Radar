@@ -685,6 +685,24 @@ function alertaSemConfirmacao(p) {
   return `<p class="alerta-execucao">${badge("sem confirmação de execução", "warning")}${ajuda(`Anunciado há ${anos} e ainda sem evidência de obra (CNO, licença de instalação, notícia de canteiro) nem de operação (inauguração, licença de operação). Pode ter sido adiado, cancelado ou executado sem notícia: vale uma busca dirigida.`)} <span class="muted">anunciado há ${anos}, sem obra nem operação registrada</span></p>`;
 }
 
+const ORIGEM_LANCAMENTO = { noticia: "primeira notícia", cno: "obra no CNO", manual: "informada à mão" };
+
+// De onde veio a data de lançamento (sql/032), ao lado do rótulo na ficha.
+function origemLancamento(p) {
+  const rotulo = ORIGEM_LANCAMENTO[p.data_anuncio_origem];
+  if (!rotulo) return "";
+  const ref = p.data_anuncio_ref;
+  const detalhe = ref?.titulo ? `Data da primeira evidência forte aceita no projeto: ${ref.titulo}` : "A data de lançamento é a da primeira evidência forte aceita no projeto (notícia ou obra do CNO), não a do fato que a notícia conta.";
+  return ` · ${esc(rotulo)}${p.data_anuncio_origem === "manual" ? "" : ajuda(detalhe)}`;
+}
+
+// Data informada à mão, mas há evidência aceita anterior a ela.
+function alertaLancamento(p) {
+  const antiga = p.data_anuncio_origem === "manual" ? p.data_anuncio_ref?.mais_antiga : null;
+  if (!antiga) return "";
+  return `<p class="alerta-execucao">${badge("evidência anterior ao lançamento", "warning")}${ajuda("A data de lançamento foi informada à mão e há uma evidência aceita mais antiga. Se ela for deste projeto, apague a data na edição para o Radar usar a primeira evidência; se não for, retire a evidência do projeto.")} <span class="muted">${esc(dia(antiga.data))}: ${esc(antiga.titulo || antiga.fonte)}</span></p>`;
+}
+
 function anoDoProjeto(p) {
   const d = dataDoAnuncio(p);
   return d ? String(new Date(d).getUTCFullYear()) : "";
@@ -1298,8 +1316,9 @@ function paginaProjeto({ projeto, timeline, notice, pai = null, filhos = [], reg
         <div><strong>${esc(money(projeto.valor_estimado_brl))}</strong><span>Valor estimado${projeto.fonte_valor ? ` · ${esc(projeto.fonte_valor)}` : ""}</span></div>
         <div><strong>${esc(localProjeto(projeto))}</strong><span>${projeto.local_origem === "matriz" ? "Local não informado (sede da matriz)" : "Local"}</span></div>
         <div><strong>${timeline.length}</strong><span>Evidências</span></div>
-        <div><strong>${esc(dia(projeto.data_anuncio))}</strong><span>Anúncio</span></div>
+        <div><strong>${esc(dia(projeto.data_anuncio))}</strong><span>Lançamento${origemLancamento(projeto)}</span></div>
       </section>
+      ${alertaLancamento(projeto)}
       ${blocoFamilia(pai ? { ...pai, relacao_do_filho: projeto.relacao } : null, filhos)}
       ${blocoStatus(projeto, obras)}
       ${blocoPerfil(projeto)}
