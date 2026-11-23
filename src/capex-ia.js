@@ -13,6 +13,7 @@ const NICHOS = {
   alimentos_bebidas: "alimentos e bebidas",
   ecommerce: "e-commerce",
   datacenter: "datacenters",
+  industria: "indústria",
 };
 
 const triagemSchema = z.object({

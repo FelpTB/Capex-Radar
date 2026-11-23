@@ -615,7 +615,7 @@ async function eficienciaFontes() {
 // Projetos da carteira. Os descartados ficam fora, a não ser que sejam pedidos.
 async function carteira({ incluirDescartados = false } = {}) {
   const { rows } = await pool.query(
-    `select v.*, p.avaliacao, p.secundarias, p.linha_tempo, p.projeto_pai_id, p.relacao, p.perfil_etapa,
+    `select v.*, p.avaliacao, p.secundarias, p.linha_tempo, p.projeto_pai_id, p.relacao, p.perfil_etapa, p.origem,
             pai.titulo as pai_titulo
        from capex_radar.vw_carteira v
        join capex_radar.projetos p on p.id = v.id
@@ -639,7 +639,7 @@ async function obterProjeto(id) {
     ),
     pool.query(
       `select objeto, fonte_valor, avaliacao, secundarias, linha_tempo, perfil, perfil_etapa, perfil_em,
-              projeto_pai_id, relacao, municipio_pendencia, data_anuncio_origem, data_anuncio_ref
+              projeto_pai_id, relacao, municipio_pendencia, data_anuncio_origem, data_anuncio_ref, origem
          from capex_radar.projetos where id = $1`,
       [id],
     ),

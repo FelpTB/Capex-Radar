@@ -964,6 +964,8 @@ async function podarMarcos(db, projetoId, { ator = ATOR } = {}) {
 
 module.exports = {
   VERSAO,
+  gravarRegistros,
+  nomesDasFontes,
   podarMarcos,
   tetoDoPorte,
   VERSAO_LINHA,

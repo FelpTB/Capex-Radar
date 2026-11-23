@@ -26,6 +26,7 @@ const NICHOS = {
   alimentos_bebidas: "Alimentos e Bebidas",
   ecommerce: "E-commerce",
   datacenter: "Datacenters",
+  industria: "Indústria (outros setores)",
 };
 
 const ESTAGIO_ROTULO = {
@@ -703,6 +704,12 @@ function alertaLancamento(p) {
   return `<p class="alerta-execucao">${badge("evidência anterior ao lançamento", "warning")}${ajuda("A data de lançamento foi informada à mão e há uma evidência aceita mais antiga. Se ela for deste projeto, apague a data na edição para o Radar usar a primeira evidência; se não for, retire a evidência do projeto.")} <span class="muted">${esc(dia(antiga.data))}: ${esc(antiga.titulo || antiga.fonte)}</span></p>`;
 }
 
+// Projeto criado de uma obra do CNO (scripts/capex-cno-prospeccao.js), ainda sem notícia.
+function seloPreCadastro(p) {
+  if (p.origem !== "cno_prospeccao") return "";
+  return `<p class="alerta-execucao">${badge("pré-cadastro pelo CNO", "info")}${ajuda("Obra de galpão industrial com mais de 5.000 m² de uma indústria privada, achada no Cadastro Nacional de Obras. Falta a notícia que confirme o projeto: valide e confirme, ou descarte.")}</p>`;
+}
+
 function anoDoProjeto(p) {
   const d = dataDoAnuncio(p);
   return d ? String(new Date(d).getUTCFullYear()) : "";
@@ -775,6 +782,7 @@ function cardProjeto(p) {
           ${p.pai_titulo ? `<p class="project-row__parent muted">↳ ${esc(RELACAO_ROTULO[p.relacao] || "ligado")} de <a href="/monitoramento/projetos/${p.projeto_pai_id}">${esc(p.pai_titulo)}</a></p>` : ""}
           ${p.avaliacao && p.avaliacao.decisao !== "valido" ? linhaAvaliacao(p.avaliacao) : ""}
           ${alertaSemConfirmacao(p)}
+          ${seloPreCadastro(p)}
         </div>
         <div class="project-row__field"><span>Empresa</span><strong>${esc(p.grupo)}</strong></div>
         <div class="project-row__field"><span>Local</span><strong>${esc(localProjeto(p))}</strong></div>
@@ -1309,6 +1317,7 @@ function paginaProjeto({ projeto, timeline, notice, pai = null, filhos = [], reg
           <p class="eyebrow">${esc(projeto.grupo)} · ${esc(NICHOS[projeto.nicho] || projeto.nicho)}</p>
           <h1>${esc(projeto.titulo)}</h1>
           ${alertaSemConfirmacao(projeto)}
+          ${seloPreCadastro(projeto)}
           <p>${esc(projeto.matriz_razao_social)} · ${esc(projeto.matriz_cnpj)}${projeto.filial_cnpj ? ` · filial ${esc(projeto.filial_cnpj)}` : ""}</p>
         </div>
       </section>
