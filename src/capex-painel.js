@@ -704,11 +704,21 @@ function alertaLancamento(p) {
   return `<p class="alerta-execucao">${badge("evidência anterior ao lançamento", "warning")}${ajuda("A data de lançamento foi informada à mão e há uma evidência aceita mais antiga. Se ela for deste projeto, apague a data na edição para o Radar usar a primeira evidência; se não for, retire a evidência do projeto.")} <span class="muted">${esc(dia(antiga.data))}: ${esc(antiga.titulo || antiga.fonte)}</span></p>`;
 }
 
-// Projeto criado de uma obra do CNO (scripts/capex-cno-prospeccao.js), ainda sem notícia.
+// Pré-projeto: criado de uma obra do CNO (scripts/capex-cno-prospeccao.js) e
+// ainda não enriquecido (sem notícia, fontes secundárias nem linha do tempo).
+// Deixa de ser pré-projeto quando alguém o confirma (status ativo).
+const ehPreProjeto = (p) => p.origem === "cno_prospeccao" && p.status === "em_revisao";
+
 function seloPreCadastro(p) {
-  if (p.origem !== "cno_prospeccao") return "";
-  return `<p class="alerta-execucao">${badge("pré-cadastro pelo CNO", "info")}${ajuda("Obra de galpão industrial com mais de 5.000 m² de uma indústria privada, achada no Cadastro Nacional de Obras. Falta a notícia que confirme o projeto: valide e confirme, ou descarte.")}</p>`;
+  if (!ehPreProjeto(p)) return "";
+  return `<p class="alerta-execucao">${badge("pré-projeto", "info")} ${badge("não enriquecido", "warning")}${ajuda("Obra de galpão industrial com mais de 5.000 m² de uma indústria privada, achada no Cadastro Nacional de Obras. Ainda não foi enriquecido: falta a notícia que confirme o projeto, as fontes secundárias e a linha do tempo. Valide e confirme, ou descarte.")}</p>`;
 }
+
+const TIPOS_PROJETO = {
+  projetos: { rotulo: "Projetos", teste: (p) => !ehPreProjeto(p) },
+  pre: { rotulo: "Pré-projetos (CNO, não enriquecidos)", teste: ehPreProjeto },
+  todos: { rotulo: "Projetos e pré-projetos", teste: () => true },
+};
 
 function anoDoProjeto(p) {
   const d = dataDoAnuncio(p);
@@ -727,6 +737,7 @@ function filtrosCarteira(query = {}) {
     valor: FAIXAS_VALOR[query.valor] ? query.valor : "",
     ano: /^\d{4}$/.test(texto(query.ano)) ? texto(query.ano) : "",
     processamento: PROCESSAMENTO[query.processamento] ? query.processamento : "",
+    tipo: TIPOS_PROJETO[query.tipo] ? query.tipo : "",
     ordem: ORDENS[query.ordem] ? query.ordem : "recentes",
   };
 }
@@ -734,7 +745,8 @@ function filtrosCarteira(query = {}) {
 // Aplica os filtros e a ordem. Sem situação escolhida, mostra ativos e em revisão.
 function filtrarCarteira(projetos, f) {
   const lista = projetos.filter((p) =>
-    (!f.grupo || p.grupo_id === f.grupo)
+    TIPOS_PROJETO[f.tipo || "projetos"].teste(p)
+    && (!f.grupo || p.grupo_id === f.grupo)
     && (!f.nicho || p.nicho === f.nicho)
     && (!f.uf || p.uf === f.uf)
     && (!f.estagio || p.estagio === f.estagio)
@@ -806,15 +818,18 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
     estagio: [["", "Todos"], ...Object.entries(ESTAGIO_ROTULO)],
     status: [["", "Ativos e em revisão"], ...Object.entries(STATUS_ROTULO), ["todos", "Todos"]],
     processamento: [["", "Todos"], ...Object.entries(PROCESSAMENTO).map(([k, v]) => [k, v.rotulo])],
+    tipo: [["", TIPOS_PROJETO.projetos.rotulo], ["pre", TIPOS_PROJETO.pre.rotulo], ["todos", TIPOS_PROJETO.todos.rotulo]],
     valor: [["", "Qualquer valor"], ...Object.entries(FAIXAS_VALOR).map(([k, v]) => [k, v.rotulo])],
     ano: [["", "Todos"], ...unicos(projetos.map(anoDoProjeto)).sort().reverse().map((a) => [a, a])],
     ordem: Object.entries(ORDENS).map(([k, v]) => [k, v.rotulo]),
   };
   const campo = (nome, rotulo) => `<div><label>${rotulo}</label><select name="${nome}">${selectOptions(opcoes[nome], filtros[nome] || "")}</select></div>`;
-  const algumFiltro = ["grupo", "nicho", "uf", "estagio", "status", "valor", "ano", "processamento"].some((k) => filtros[k]);
+  const algumFiltro = ["grupo", "nicho", "uf", "estagio", "status", "valor", "ano", "processamento", "tipo"].some((k) => filtros[k]);
+  const preProjetos = projetos.filter(ehPreProjeto).length;
   const somaValor = visiveis.reduce((t, p) => t + (p.valor_estimado_brl == null ? 0 : Number(p.valor_estimado_brl)), 0);
   const filtrosHtml = projetos.length ? `
       <form class="source-filters js-filtros" method="get" action="/monitoramento/carteira">
+        ${campo("tipo", "Mostrar")}
         ${campo("grupo", "Empresa")}
         ${campo("nicho", "Nicho")}
         ${campo("uf", "UF")}
@@ -825,7 +840,7 @@ function paginaCarteira({ projetos, filtros = filtrosCarteira(), notice = "" }) 
         ${campo("ano", "Ano do anúncio")}
         ${campo("ordem", "Ordenar por")}
         <div class="source-filters__actions"><noscript><button class="button button--small" type="submit">Filtrar</button></noscript>${algumFiltro ? '<a href="/monitoramento/carteira">Limpar filtros</a>' : ""}</div>
-        <p class="source-filters__count muted">${visiveis.length} projeto(s) neste filtro${somaValor ? ` · ${esc(money(somaValor))} em valor estimado` : ""}.</p>
+        <p class="source-filters__count muted">${visiveis.length} projeto(s) neste filtro${somaValor ? ` · ${esc(money(somaValor))} em valor estimado` : ""}.${preProjetos && !filtros.tipo ? ` <a href="/monitoramento/carteira?tipo=pre">${preProjetos} pré-projeto(s) do CNO, não enriquecidos</a> ficam fora desta lista.` : ""}</p>
       </form>` : "";
   let cards;
   // Os projetos vêm separados por status (ativo, em revisão, descartado), na ordem escolhida dentro de cada um.

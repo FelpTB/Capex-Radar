@@ -91,8 +91,10 @@ async function grupoDaEmpresa(client, c) {
   const { rows: [homonimo] } = await client.query("select id from capex_radar.grupos where nome = $1", [nome]);
   if (homonimo) nome = `${nome} (${raiz})`;
   const { rows: [g] } = await client.query(
-    `insert into capex_radar.grupos (nome, nicho, origem, subsetor, notas)
-     values ($1, $2, 'cno_prospeccao', $3, $4) returning id`,
+    // Inativo: não entra no monitoramento de notícias nem na lista de empresas
+    // até o pré-projeto ser validado; os projetos aparecem na carteira.
+    `insert into capex_radar.grupos (nome, nicho, origem, subsetor, notas, ativo)
+     values ($1, $2, 'cno_prospeccao', $3, $4, false) returning id`,
     [nome, c.projeto.nicho, c.empresa.cnae_descricao || null, `Achada pela obra ${c.cno} no CNO (pré-cadastro, a validar).`],
   );
   const matriz = prosp.cnpjDaMatriz(raiz);

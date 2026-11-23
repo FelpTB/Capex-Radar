@@ -142,9 +142,18 @@ const PROJETOS = [
 
 test("filtros da carteira aceitam só valores conhecidos", () => {
   const f = filtrosCarteira({ grupo: "x", nicho: "ecommerce", uf: "sp", estagio: "nada", status: "todos", valor: "1b", ano: "2024", ordem: "valor" });
-  assert.deepEqual(f, { grupo: "", nicho: "ecommerce", uf: "SP", estagio: "", status: "todos", valor: "1b", ano: "2024", processamento: "", ordem: "valor" });
+  assert.deepEqual(f, { grupo: "", nicho: "ecommerce", uf: "SP", estagio: "", status: "todos", valor: "1b", ano: "2024", processamento: "", tipo: "", ordem: "valor" });
   assert.equal(filtrosCarteira({ processamento: "processado" }).processamento, "processado");
   assert.equal(filtrosCarteira({}).ordem, "recentes");
+});
+
+test("pré-projetos do CNO ficam fora da carteira padrão e têm filtro próprio", () => {
+  const pre = { id: "pp", origem: "cno_prospeccao", status: "em_revisao", grupo_id: "g", criado_em: "2026-11-23" };
+  const ativo = { ...pre, id: "pa", status: "ativo" };
+  const ids = (q) => filtrarCarteira([pre, ativo], filtrosCarteira(q)).map((p) => p.id);
+  assert.deepEqual(ids({}), ["pa"]);
+  assert.deepEqual(ids({ tipo: "pre" }), ["pp"]);
+  assert.equal(ids({ tipo: "todos" }).length, 2);
 });
 
 test("filtra a carteira por empresa, UF, valor, ano e situação", () => {
