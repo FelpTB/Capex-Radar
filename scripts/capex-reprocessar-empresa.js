@@ -20,6 +20,7 @@ const ESTRUTURADAS = /^SEC-(BNDES|CNO|CVM|SISLIC|SIGA|ANEEL|REIDI|ANA|ANTT|ANTAQ
 
 const dobrar = (s) => String(s || "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 const { citaMunicipio } = require("../src/enrichment/resolve");
+const { semMunicipioMasRelevante } = require("../src/enrichment/correlacao");
 
 function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
   async function registrosEmpresa(args) {
@@ -51,7 +52,10 @@ function criar({ pool, projetosAtivos, noticiasDoProjeto, dia, ATOR }) {
       for (const r of unicos.values()) {
         const { contexto, ...campos } = r.registro || {};
         const texto = dobrar(`${contexto || ""} ${JSON.stringify(campos)}`);
-        if (ESTRUTURADAS.test(r.fonte_codigo) || municipios.some((m) => texto.includes(m)) || lista.some((p) => citaMunicipio(texto, p.municipio))) {
+        const ufDiario = (r.fonte_codigo.match(/^CAPTURA-DOE-([A-Z]{2})$/) || [])[1];
+        const naUf = ufDiario ? lista.filter((p) => p.uf === ufDiario).length : null;
+        if (ESTRUTURADAS.test(r.fonte_codigo) || municipios.some((m) => texto.includes(m)) || lista.some((p) => citaMunicipio(texto, p.municipio))
+            || semMunicipioMasRelevante(r.fonte_codigo, texto, naUf)) {
           julgar.push({
             chave: r.chave, fonte: r.fonte_codigo, especialista: especialistaDe(r.fonte_codigo).chave, data: dia(r.data_registro),
             campos: JSON.stringify(campos).slice(0, 900), contexto: contexto ? String(contexto).slice(0, 900) : null,

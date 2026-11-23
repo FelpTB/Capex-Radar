@@ -66,6 +66,20 @@ function dataDaLinha(line) {
  * Devolve null quando o registro deve ser julgado, ou o motivo para não ser.
  * project: { municipio, codigo_ibge, filial_cnpj, data_anuncio | status_em }.
  */
+// Ato de diário estadual que não cita o município mas pode ser da obra:
+// incentivo fiscal, protocolo de intenções, licença prévia ou de instalação.
+// Vai ao julgamento quando a empresa tem um projeto só naquela UF (o ato só
+// pode ser dele). Caso: termo Semadesc–Bracell no DOE-MS (jan/2026).
+const ATO_SEM_MUNICIPIO = /incentiv|protocolo de intenc|termo de acordo|regime especial|beneficio fiscal|desenvolvimento economic|semadesc|licenca de instalacao|licenca previa|\bl\.?i\.?\b/;
+// Fontes que só trazem a UF, nunca o município (habilitação no REIDI).
+const SO_UF = new Set(["CAPTURA-REIDI"]);
+
+/** O registro sem o município ainda deve ir ao julgamento? texto já dobrado. */
+function semMunicipioMasRelevante(codigo, texto, projetosNaUf) {
+  if (SO_UF.has(codigo)) return true;
+  return /^CAPTURA-DOE-/.test(codigo) && projetosNaUf === 1 && ATO_SEM_MUNICIPIO.test(texto);
+}
+
 function preTriagem(line, project, codigo = "") {
   const { contexto, url, link, rank, ...campos } = line || {};
   const texto = fold(`${contexto || ""} ${JSON.stringify(campos)}`);
@@ -75,7 +89,8 @@ function preTriagem(line, project, codigo = "") {
   const citaFilial = String(project?.filial_cnpj || "").length === 14 && digitos.includes(String(project.filial_cnpj));
   const mesmoIbge = project?.codigo_ibge && line?.ibge && String(line.ibge) === String(project.codigo_ibge);
   // Projeto sem município (só UF, várias localidades): não dá para exigir o local.
-  if (municipio.length >= 4 && !citaMunicipio && !citaFilial && !mesmoIbge && !line?.no_municipio) {
+  if (municipio.length >= 4 && !citaMunicipio && !citaFilial && !mesmoIbge && !line?.no_municipio
+      && !semMunicipioMasRelevante(codigo, texto, project?.projetos_na_uf)) {
     return "Pré-triagem: o registro não cita o município do projeto";
   }
   const anos = anosDesde(dataDaLinha(line), project?.data_anuncio || project?.status_em);
@@ -213,4 +228,4 @@ function rebuildFound(codigo, found, kept, { since = null, limite = 8 } = {}) {
   };
 }
 
-module.exports = { MAX_AVALIADOS, contextText, correlateLines, linesOf, localGate, preTriagem, rebuildFound };
+module.exports = { MAX_AVALIADOS, contextText, correlateLines, linesOf, localGate, preTriagem, rebuildFound, semMunicipioMasRelevante };

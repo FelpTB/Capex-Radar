@@ -24,3 +24,24 @@ test("explicações gravadas cobrem as fontes e têm texto", () => {
     assert.ok(f.explicacao && f.explicacao.length > 20, codigo);
   }
 });
+
+const { semMunicipioMasRelevante, preTriagem } = require("../src/enrichment/correlacao");
+const { fontesForaDoSetor } = require("../src/capex-fontes-secundarias");
+
+test("fontes setoriais só para projetos do setor", () => {
+  const fabrica = fontesForaDoSetor({ titulo: "Klabin — fábrica de papel", objeto: "nova máquina" });
+  assert.ok(fabrica.includes("SEC-ANP-EP") && fabrica.includes("SEC-ANTAQ-INST") && fabrica.includes("SEC-ARTESP"));
+  const porto = fontesForaDoSetor({ titulo: "Caramuru — complexo logístico", objeto: "estação de transbordo e terminal portuário" });
+  assert.ok(!porto.includes("SEC-ANTAQ-INST"));
+});
+
+test("ato estadual sem município vai ao julgamento só com um projeto na UF", () => {
+  const texto = "termo de acordo entre a semadesc e a bracell sp celulose ltda";
+  assert.equal(semMunicipioMasRelevante("CAPTURA-DOE-MS", texto, 1), true);
+  assert.equal(semMunicipioMasRelevante("CAPTURA-DOE-MS", texto, 3), false);
+  assert.equal(semMunicipioMasRelevante("CAPTURA-DOE-MS", "licenca florestal fazenda tres topes", 1), false);
+  assert.equal(semMunicipioMasRelevante("CAPTURA-REIDI", "bracell sp celulose", 4), true);
+  const projeto = { municipio: "Lençóis Paulista", uf: "SP", projetos_na_uf: 2 };
+  assert.equal(preTriagem({ razao_social: "BRACELL SP CELULOSE LTDA.", uf: "SP" }, projeto, "CAPTURA-REIDI"), null);
+  assert.match(preTriagem({ titulo: "ato qualquer" }, projeto, "CAPTURA-DOE-SP"), /não cita o município/);
+});

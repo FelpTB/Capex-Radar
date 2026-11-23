@@ -675,13 +675,15 @@ async function querySource(codigo, cnpj, razaoSocial, since = null, project = {}
     return rows;
   }
   if (codigo === "SEC-IBAMA") {
-    const razao = `%${fold(razaoSocial).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).slice(0, 2).join("%")}%`;
+    // As duas primeiras palavras da razão social, juntas e inteiras: "%c%vale%"
+    // casava com "Companhia ... dos Vales" (homônimos, nov/2026).
+    const razao = `% ${fold(razaoSocial).replace(/[^a-z0-9]+/g, " ").trim().split(/\s+/).slice(0, 2).join(" ")} %`;
     const { rows } = await pool.query(
       `select tipo_licenca, numero_licenca, data_emissao, data_vencimento,
               empreendimento, pessoa, processo, tipologia, pac, atualizado_em,
               ($2::date is not null and data_emissao >= $2::date) as no_periodo
        from enr_sislic
-       where translate(lower(pessoa), 'áàâãäéèêëíìîïóòôõöúùûüç', 'aaaaaeeeeiiiiooooouuuuc') like $1
+       where ' ' || regexp_replace(translate(lower(pessoa), 'áàâãäéèêëíìîïóòôõöúùûüç', 'aaaaaeeeeiiiiooooouuuuc'), '[^a-z0-9]+', ' ', 'g') || ' ' like $1
        order by data_emissao desc nulls last limit 50`,
       [razao, since],
     );

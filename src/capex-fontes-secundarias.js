@@ -169,6 +169,7 @@ function projetoParaColeta(p) {
     raizes: p.raizes || [],
     marcas: p.marcas || [],
     leitura: p.objeto || null,
+    projetos_na_uf: p.projetos_na_uf ?? null,
     // Área da notícia (perfil) para o teto por porte das obras do CNO.
     area: p.perfil && (p.perfil.area_construida_m2 || p.perfil.area_terreno_m2)
       ? { area_construida_m2: p.perfil.area_construida_m2 || null, area_terreno_m2: p.perfil.area_terreno_m2 || null } : null,
@@ -354,6 +355,26 @@ const classes = require("./capex-classes");
 // projetos (nov/2026) e não falam de obra privada: títulos minerários da ANM
 // e o plano de expansão da transmissão (ONS/EPE).
 const FONTES_SEM_RETORNO = ["CAPTURA-SIGMINE", "CAPTURA-ONS-PAR"];
+
+// Fontes de um setor só: consultadas quando o título ou o objeto do projeto é
+// do setor. Em nov/2026 rodavam nos 117 projetos sem nenhum retorno
+// (docs/diagnostico-fontes.json).
+const PETROLEO = /petroleo|\bgas\b|refinaria|combustive|oleoduto|gasoduto/;
+const FONTES_SETORIAIS = {
+  "SEC-ANP-EP": PETROLEO,
+  "SEC-ANP-CAMPO": PETROLEO,
+  "SEC-ANP-PLAT": PETROLEO,
+  "SEC-ANP-DUTO": PETROLEO,
+  "SEC-ANTT-INV": /rodovi|ferrovi|concessionaria/,
+  "SEC-ARTESP": /rodovi|concessionaria/,
+  "SEC-ANTAQ-INST": /porto|portuari|terminal|transbordo|hidrovi|fluvial/,
+};
+
+/** Códigos das fontes setoriais que não servem ao projeto (pelo título e objeto). */
+function fontesForaDoSetor(projeto) {
+  const texto = semAcento(`${projeto?.titulo || ""} ${projeto?.objeto || ""}`);
+  return Object.entries(FONTES_SETORIAIS).filter(([, re]) => !re.test(texto)).map(([codigo]) => codigo);
+}
 
 /** Código IBGE do município do projeto (pré-triagem da IAT, que só traz o código). Grava no projeto. */
 async function garantirIbge(db, projeto) {
@@ -543,6 +564,13 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
     if (p.perfil === undefined) {
       p.perfil = (await db.query("select perfil from capex_radar.projetos where id = $1", [p.id])).rows[0]?.perfil || null;
     }
+    // Projetos do grupo na mesma UF: com um só, ato estadual sem município pode ir ao julgamento.
+    if (p.uf && p.grupo_id) {
+      p.projetos_na_uf = (await db.query(
+        "select count(*)::int as n from capex_radar.projetos where grupo_id = $1 and uf = $2 and status <> 'descartado'",
+        [p.grupo_id, p.uf],
+      )).rows[0].n;
+    }
   }
   const paraColeta = projetos.map(projetoParaColeta);
   let cno = new Map();
@@ -558,7 +586,7 @@ async function consultarFontes(db, projetos, { log = () => {}, deps = null, semJ
     const analises = [];
     const onAnalise = (codigo, linha, correlacao, motivo, probabilidade) => analises.push({ codigo, linha, correlacao, motivo, probabilidade });
     try {
-      const consulta = await coleta.consultViableSources(mvp, { dryRun: true, skipCno: true, semJulgamento, onAnalise, excluir: FONTES_SEM_RETORNO });
+      const consulta = await coleta.consultViableSources(mvp, { dryRun: true, skipCno: true, semJulgamento, onAnalise, excluir: [...FONTES_SEM_RETORNO, ...fontesForaDoSetor(projeto)] });
       relatorio.push(...consulta.relatorio);
     } catch (error) {
       log(`${projeto.titulo}: erro na coleta (${error.message})`);
@@ -961,6 +989,8 @@ module.exports = {
   gravarAnalisados,
   garantirIbge,
   FONTES_SEM_RETORNO,
+  FONTES_SETORIAIS,
+  fontesForaDoSetor,
   aplicarJulgamento,
   classificarRegistro,
   revisarRegistro,
