@@ -12,7 +12,7 @@
 //
 // Uso:
 //   npm run capex:cno-prospeccao -- listar --saida <pasta> [--area 5000] [--anos 3] [--limite N]
-//   npm run capex:cno-prospeccao -- aplicar --arquivo <pasta>/candidatos.json [--seco]
+//   npm run capex:cno-prospeccao -- aplicar --arquivo <pasta>/candidatos.json [--limite N] [--seco]
 const fs = require("node:fs");
 const path = require("node:path");
 const { pool } = require("../src/db");
@@ -111,14 +111,40 @@ async function aplicar(args) {
   const sec = require("../src/capex-fontes-secundarias");
   const perfis = require("../src/capex-perfil");
   // O projeto é refeito da obra e da empresa: a regra de nome e título pode ter mudado depois da listagem.
-  const candidatos = JSON.parse(fs.readFileSync(args.arquivo, "utf8")).filter((c) => !c.ja_no_radar)
+  const lidos = JSON.parse(fs.readFileSync(args.arquivo, "utf8")).filter((c) => !c.ja_no_radar)
     .map((c) => ({ ...c, projeto: prosp.projetoDaObra(c.obra, c.empresa) }));
+  // Empresa já monitorada com projeto no mesmo município: a obra é julgada
+  // para esse projeto (coleta do CNO), não vira pré-cadastro duplicado.
+  const { rows: locais } = await pool.query(
+    `select m.cnpj_basico, p.uf, lower(p.municipio) as municipio, p.titulo
+       from capex_radar.projetos p join capex_radar.matrizes m on m.grupo_id = p.grupo_id
+      where p.status <> 'descartado' and p.municipio is not null`,
+  );
+  const comProjeto = new Map(locais.map((l) => [`${l.cnpj_basico}|${l.uf}|${l.municipio}`, l.titulo]));
+  const noMesmoLocal = [];
+  const candidatos = lidos.filter((c) => {
+    const titulo = comProjeto.get(`${c.empresa.cnpj.slice(0, 8)}|${c.projeto.uf}|${String(c.projeto.municipio).toLowerCase()}`);
+    if (titulo) noMesmoLocal.push(`${c.cno} (${Math.round(c.obra.area_obra).toLocaleString("pt-BR")} m², início ${c.obra.inicio}) -> ${titulo}`);
+    return !titulo;
+  });
+  if (noMesmoLocal.length) {
+    console.log(`${noMesmoLocal.length} obra(s) de empresa monitorada no município de um projeto (julgar pela coleta do CNO, não viram pré-cadastro):`);
+    for (const l of noMesmoLocal) console.log(`  ${l}`);
+  }
   // Um projeto por empresa e município; a obra mais antiga dá a data.
   const porProjeto = new Map();
   for (const c of candidatos) {
     const k = `${c.empresa.cnpj.slice(0, 8)}|${c.projeto.uf}|${c.projeto.municipio}`;
     if (!porProjeto.has(k)) porProjeto.set(k, []);
     porProjeto.get(k).push(c);
+  }
+  // --limite N: só os N primeiros projetos (piloto), dos maiores para os menores.
+  if (args.limite) {
+    const area = (obras) => obras.reduce((t, o) => t + o.obra.area_obra, 0);
+    const escolhidos = [...porProjeto.entries()].sort((a, b) => area(b[1]) - area(a[1])).slice(0, Number(args.limite));
+    porProjeto.clear();
+    for (const [k, v] of escolhidos) porProjeto.set(k, v);
+    candidatos.splice(0, candidatos.length, ...escolhidos.flatMap(([, v]) => v));
   }
   const resumo = { projetos: 0, obras: 0, grupos_novos: 0, ja_existentes: 0 };
   if (seco) {
