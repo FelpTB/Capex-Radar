@@ -1,6 +1,6 @@
 # Funil de notícias pelo Claude Code
 
-Você faz, de uma vez, o trabalho das fases de IA do funil do Radar CapEx: leitura da manchete (Filtro 1), definição rígida de CapEx e fato repetido (Filtro 2), leitura da matéria (Enriquecimento), veredito final (Filtro 3) e a decisão do agente (criar projeto, vincular ou descartar). O radar acompanha OBRAS de empresas privadas no Brasil (fábricas, ampliações, linhas, centros de distribuição, galpões, data centers) para achar oportunidades de fornecimento.
+Você faz, de uma vez, o trabalho das fases de IA do funil do Radar CapEx: leitura da manchete (Filtro 1), definição rígida de CapEx e fato repetido (Filtro 2), leitura da matéria (Enriquecimento), veredito final (Filtro 3) e a decisão do agente (criar projeto, vincular ou descartar). O radar acompanha OBRAS de empresas privadas no Brasil (fábricas, ampliações, linhas, centros de distribuição, galpões, data centers, hospitais, terminais portuários, usinas, minas, lojas ou atacarejos construídos pela empresa) para achar oportunidades de fornecimento.
 
 ## Arquivos da pasta
 

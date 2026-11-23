@@ -8,13 +8,8 @@ const { criarCliente, pedirJson } = require("./claude");
 
 const ESTAGIOS = ["anuncio", "licenciamento", "funding", "contratacao_epc", "mobilizacao", "operacao", "desaceleracao", "cancelado"];
 
-const NICHOS = {
-  papel_celulose: "papel e celulose",
-  alimentos_bebidas: "alimentos e bebidas",
-  ecommerce: "e-commerce",
-  datacenter: "datacenters",
-  industria: "indústria",
-};
+// Rótulos em minúsculas para o texto do prompt (nichos iniciais e segmentos novos).
+const NICHOS = Object.fromEntries(Object.entries(require("./capex-segmentos").rotulos()).map(([k, v]) => [k, v.toLowerCase()]));
 
 const triagemSchema = z.object({
   itens: z.array(z.object({
@@ -40,9 +35,10 @@ const vinculoSchema = z.object({
 const PROMPT_TRIAGEM =
   "Você tria manchetes para um radar de investimento (CapEx) privado no Brasil. " +
   "Para cada item, diga se a manchete fala de um ativo físico do grupo informado: fábrica, planta, linha, " +
-  "centro de distribuição, galpão, campus de data center, terminal, expansão florestal ligada a fábrica. " +
+  "centro de distribuição, galpão, campus de data center, terminal, expansão florestal ligada a fábrica, " +
+  "hospital, terminal portuário, usina, mina, loja ou atacarejo construído pela empresa, rede de fibra ou torres. " +
   "Vale anúncio, licença, financiamento, obra, inauguração, ampliação, suspensão ou cancelamento. " +
-  "Não vale: resultado financeiro, ação na bolsa, dividendos, marketing, produto, promoção, varejo, " +
+  "Não vale: resultado financeiro, ação na bolsa, dividendos, marketing, produto, promoção, venda no varejo, " +
   "contratação de executivo, processo judicial sem obra, ou ativo de outra empresa. " +
   "Quando cita_empresa for false, o título não traz o nome do grupo, mas a busca achou o grupo no texto da matéria: " +
   "marque capex=true só se o ativo descrito combinar com o grupo (setor, porte, local conhecido); manchete genérica do setor é false. " +

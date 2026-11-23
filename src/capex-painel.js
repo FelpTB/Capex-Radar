@@ -21,13 +21,8 @@ const triagem = require("./capex-triagem-jobs");
 const agente = require("./capex-agente");
 const { esc, money, badge, selectOptions, layout } = require("./html");
 
-const NICHOS = {
-  papel_celulose: "Papel e Celulose",
-  alimentos_bebidas: "Alimentos e Bebidas",
-  ecommerce: "E-commerce",
-  datacenter: "Datacenters",
-  industria: "Indústria (outros setores)",
-};
+// Os quatro nichos iniciais e os segmentos novos (seeds/capex_radar/segmentos.json).
+const NICHOS = require("./capex-segmentos").rotulos();
 
 const ESTAGIO_ROTULO = {
   anuncio: "Anúncio",

@@ -33,17 +33,12 @@ const MAX_LEITURAS = 1;
 const MAX_TOKENS_PAGINA = 5000;
 const MAX_VOLTAS = 3;
 
-const NICHOS = {
-  papel_celulose: "papel e celulose",
-  alimentos_bebidas: "alimentos e bebidas",
-  ecommerce: "e-commerce",
-  datacenter: "datacenters",
-  industria: "indústria",
-};
+// Rótulos em minúsculas para o texto do prompt (nichos iniciais e segmentos novos).
+const NICHOS = Object.fromEntries(Object.entries(require("./capex-segmentos").rotulos()).map(([k, v]) => [k, v.toLowerCase()]));
 
 const OBRA = ["por_fazer", "em_andamento", "concluida", "sem_obra", "incerto"];
 
-const PROMPT = `Você enriquece notícias de um radar de projetos de CapEx privado no Brasil. Cada notícia já passou por dois filtros e provavelmente fala de um investimento com obra (fábrica, ampliação, centro de distribuição, data center, linha de produção) de uma empresa do grupo informado. Você recebe a manchete, o veículo, a data e o link do Google News, que em geral NÃO abre a matéria.
+const PROMPT = `Você enriquece notícias de um radar de projetos de CapEx privado no Brasil. Cada notícia já passou por dois filtros e provavelmente fala de um investimento com obra (fábrica, ampliação, centro de distribuição, data center, linha de produção, hospital, terminal portuário, usina, mina, loja construída) de uma empresa do grupo informado. Você recebe a manchete, o veículo, a data e o link do Google News, que em geral NÃO abre a matéria.
 
 O QUE FAZER
 1. Ache a matéria original: busque pela manchete (entre aspas, se ajudar) e pelo veículo. Se não achar a do veículo, uma matéria de outro veículo sobre o MESMO fato serve. Leia a página com a ferramenta de leitura.
@@ -55,7 +50,7 @@ CAMPOS
 - url_original: endereço da matéria lida (null se não achou). veiculo_original: nome do veículo dessa matéria.
 - resumo: 2 a 4 frases em português com o fato e os números principais.
 - empresa: quem faz o investimento, como escrito no texto. mesmo_grupo: true se é o grupo informado ou uma controlada dele; false se é outra empresa (fornecedor, cliente, governo, homônimo).
-- objeto: o ativo (ex.: "fábrica de celulose", "ampliação do frigorífico", "centro de distribuição"). tipo_ativo: uma palavra (fabrica, ampliacao, centro_distribuicao, data_center, linha_producao, florestal, energia, outro).
+- objeto: o ativo (ex.: "fábrica de celulose", "ampliação do frigorífico", "centro de distribuição"). tipo_ativo: uma palavra (fabrica, ampliacao, centro_distribuicao, data_center, linha_producao, florestal, energia, hospital, terminal, usina, mina, loja, rede, outro).
 - uf: sigla do estado; municipio: cidade; local_detalhe: distrito, rodovia ou bairro, se houver.
 - valor_brl: valor do investimento em reais, número inteiro (R$ 1,2 bilhão = 1200000000). Valor em dólar ou euro fica em valor_texto, com valor_brl null. valor_texto: o valor como escrito.
 - capacidade: capacidade produtiva ou área, como escrito. empregos: número de empregos (obra ou operação), inteiro.

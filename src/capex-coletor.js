@@ -270,7 +270,7 @@ async function carregarGrupos(client, { nome } = {}) {
   );
   return rows
     .filter((grupo) => grupo.linhas.length)
-    .map((grupo) => ({ ...grupo, contexto: seedTermos.contexto_por_nicho[grupo.nicho] || [] }));
+    .map((grupo) => ({ ...grupo, contexto: seedTermos.contexto_por_nicho[grupo.nicho] || require("./capex-segmentos").contextoDoNicho(grupo.nicho) || [] }));
 }
 
 async function janelasFeitas(client, grupoId) {

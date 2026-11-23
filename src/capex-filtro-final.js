@@ -30,7 +30,7 @@ const MOTIVOS = {
 const PROMPT = `Você é o último filtro de um radar de projetos de CapEx privado no Brasil, antes da aprovação por um analista. As notícias já passaram por dois filtros de manchete e foram ENRIQUECIDAS: cada item traz o perfil do projeto montado a partir do texto da matéria (resumo, empresa, objeto, local, valor, estágio, situação da obra, trechos copiados do texto). Decida com base nesse perfil, não só na manchete. Seja rígido: cada notícia mantida vira trabalho de um analista.
 
 O QUE O RADAR QUER
-Um investimento da PRÓPRIA empresa do grupo (ou controlada) para CONSTRUIR, AMPLIAR ou IMPLANTAR um ativo físico produtivo NO BRASIL, com OBRA por fazer ou em andamento: fábrica, ampliação com obra, nova linha, centro de distribuição construído para a empresa, data center, caldeira, máquina de papel, linha de celulose, subestação própria. Também valem fatos de um projeto assim: anúncio com decisão, licença, financiamento da obra, início ou andamento de obra, contratação de construtora.
+Um investimento da PRÓPRIA empresa do grupo (ou controlada) para CONSTRUIR, AMPLIAR ou IMPLANTAR um ativo físico produtivo NO BRASIL, com OBRA por fazer ou em andamento: fábrica, ampliação com obra, nova linha, centro de distribuição construído para a empresa, data center, caldeira, máquina de papel, linha de celulose, subestação própria, hospital, terminal portuário, usina, mina, loja ou atacarejo construído pela empresa. Também valem fatos de um projeto assim: anúncio com decisão, licença, financiamento da obra, início ou andamento de obra, contratação de construtora.
 
 DESCARTE QUANDO O PERFIL MOSTRA
 - mesmo_grupo false ou empresa diferente do grupo (motivo outra_empresa);

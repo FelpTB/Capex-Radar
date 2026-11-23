@@ -28,7 +28,7 @@ const LIMITE_PROXIMAS = 20;
 // Motivos que o agente pode dar, por decisão. O código fica no banco; o
 // rótulo aparece na tela e no motivo do descarte.
 const MOTIVOS = {
-  obra_nova: { decisao: "criar_projeto", rotulo: "obra nova (fábrica, planta, CD, data center)" },
+  obra_nova: { decisao: "criar_projeto", rotulo: "obra nova (fábrica, planta, CD, data center, hospital, terminal, usina)" },
   expansao: { decisao: "criar_projeto", rotulo: "expansão ou nova linha com obra" },
   mesmo_projeto: { decisao: "vincular", rotulo: "mesmo projeto já cadastrado" },
   sem_obra: { decisao: "descartar", rotulo: "investimento sem obra (máquinas, TI, frota, marketing)" },
@@ -45,7 +45,7 @@ const RELACOES = ["expansao", "subprojeto", "localidade"];
 const SITUACOES_OBRA = ["anunciado", "em_construcao", "concluido", "incerto"];
 
 const PROMPT = `Você é o analista de triagem de um radar de projetos de investimento (CapEx) privados no Brasil.
-O radar acompanha OBRAS: fábricas, plantas, linhas de produção, centros de distribuição, galpões logísticos e campi de data center que ainda vão ser construídos ou estão em construção. Ele serve para encontrar oportunidades de fornecimento para a obra.
+O radar acompanha OBRAS: fábricas, plantas, linhas de produção, centros de distribuição, galpões logísticos, campi de data center, hospitais, terminais portuários, usinas, minas e lojas ou atacarejos construídos pela empresa, que ainda vão ser construídos ou estão em construção. Ele serve para encontrar oportunidades de fornecimento para a obra.
 
 Você recebe UMA notícia de um grupo empresarial (em geral só a manchete), a leitura prévia da IA de triagem (pode ter erros), a lista dos projetos já cadastrados do grupo e as manchetes próximas do mesmo grupo (outras notícias de até ${JANELA_PROXIMAS_DIAS} dias antes ou depois, com o que já foi decidido sobre elas).
 
@@ -57,7 +57,7 @@ Siga os passos na ordem:
 
 2. MESMO PROJETO. É o mesmo projeto quando a notícia trata do mesmo empreendimento de um projeto cadastrado: mesmo ativo e mesmo local, ou o mesmo anúncio (valor igual ou próximo, mesma UF, mesmo período), ainda que a manchete seja mais genérica (ex.: "investe R$ 400 milhões no RS" e o projeto cadastrado é a ampliação de uma planta no RS anunciada na mesma época com esse valor). Anúncio, licença, financiamento, início de obra e inauguração do mesmo empreendimento são o MESMO projeto: decisão vincular, com mesmo_projeto_id. Ativo diferente ou local diferente é outro projeto.
 
-3. GERA OBRA. Presuma que gera obra quando a empresa investe em fábrica, planta, unidade, CD ou data center para construir, ampliar, expandir capacidade ou produção, ou instalar nova linha. Só conclua que NÃO gera obra quando o texto disser que é compra de máquinas, equipamentos, frota, tecnologia, manutenção ou modernização sem obra; ou aquisição de empresa, marca, fazenda ou ativo já pronto (fusão, compra de participação, arrendamento); ou P&D, marketing, contratação.
+3. GERA OBRA. Presuma que gera obra quando a empresa investe em fábrica, planta, unidade, CD, data center, hospital, terminal, usina ou mina para construir, ampliar, expandir capacidade ou produção, ou instalar nova linha. Só conclua que NÃO gera obra quando o texto disser que é compra de máquinas, equipamentos, frota, tecnologia, manutenção ou modernização sem obra; ou aquisição de empresa, marca, fazenda ou ativo já pronto (fusão, compra de participação, arrendamento); ou P&D, marketing, contratação.
 
 4. SITUAÇÃO. anunciado: planejado, anunciado, "vai investir", "investe até 20XX", em licenciamento ou financiamento. em_construcao: obras iniciadas ou em andamento ("dá largada", "começa obras"). concluido: só quando o texto diz inaugura, inaugurou, concluiu, entra em operação. incerto: o texto não dá pista; trate como anunciado.
 

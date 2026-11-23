@@ -1,0 +1,317 @@
+{
+  "versao": "2026-11-23",
+  "descricao": "Segmentos novos do Radar (Pontos de Melhora 23/11/2026, item 3): só empresas privadas. Cada nicho tem as classes CNAE (prefixo do CNAE principal da matriz) e os termos de contexto da busca de notícias. As empresas são as maiores de cada nicho pelo capital social no cnpj_db (porte 'demais', matriz ativa, natureza jurídica privada), escolhidas com scripts/capex-segmentos.js.",
+  "por_nicho": 12,
+  "nichos": {
+    "portuario": {
+      "rotulo": "Portos e terminais",
+      "cnaes": [
+        "5231",
+        "5232",
+        "5239"
+      ],
+      "contexto": [
+        "terminal",
+        "porto",
+        "berço",
+        "cais",
+        "píer",
+        "investimento",
+        "expansão",
+        "obra",
+        "dragagem"
+      ]
+    },
+    "telecom": {
+      "rotulo": "Telecomunicações",
+      "cnaes": [
+        "61"
+      ],
+      "contexto": [
+        "data center",
+        "torres",
+        "fibra",
+        "rede",
+        "investimento",
+        "expansão",
+        "obra",
+        "construção",
+        "cabo submarino"
+      ]
+    },
+    "varejo": {
+      "rotulo": "Varejo e atacarejo",
+      "cnaes": [
+        "4711",
+        "4712",
+        "4744",
+        "4753",
+        "4754",
+        "4771",
+        "4781",
+        "4639"
+      ],
+      "contexto": [
+        "centro de distribuição",
+        "CD",
+        "loja",
+        "hipermercado",
+        "atacarejo",
+        "construção",
+        "investimento",
+        "expansão",
+        "obra"
+      ]
+    },
+    "textil": {
+      "rotulo": "Têxtil, vestuário e calçados",
+      "cnaes": [
+        "13",
+        "14",
+        "15"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha",
+        "fiação",
+        "tecelagem"
+      ]
+    },
+    "saude": {
+      "rotulo": "Hospitais e saúde",
+      "cnaes": [
+        "8610",
+        "8640"
+      ],
+      "contexto": [
+        "hospital",
+        "leitos",
+        "unidade",
+        "ampliação",
+        "construção",
+        "investimento",
+        "obra",
+        "inaugura",
+        "torre"
+      ]
+    },
+    "farmaceutico": {
+      "rotulo": "Farmacêutico",
+      "cnaes": [
+        "21"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha",
+        "laboratório",
+        "centro de distribuição"
+      ]
+    },
+    "quimico": {
+      "rotulo": "Química e petroquímica",
+      "cnaes": [
+        "20"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha",
+        "complexo"
+      ]
+    },
+    "automotivo": {
+      "rotulo": "Automotivo",
+      "cnaes": [
+        "29"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha",
+        "montadora"
+      ]
+    },
+    "siderurgia": {
+      "rotulo": "Siderurgia e metalurgia",
+      "cnaes": [
+        "24"
+      ],
+      "contexto": [
+        "usina",
+        "fábrica",
+        "laminação",
+        "alto-forno",
+        "aciaria",
+        "investimento",
+        "expansão",
+        "obra"
+      ]
+    },
+    "materiais_construcao": {
+      "rotulo": "Cimento, vidro e cerâmica",
+      "cnaes": [
+        "23"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "forno",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha"
+      ]
+    },
+    "maquinas": {
+      "rotulo": "Máquinas e equipamentos elétricos",
+      "cnaes": [
+        "27",
+        "28"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha"
+      ]
+    },
+    "eletronicos": {
+      "rotulo": "Eletrônicos",
+      "cnaes": [
+        "26"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha"
+      ]
+    },
+    "borracha_plastico": {
+      "rotulo": "Borracha e plástico",
+      "cnaes": [
+        "22"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha"
+      ]
+    },
+    "bioenergia": {
+      "rotulo": "Bioenergia e etanol",
+      "cnaes": [
+        "1931",
+        "1932"
+      ],
+      "contexto": [
+        "usina",
+        "planta",
+        "etanol",
+        "biometano",
+        "investimento",
+        "expansão",
+        "obra",
+        "unidade"
+      ]
+    },
+    "mineracao": {
+      "rotulo": "Mineração",
+      "cnaes": [
+        "07",
+        "08"
+      ],
+      "contexto": [
+        "mina",
+        "planta",
+        "usina de beneficiamento",
+        "projeto",
+        "investimento",
+        "expansão",
+        "obra"
+      ]
+    },
+    "madeira_moveis": {
+      "rotulo": "Madeira e móveis",
+      "cnaes": [
+        "16",
+        "31"
+      ],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha"
+      ]
+    },
+    "industria": {
+      "rotulo": "Indústria (outros setores)",
+      "cnaes": [],
+      "contexto": [
+        "fábrica",
+        "planta",
+        "unidade",
+        "investimento",
+        "expansão",
+        "obra",
+        "linha"
+      ]
+    }
+  },
+  "excluir_notas": "Raízes de CNPJ fora do segmento (CNAE de porto em lubrificante e fertilizante, consultoria portuária, comércio exterior agrícola, serviço submarino de petróleo) ou controladas pelo Estado (Petrobras Biocombustível, Araucária Nitrogenados). Também ficam de fora subsidiárias de um grupo já escolhido (WMS, WMB e Bompreço do Carrefour; Americel e Telmex Solutions da Claro; Salobo e Onça Puma da Vale) e a Allore Capital (gestora, não mineradora).",
+  "excluir": [
+    "54122724",
+    "02476026",
+    "05524572",
+    "42080238",
+    "01505705",
+    "10144628",
+    "12984254",
+    "02570352",
+    "01685903",
+    "93209765",
+    "00063960",
+    "13004510",
+    "33931478",
+    "48256824",
+    "47894889",
+    "02667694",
+    "14314050",
+    "97422620"
+  ],
+  "nomes": {
+    "15114494": "Corredor Logística e Infraestrutura"
+  }
+}

@@ -1,15 +1,7 @@
 -- Prospecção pelo CNO (Pontos de Melhora 23/11/2026, item 2): obras de galpão
--- industrial de indústrias privadas viram projetos em pré-cadastro. Abre o
--- nicho 'industria' para empresas fora dos quatro nichos iniciais e marca a
--- origem do grupo e do projeto.
-
-alter table capex_radar.grupos drop constraint if exists grupos_nicho_check;
-alter table capex_radar.grupos add constraint grupos_nicho_check
-  check (nicho in ('papel_celulose', 'alimentos_bebidas', 'ecommerce', 'datacenter', 'industria'));
-
-alter table capex_radar.nicho_cnae drop constraint if exists nicho_cnae_nicho_check;
-alter table capex_radar.nicho_cnae add constraint nicho_cnae_nicho_check
-  check (nicho in ('papel_celulose', 'alimentos_bebidas', 'ecommerce', 'datacenter', 'industria'));
+-- industrial de indústrias privadas viram projetos em pré-cadastro. Marca a
+-- origem do grupo e do projeto. Os nichos novos (inclusive 'industria') ficam
+-- na 034, que roda depois desta a cada deploy.
 
 alter table capex_radar.grupos add column if not exists origem text not null default 'curadoria';
 alter table capex_radar.projetos add column if not exists origem text;

@@ -56,7 +56,10 @@ CapEx é o dinheiro que a PRÓPRIA empresa do grupo (ou uma controlada) gasta pa
 - centro de distribuição, hub logístico ou galpão novo da empresa, inclusive construído sob medida (built-to-suit) para ela;
 - campus, prédio ou nova fase de data center; subestação ou linha de energia própria para o ativo;
 - máquina de papel ou linha de celulose nova, caldeira de recuperação, fábrica de celulose; viveiro ou base florestal só quando ligada a uma fábrica nova;
-- centro de pesquisa ou de distribuição com obra.
+- centro de pesquisa ou de distribuição com obra;
+- hospital novo, torre ou ampliação de hospital com obra (leitos novos em prédio novo ou ampliado);
+- terminal portuário, berço, cais, píer ou pátio novo ou ampliado; usina (siderúrgica, de etanol, de biometano), mina ou planta de beneficiamento;
+- loja, hipermercado ou atacarejo CONSTRUÍDO pela empresa (terreno próprio, obra, construção da unidade); rede de fibra óptica, torres ou data center de operadora com obra.
 A notícia de um FATO do projeto também é CapEx: anúncio com decisão da empresa, licença ambiental, financiamento para a obra, terraplenagem, início ou andamento de obra, contratação de construtora.
 
 NÃO é CapEx (descartar):
@@ -64,10 +67,10 @@ NÃO é CapEx (descartar):
 - compra de máquinas, equipamentos, frota, caminhões, TI, software, automação, manutenção ou modernização sem obra; marketing; P&D sem prédio novo (motivo sem_obra);
 - reabertura, retomada, religamento ou recuperação de unidade que já existia (após enchente, incêndio, paralisação), quando não há ampliação com obra (motivo reabertura);
 - inauguração, abertura, entrada em operação ou obra concluída de um empreendimento que NÃO aparece em projetos nem em mantidas (motivo concluido). O radar quer obra por fazer; a inauguração de algo que nunca vimos ser construído chega tarde. Isso vale para todos os nichos;
-- abrir, inaugurar ou "instalar-se" em centro de distribuição, hub, galpão ou centro logístico sem sinal de construção: em geral é ocupar galpão alugado e pronto (motivo concluido se já abriu; sem_obra se é só ocupação, hub de última milha, ponto de coleta ou loja). Mantenha CD ou galpão só quando a manchete fala de construir, obra, terreno, terraplenagem, built-to-suit ou um investimento em reais ligado a esse CD;
+- abrir, inaugurar ou "instalar-se" em centro de distribuição, hub, galpão ou centro logístico sem sinal de construção: em geral é ocupar galpão alugado e pronto (motivo concluido se já abriu; sem_obra se é só ocupação, hub de última milha, ponto de coleta ou loja em ponto alugado ou em shopping). Mantenha CD ou galpão só quando a manchete fala de construir, obra, terreno, terraplenagem, built-to-suit ou um investimento em reais ligado a esse CD;
 - plano de investimento agregado ("investirá R$ 15 bi no Brasil até 2026", "R$ 1 bilhão em 2024") sem uma unidade, cidade ou obra identificada (motivo generico);
 - intenção sem decisão da empresa: governo quer atrair, governador busca, empresa "estuda", "avalia", "negocia incentivo", "pode instalar" (motivo especulacao);
-- resultado, ações, dívida, dividendos, produto, lançamento, promoção, loja, varejo, contratação de executivo, processo judicial, prêmio, ESG sem obra (motivo nao_investimento);
+- resultado, ações, dívida, dividendos, produto, lançamento, promoção, abertura de loja sem obra, vendas no varejo, contratação de executivo, processo judicial, prêmio, ESG sem obra (motivo nao_investimento);
 - ativo de outra empresa, de fornecedor, de cliente ou de governo; homônimo (motivo outra_empresa);
 - ativo fora do Brasil (motivo fora_brasil);
 - cancelamento ou suspensão quando não há projeto cadastrado (motivo cancelado).
