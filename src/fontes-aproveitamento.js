@@ -132,7 +132,7 @@ function barrasSecundarias(fontes) {
 
 function subnavHub(ativo) {
   const item = (chave, href, texto) => `<a class="${chave === ativo ? "active" : ""}" href="${href}">${texto}</a>`;
-  return `<nav class="hub-tabs">${item("fontes", "/fontes/hub", "Fontes por abrangência")}${item("aproveitamento", "/fontes/hub/aproveitamento", "Aproveitamento das fontes")}</nav>`;
+  return `<nav class="hub-tabs">${item("fontes", "/fontes/hub", "Fontes por abrangência")}${item("aproveitamento", "/fontes/hub/aproveitamento", "Aproveitamento das fontes")}${item("diagnostico", "/fontes/hub/diagnostico", "Por que não aproveita")}</nav>`;
 }
 
 function paginaAproveitamento({ funil = {}, veiculos = [], secundarias = [], meses = [], marcos = [] }) {

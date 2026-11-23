@@ -549,6 +549,11 @@ app.get("/fontes/hub", async (req, res) => {
 });
 
 // Hub de fontes › Aproveitamento: gráficos de quanto cada fonte chega aos projetos.
+app.get("/fontes/hub/diagnostico", async (req, res) => {
+  const diagnostico = require("./fontes-diagnostico");
+  res.send(diagnostico.paginaDiagnostico(await diagnostico.dadosDiagnostico()));
+});
+
 app.get("/fontes/hub/aproveitamento", async (req, res) => {
   const aproveitamento = require("./fontes-aproveitamento");
   res.send(aproveitamento.paginaAproveitamento(await aproveitamento.dadosAproveitamento()));

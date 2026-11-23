@@ -594,3 +594,19 @@ body.is-waiting { cursor: progress; }
 .raw-sort .chip:hover { border-color: var(--green); }
 .raw-sort .chip.is-active { background: var(--green); border-color: var(--green); color: #fff; }
 .raw-group { margin: 14px 0 4px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+
+/* Hub › Por que não aproveita (src/fontes-diagnostico.js): perdas em tons
+   quentes, distintos do azul do que a fonte rende. */
+:root { --dv-uf: #d9a441; --dv-municipio: #c9733a; --dv-periodo: #a8875c; --dv-ligacao: #8c5a8a; }
+.dv-fill--uf { background: var(--dv-uf); }
+.dv-fill--municipio { background: var(--dv-municipio); }
+.dv-fill--periodo { background: var(--dv-periodo); }
+.dv-fill--ligacao { background: var(--dv-ligacao); }
+.diag-lista { display: grid; gap: 14px; }
+.diag-fonte { padding: 12px 0; border-top: 1px solid var(--dv-grid); }
+.diag-fonte:first-child { border-top: 0; }
+.diag-fonte h3 { margin: 0 0 2px; font-size: 15px; }
+.diag-fonte h3 .muted { font-weight: 400; font-size: 12px; }
+.diag-fonte header p { margin: 0 0 8px; font-size: 13px; }
+.diag-fonte > p { margin: 8px 0 0; font-size: 14px; }
+.diag-fonte__acao { color: var(--ink); }

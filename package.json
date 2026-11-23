@@ -24,7 +24,8 @@
     "capex:uso-ia": "node scripts/capex-uso-ia.js",
     "capex:reprocessar": "node scripts/capex-reprocessar.js",
     "capex:funil": "node scripts/capex-funil.js",
-    "capex:cno-mensal": "node scripts/dadosgov-sync.js SEC-CNO && node scripts/capex-reprocessar.js coletar-cno"
+    "capex:cno-mensal": "node scripts/dadosgov-sync.js SEC-CNO && node scripts/capex-reprocessar.js coletar-cno",
+    "capex:diagnostico-fontes": "node scripts/capex-diagnostico-fontes.js"
   },
   "keywords": [],
   "author": "",

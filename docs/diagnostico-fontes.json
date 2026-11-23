@@ -1,0 +1,159 @@
+{
+  "em": "2026-11-23",
+  "resumo": [
+    "A maior parte das perdas é estrutural e vem do jeito de buscar: as fontes são consultadas pelo CNPJ ou pelo nome da empresa, não pelo local do projeto. Uma busca por Klabin, Nestlé ou JBS traz tudo o que a empresa tem no país (outras fábricas, fazendas, atos societários), e só uma fração é do projeto. Por isso 'Outra UF' e 'Sem o município' somam mais da metade das perdas e quase sempre estão certas.",
+    "Os números contam registro por projeto: o mesmo registro aparece uma vez para cada projeto da empresa (uma empresa com 8 projetos multiplica por 8). As fontes federais foram consultadas nos 117 projetos; os diários estaduais só nos projetos daquele estado.",
+    "Rendem bem quando o projeto está no lugar certo da fonte: CNO (84 obras na linha do tempo), DOE-PR (30), DOE-SP (23), IAT (15) e DOU (13). Fontes setoriais de energia, petróleo, transporte e mineração (ANP, ANTT, ARTESP, SIGA, SIGMINE, ONS) quase não retornam nada porque os grupos monitorados são de alimentos, bebidas, papel, logística e data centers.",
+    "Há perdas corrigíveis: diários estaduais com ato de secretaria de desenvolvimento ou de incentivo fiscal que não citam o município (caso Bracell/Semadesc no MS), REIDI sem município e outorgas da ANA na mesma UF que a pré-triagem descarta sem leitura. Também há falsos positivos de busca por nome (homônimos) que inflam o total sem risco de evidência errada."
+  ],
+  "fontes": {
+    "SEC-CNO": {
+      "explicacao": "Fonte que mais rende: 84 obras na linha do tempo e 135 possibilidades em 2.166 registros. As perdas são esperadas: a busca traz todas as obras do CNPJ e das construtoras com vínculo ao grupo, inclusive em outros municípios (1.141 sem o município do projeto, 224 de outra UF), e o julgamento por empresa descarta obras pequenas de manutenção ou de outra unidade (433 sem ligação, 145 de outra obra).",
+      "recomendacao": "Nada estrutural a mudar. Rever as possibilidades (incerta/improvável) dos projetos grandes e aplicar o teto por porte (capex:reprocessar -- porte) quando a notícia trouxer a área."
+    },
+    "CAPTURA-DOE-SP": {
+      "explicacao": "23 registros na linha do tempo, mas 1.497 de 1.882 caem por não citar o município de nenhum projeto. A busca por nome no Diário Oficial de SP é ampla: traz junta comercial, despachos de vigilância sanitária e atos de outras empresas com nome parecido (ex.: 'Pet Center' numa busca de Ascenty).",
+      "recomendacao": "Perda esperada. Para reduzir ruído, restringir a busca às seções de meio ambiente (CETESB, SP Águas) e de desenvolvimento econômico."
+    },
+    "SEC-ANA-SNIRH": {
+      "explicacao": "Só 3 registros aproveitados em 868: 675 são outorgas da empresa em outro estado. A ANA lista as outorgas federais pelo CNPJ no país inteiro e a maioria das plantas monitoradas usa água de domínio estadual, não federal.",
+      "recomendacao": "Filtrar pela UF do projeto já na consulta (a perda de outra UF some). As outorgas estaduais vêm dos diários (SP Águas, IGAM, IAT)."
+    },
+    "CAPTURA-DOE-MS": {
+      "explicacao": "Nenhum aproveitado em 670: 651 não citam o município do projeto. No MS os grupos monitorados (Bracell, Eldorado, Suzano) aparecem sobretudo por licenças florestais de fazendas em outros municípios e por convênios culturais, que estão bem descartados. Mas um termo entre a Semadesc e a Bracell (jan/2026) caiu na pré-triagem sem leitura e pode ser o termo de incentivo da fábrica de Bataguassu.",
+      "recomendacao": "Quando a empresa tem um projeto só no estado, mandar para o julgamento (sem exigir o município) os atos de secretaria de desenvolvimento, incentivo fiscal e licença de instalação. Conferir o termo Semadesc–Bracell de 28/01/2026."
+    },
+    "SEC-IAT": {
+      "explicacao": "15 aproveitados e 9 possibilidades, mas 488 de 530 julgados sem ligação: o IAT lista todas as licenças e autorizações da empresa no Paraná (outras unidades, manutenção, poços). As amostras descartadas são de outras unidades (ex.: Coca-Cola FEMSA em Araucária para o projeto de Maringá).",
+      "recomendacao": "Perda esperada; a fonte é boa. Nada a mudar."
+    },
+    "SEC-BNDES": {
+      "explicacao": "5 aproveitados em 478. 416 são operações sem obra (capital de giro, linha genérica de máquinas, aquisições) e 48 planos de investimento muito anteriores ao anúncio. Muitas operações vêm 'sem município', o que impede a ligação direta.",
+      "recomendacao": "Perda esperada. Manter a regra de ligação indireta do especialista de financiamento para operações com objeto e período compatíveis."
+    },
+    "CAPTURA-DOU": {
+      "explicacao": "13 aproveitados em 464; 436 caem por não citar o município. O DOU publica atos nacionais (ANEEL, ANTAQ, portarias) e a busca por nome traz despachos genéricos de outras unidades.",
+      "recomendacao": "Perda esperada. Os aproveitados vêm de ANEEL (subestação, seccionamento de linha) e portos: vale priorizar essas seções."
+    },
+    "CAPTURA-SIGMINE": {
+      "explicacao": "Nenhum aproveitado em 428. São processos minerários (areia, argila, calcário) em nome da empresa, quase sempre em fazendas ou jazidas fora do município do projeto. Mineração não é a obra que o radar procura.",
+      "recomendacao": "Consultar só para projetos de mineração ou cimento; para os demais, desligar a fonte economiza tempo de coleta."
+    },
+    "CAPTURA-DOE-PR": {
+      "explicacao": "Segundo melhor diário: 30 aproveitados e 8 possibilidades em 418. As perdas são de atos sem o município do projeto (329) e outros atos da empresa no estado (50).",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "CAPTURA-DOE-RS": {
+      "explicacao": "5 aproveitados e 4 possibilidades em 354; 303 não citam o município. Mesmo padrão dos outros diários estaduais: busca pelo nome traz atos de toda a empresa no estado.",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "SEC-SIGA": {
+      "explicacao": "Nenhum aproveitado em 289; 220 são usinas da empresa em outro estado. O SIGA (ANEEL) lista geração de energia (autoprodução, cogeração), que raramente é a obra do projeto. Um caso a conferir: a usina 'Nestlé Araraquara' foi julgada sem ligação com a ampliação de café em Araraquara.",
+      "recomendacao": "Filtrar pela UF do projeto na consulta. Conferir na ficha a usina Nestlé Araraquara (pode ser a cogeração da planta ampliada)."
+    },
+    "CAPTURA-DOE-MG": {
+      "explicacao": "2 aproveitados em 254; 232 não citam o município do projeto. Poucos projetos em MG e muitos atos de outras unidades.",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "CAPTURA-DOE-RJ": {
+      "explicacao": "Nenhum aproveitado em 229; 226 não citam o município. Só 4 projetos no RJ, e a busca por nome traz atos de toda a empresa no estado.",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "SEC-CVM-IPE": {
+      "explicacao": "1 aproveitado em 202; 198 são comunicados sem obra (recompra e cancelamento de ações, resultados, eleição de diretor, apresentação institucional). Fato relevante de investimento é raro e quase nunca traz o município.",
+      "recomendacao": "Perda esperada. Pré-filtrar na coleta pelos tipos de documento 'Fato Relevante' e 'Comunicado ao Mercado' com termos de investimento, para cortar o ruído antes do julgamento."
+    },
+    "CAPTURA-SIGPUB": {
+      "explicacao": "8 possibilidades e nenhum aproveitado em 172. São diários municipais: leis, decretos, balanços e convênios do município que citam a empresa. As possibilidades (ex.: isenção de ISS para a obra da Eldorado em Três Lagoas) são bons sinais de incentivo, mas antigos.",
+      "recomendacao": "Perda esperada. Incentivo fiscal municipal para a obra (ISS, IPTU, doação de terreno) deveria subir a probabilidade no especialista."
+    },
+    "CAPTURA-DOE-PE": {
+      "explicacao": "6 aproveitados em 155; 141 não citam o município. Padrão normal de diário estadual.",
+      "recomendacao": "Nada a mudar."
+    },
+    "CAPTURA-DOE-MA": {
+      "explicacao": "Nenhum aproveitado em 146, todos sem o município do projeto. Há um único projeto no MA (Ambev, fábrica Equatorial) e os atos encontrados são de outras empresas ou de outras atividades.",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "CAPTURA-DOE-MT": {
+      "explicacao": "2 aproveitados em 126; 116 não citam o município do projeto.",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "CAPTURA-DOE-SC": {
+      "explicacao": "7 aproveitados em 103, uma boa taxa para diário estadual; 77 não citam o município.",
+      "recomendacao": "Nada a mudar."
+    },
+    "CAPTURA-DOE-GO": {
+      "explicacao": "3 aproveitados e 3 possibilidades em 80; 60 sem o município.",
+      "recomendacao": "Nada a mudar."
+    },
+    "SEC-IBAMA": {
+      "explicacao": "Nenhum aproveitado em 52, todos sem o município. A busca por nome traz homônimos (ex.: 'Projeto de Irrigação Propriá' para a C.Vale) e licenças federais são raras para fábricas, que se licenciam no estado.",
+      "recomendacao": "Buscar só pelo CNPJ, não pelo nome, para cortar homônimos."
+    },
+    "CAPTURA-DOE-BA": {
+      "explicacao": "1 aproveitado em 49; 46 sem o município. Só 2 projetos na BA.",
+      "recomendacao": "Nada a mudar."
+    },
+    "CAPTURA-ONS-PAR": {
+      "explicacao": "Nenhum aproveitado em 43. O parecer de acesso do ONS lista obras de transmissão (linhas e subestações) por região; a busca casa pelo município da subestação, que quase nunca é a fábrica.",
+      "recomendacao": "Usar só para data centers e projetos com subestação própria; para os demais, desligar."
+    },
+    "CAPTURA-DOE-CE": {
+      "explicacao": "Nenhum aproveitado em 20, todos sem o município do projeto.",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "CAPTURA-DOE-ES": {
+      "explicacao": "Nenhum aproveitado em 20: 16 sem o município e 4 sem ligação. Um projeto só no ES.",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "SEC-ANTAQ-INST": {
+      "explicacao": "1 possibilidade em 16. A ANTAQ lista instalações portuárias da empresa (ex.: estações de transbordo da Caramuru em São Simão e Itaituba); só interessa a projetos portuários.",
+      "recomendacao": "Consultar só para projetos de terminal ou porto."
+    },
+    "CAPTURA-REIDI": {
+      "explicacao": "Nenhum aproveitado em 15: 10 de outra UF e 5 sem município. A habilitação no REIDI não traz o município, só a UF, então a pré-triagem descarta mesmo quando a UF bate (ex.: Bracell SP para os projetos de Lençóis Paulista).",
+      "recomendacao": "Quando a UF bate e a empresa tem poucos projetos no estado, mandar o REIDI para o julgamento: habilitação para infraestrutura é sinal de obra."
+    },
+    "CAPTURA-DOM-METAWAY": {
+      "explicacao": "Nenhum aproveitado em 12, todos sem ligação: atos municipais sem relação com obra.",
+      "recomendacao": "Perda esperada. Nada a mudar."
+    },
+    "SEC-SEMAD": {
+      "explicacao": "1 aproveitado em 10; os outros 9 são licenças de outras unidades da empresa em MG.",
+      "recomendacao": "Nada a mudar."
+    },
+    "SEC-ANP-CAMPO": {
+      "explicacao": "Um único registro, sem ligação. A ANP cobre exploração e produção de petróleo, fora do setor dos grupos monitorados.",
+      "recomendacao": "Consultar só para empresas de óleo e gás."
+    },
+    "CAPTURA-QD": {
+      "explicacao": "Um registro, julgado possibilidade. Fonte de diários municipais com pouca cobertura dos municípios dos projetos.",
+      "recomendacao": "Nada a mudar."
+    },
+    "SEC-ANP-DUTO": {
+      "explicacao": "Consultada nos 117 projetos sem nenhum retorno: dutos de óleo e gás não fazem parte dos setores monitorados. Não é falha de busca.",
+      "recomendacao": "Consultar só para empresas de óleo e gás."
+    },
+    "SEC-ANP-EP": {
+      "explicacao": "Consultada nos 117 projetos sem nenhum retorno: exploração e produção de petróleo, fora dos setores monitorados.",
+      "recomendacao": "Consultar só para empresas de óleo e gás."
+    },
+    "SEC-ANP-PLAT": {
+      "explicacao": "Consultada nos 117 projetos sem nenhum retorno: plataformas de petróleo, fora dos setores monitorados.",
+      "recomendacao": "Consultar só para empresas de óleo e gás."
+    },
+    "SEC-ANTT-INV": {
+      "explicacao": "Consultada nos 117 projetos sem nenhum retorno: investimentos de concessionárias de rodovia e ferrovia, setor que nenhum grupo monitorado tem.",
+      "recomendacao": "Consultar só para concessionárias de transporte."
+    },
+    "SEC-ARTESP": {
+      "explicacao": "Consultada em 29 projetos de SP sem nenhum retorno: a ARTESP lista obras das concessionárias de rodovia paulistas, não de indústrias.",
+      "recomendacao": "Consultar só para concessionárias de rodovia em SP."
+    },
+    "CAPTURA-DOE-PA": {
+      "explicacao": "Consultada em 2 projetos sem retorno. O diário do PA não tem busca: o Radar indexa os PDFs das edições, e com o agendador desligado o índice não é atualizado desde 11/11.",
+      "recomendacao": "Rodar a carga do índice antes de consultar (npm run doe:pdf-sync -- --dias 30 --uf PA)."
+    }
+  }
+}
