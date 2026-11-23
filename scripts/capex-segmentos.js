@@ -110,7 +110,10 @@ async function aplicar(args) {
       const { rows: [g] } = await client.query(
         `insert into capex_radar.grupos (nome, nicho, ranking, controle, subsetor, notas, origem, ativo)
          values ($1, $2, $3, 'privada', $4, $5, 'curadoria', true)
-         on conflict (nome) do nothing returning id`,
+         -- Empresa que já entrou pelo pré-cadastro do CNO (inativa) passa a monitorada.
+         on conflict (nome) do update set ativo = true, origem = 'curadoria', nicho = excluded.nicho, ranking = excluded.ranking
+           where capex_radar.grupos.origem = 'cno_prospeccao'
+         returning id`,
         [e.grupo, e.nicho, { fonte: "cnpj_db", metrica: "capital social", valor: e.capital }, e.cnae_descricao || null,
           `Segmento ${e.nicho} (23/11/2026): maior capital social do CNAE no cnpj_db.`],
       );
