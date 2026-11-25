@@ -314,5 +314,263 @@
   ],
   "nomes": {
     "15114494": "Corredor Logística e Infraestrutura"
+  },
+  "marcas_notas": "Marcas curtas, como aparecem nas notícias (curadoria manual, 25/11/2026). A razão social inteira quase nunca aparece numa manchete; sem a marca, a busca volta vazia. Aplicadas com capex:segmentos marcas.",
+  "marcas": {
+    "Agco do Brasil Solucoes Agricolas": [
+      "AGCO"
+    ],
+    "Ford Brasil": [
+      "Ford"
+    ],
+    "General Motors do Brasil": [
+      "General Motors",
+      "Chevrolet"
+    ],
+    "Hyundai Motor Brasil": [
+      "Hyundai"
+    ],
+    "Mercedes-Benz do Brasil": [
+      "Mercedes-Benz"
+    ],
+    "Nissan do Brasil Automoveis": [
+      "Nissan"
+    ],
+    "Peugeot-Citroen do Brasil Automoveis": [
+      "Stellantis"
+    ],
+    "Renault do Brasil": [
+      "Renault"
+    ],
+    "Toyota do Brasil": [
+      "Toyota"
+    ],
+    "Volkswagen do Brasil Industria de Veiculos Automotores": [
+      "Volkswagen"
+    ],
+    "Zf Automotive Brasil": [
+      "ZF do Brasil"
+    ],
+    "Bioenergetica Vale do Paracatu": [
+      "Bevap"
+    ],
+    "Renuka do Brasil S.A.": [
+      "Renuka"
+    ],
+    "Bioflex Agroindustrial": [
+      "GranBio",
+      "Bioflex"
+    ],
+    "Bic Amazonia": [
+      "BIC Amazônia"
+    ],
+    "Contitech do Brasil Produtos Automotivos e Industriais": [
+      "ContiTech"
+    ],
+    "Lm Wind Power do Brasil": [
+      "LM Wind Power"
+    ],
+    "Mexichem Brasil": [
+      "Mexichem",
+      "Amanco Wavin"
+    ],
+    "Plastipak Packaging do Brasil": [
+      "Plastipak"
+    ],
+    "Silgan Dispensing Systems do Brasil": [
+      "Silgan"
+    ],
+    "Sumitomo Rubber do Brasil": [
+      "Sumitomo Rubber",
+      "Dunlop"
+    ],
+    "Vitopel do Brasil": [
+      "Vitopel"
+    ],
+    "Termoplast Embalagens": [
+      "Termoplast"
+    ],
+    "Plascar Componentes Plasticos": [
+      "Plascar"
+    ],
+    "Digibras Industria do Brasil": [
+      "Digibras"
+    ],
+    "Flextronics International Tecnologia": [
+      "Flextronics"
+    ],
+    "Foxconn Moebg Industria de Eletronicos": [
+      "Foxconn"
+    ],
+    "Lenovo Tecnologia (Brasil) Limitada": [
+      "Lenovo"
+    ],
+    "Panasonic do Brasil Limitada": [
+      "Panasonic"
+    ],
+    "Samsung da Amazonia": [
+      "Samsung"
+    ],
+    "Sony Brasil": [
+      "Sony"
+    ],
+    "Tcl Semp Industria e Comercio de Eletroeletronicos": [
+      "TCL Semp"
+    ],
+    "Abbott Laboratorios do Brasil": [
+      "Abbott"
+    ],
+    "Zoetis Industria de Produtos Veterinarios": [
+      "Zoetis"
+    ],
+    "Medley Farmaceutica": [
+      "Medley"
+    ],
+    "Opella Healthcare": [
+      "Opella"
+    ],
+    "Arauco do Brasil": [
+      "Arauco"
+    ],
+    "Berneck S.A. Paineis e Serrados": [
+      "Berneck"
+    ],
+    "Eucatex S A Industria e Comercio": [
+      "Eucatex"
+    ],
+    "Colchoes Gazin": [
+      "Gazin"
+    ],
+    "Agrocortex Madeiras do Acre Agroflorestal": [
+      "Agrocortex"
+    ],
+    "Imaribo Sa Industria e Comercio": [
+      "Imaribo"
+    ],
+    "Ge Vernova Equipamentos e Solucoes Eletricas": [
+      "GE Vernova"
+    ],
+    "Hd Hyundai Construction Equipment Brasil": [
+      "HD Hyundai"
+    ],
+    "Nidec Global Appliance Brasil": [
+      "Nidec",
+      "Embraco"
+    ],
+    "Eletrocal Industria e Comercio de Materiais Eletricos": [
+      "Eletrocal"
+    ],
+    "Biancogres Cermica S": [
+      "Biancogres"
+    ],
+    "Csn Cimentos Brasil": [
+      "CSN Cimentos"
+    ],
+    "Mohawk Revestimentos Cocal do Sul": [
+      "Eliane Revestimentos"
+    ],
+    "Owens Corning Fiberglas A S": [
+      "Owens Corning"
+    ],
+    "Saint-Gobain do Brasil Produtos Industriais e Para Construcao": [
+      "Saint-Gobain"
+    ],
+    "Cimento Acu": [
+      "Cimento Açu"
+    ],
+    "Companhia de Cimento Campeao Alvorada": [
+      "Cimento Alvorada"
+    ],
+    "Kohler K&B Brasil": [
+      "Kohler"
+    ],
+    "Anglo American Minerio de Ferro Brasil": [
+      "Anglo American"
+    ],
+    "Vallourec Solucoes Tubulares do Brasil": [
+      "Vallourec"
+    ],
+    "Mineradora Tibirica": [
+      "Mineradora Tibiriçá"
+    ],
+    "Mirabela Mineracao": [
+      "Atlantic Nickel"
+    ],
+    "Porto do Acu Operacoes": [
+      "Porto do Açu"
+    ],
+    "Ultrapar Logistica": [
+      "Ultracargo"
+    ],
+    "Arlanxeo Brasil": [
+      "Arlanxeo"
+    ],
+    "Cp Kelco Brasil": [
+      "CP Kelco"
+    ],
+    "Icl America do Sul": [
+      "ICL Brasil"
+    ],
+    "Oxiteno S A Industria e Comercio": [
+      "Oxiteno"
+    ],
+    "Syngenta Protecao de Cultivos": [
+      "Syngenta"
+    ],
+    "Yara Brasil Fertilizantes": [
+      "Yara"
+    ],
+    "Diagnosticos da America S.A .": [
+      "Dasa"
+    ],
+    "Fleury Medicina e Saude": [
+      "Grupo Fleury"
+    ],
+    "Unimed-Rio Empreendimentos Medicos e Hospitalares": [
+      "Unimed-Rio"
+    ],
+    "Sao Luiz": [
+      "Rede D'Or"
+    ],
+    "Hospitais Integrados da Gavea": [
+      "Clínica São Vicente"
+    ],
+    "Ternium Brasil": [
+      "Ternium"
+    ],
+    "Usinas Siderurgicas de Minas Gerais S/A. Usiminas": [
+      "Usiminas"
+    ],
+    "Companhia de Alumina do Para": [
+      "Alumina do Pará"
+    ],
+    "Telefonica Brasil": [
+      "Telefônica Brasil",
+      "Vivo"
+    ],
+    "Claro Nxt Telecomunicacoes": [
+      "Claro"
+    ],
+    "Oi S.A.": [
+      "Oi S.A."
+    ],
+    "Vogel Solucoes Em Telecomunicacoes e Informatica": [
+      "Vogel Telecom"
+    ],
+    "Sky Banda Larga": [
+      "Sky Brasil"
+    ],
+    "Cidade Maravilhosa Industria e Comercio de Roupas": [
+      "Azzas 2154"
+    ],
+    "Dakota Nordeste": [
+      "Dakota Calçados"
+    ],
+    "Carrefour Comercio e Industria": [
+      "Carrefour"
+    ],
+    "Gfg Comercio Digital": [
+      "Dafiti"
+    ]
   }
 }

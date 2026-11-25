@@ -14,6 +14,7 @@
 // Uso:
 //   npm run capex:segmentos -- listar --saida <pasta> [--por-nicho 12]
 //   npm run capex:segmentos -- aplicar --arquivo <pasta>/segmentos.json [--seco]
+//   npm run capex:segmentos -- marcas [--seco]   grava as marcas curtas de segmentos.json como termos de busca
 const fs = require("node:fs");
 const path = require("node:path");
 const { pool } = require("../src/db");
@@ -136,9 +137,36 @@ async function aplicar(args) {
   console.log(JSON.stringify(resumo));
 }
 
+/**
+ * Grava as marcas curtas de segmentos.json ("marcas": {grupo: [termo]}) como
+ * termos de busca do tipo marca. Termos que já existem ficam. --seco só conta.
+ */
+async function marcas(args) {
+  const config = seg.carregar();
+  const lista = Object.entries(config.marcas || {});
+  const painel = require("../src/capex-painel-db");
+  const { rows: grupos } = await pool.query("select id, nome from capex_radar.grupos where nome = any($1)", [lista.map(([nome]) => nome)]);
+  const porNome = new Map(grupos.map((g) => [g.nome, g.id]));
+  const faltam = lista.filter(([nome]) => !porNome.has(nome)).map(([nome]) => nome);
+  if (args.seco) {
+    console.log(JSON.stringify({ grupos: porNome.size, termos: lista.reduce((t, [, m]) => t + m.length, 0), faltam }), "(seco: nada gravado)");
+    return;
+  }
+  const gravados = await painel.emTransacao(async (client) => {
+    let n = 0;
+    for (const [nome, termos] of lista) {
+      const id = porNome.get(nome);
+      if (!id) continue;
+      n += await seg.gravarTermos(client, id, { marca: termos });
+    }
+    return n;
+  }, ATOR);
+  console.log(JSON.stringify({ grupos: porNome.size, termos_novos: gravados, faltam }));
+}
+
 async function main() {
   const args = argumentos(process.argv.slice(2));
-  const comandos = { listar, aplicar };
+  const comandos = { listar, aplicar, marcas };
   if (!comandos[args.comando]) throw new Error(`Comandos: ${Object.keys(comandos).join(", ")}`);
   await comandos[args.comando](args);
 }
